@@ -47,7 +47,8 @@ def _type(generic: m3.GenericType | None) -> str:
         return "Any"
     if generic.typeParameter is not None:
         return generic.typeParameter.name
-    base = getattr(generic.rawType, "name", None) or "Any"
+    raw = generic.rawType
+    base = _qualified_name(raw) if raw is not None and getattr(raw, "name", None) else "Any"
     if generic.typeArguments:
         args = ", ".join(_type(arg) for arg in generic.typeArguments)
         return f"{base}<{args}>"
@@ -90,9 +91,8 @@ def _generalization_names(cls: m3.Class) -> list[str]:
     for generalization in cls.generalizations:
         general = getattr(generalization, "general", None)
         raw = getattr(general, "rawType", None)
-        name = getattr(raw, "name", None)
-        if name:
-            names.append(name)
+        if raw is not None and getattr(raw, "name", None):
+            names.append(_qualified_name(raw))
     return names
 
 

@@ -33,7 +33,7 @@ Three core layers / packages, plus an optional fourth (the Legend bridge).
 **1. `pure_python/codegen/` — source → generated metamodel.** Two upstream formats feed one neutral model:
 
 - `lexer.py` + `parser.py` parse the bootstrap `m3.pure`, whose ~85 core metaclasses are written in Pure's low-level *instance-construction* syntax (`^Class … { Root.children[…].properties[x] : value }`) into an `Instance`/`Ref` graph.
-- `grammar.py` parses the *readable* Pure class grammar (`Class p::N<T> extends B { x : T[1]; }`) used by `relation.pure`, `variant.pure`, `milestoning.pure`. It deliberately **skips** imports, functions, qualified/derived properties, and **drops type arguments to their base name**; it tolerates (skips) `<<stereotype>>` and `{tagged value}` annotations.
+- `grammar.py` parses the *readable* Pure class grammar (`Class p::N<T> extends B { x : T[1]; }`) used by `relation.pure`, `variant.pure`, `milestoning.pure`. It **skips** imports and function definitions; it captures classes, associations, enums, profiles, type parameters, type arguments, qualified/derived properties (by signature), and **property-level** `<<stereotype>>` / `{tagged value}` annotations (class- and enum-header annotations are still skipped).
 - `schema.py` (`build_metamodel`) lowers the instance graph into format-neutral dataclasses: `MetaClass` / `MetaProperty` / `MetaEnum` / `MetaPrimitive` / `MetaMultiplicity` / `MetaProfile` inside a `MetaModel`.
 - `generate.py` is the orchestrator: `build_model()` parses the bootstrap then merges the grammar files into one `MetaModel`; `render()` returns the emitted module source (no write — used by the drift test); `generate()` writes `metamodel.py`.
 - `emit.py` turns a `MetaModel` into Python source: `@dataclass(kw_only=True)` classes topologically sorted by inheritance, with `typing.TypeVar` declarations and `typing.Generic[...]` bases for parameterised types.
@@ -55,7 +55,7 @@ Three core layers / packages, plus an optional fourth (the Legend bridge).
 - **Primitive mapping:** `str/bool/int/float/Decimal/bytes/date/datetime/time` ↔ Pure `String/Boolean/Integer/Float/Decimal/Byte/StrictDate/DateTime/StrictTime`. (`bytes`→`Byte`→`int` is lossy on the way back.)
 - **Keyword escaping:** a Pure name that is a Python keyword gets a trailing underscore in emitted Python (e.g. `from` → `from_`).
 - **Dataclass style differs by layer:** generated `m3` classes are `kw_only=True`; the compile layer emits ordinary dataclasses with required fields ordered before defaulted ones.
-- **Round-trip tests are the spec.** Forward = `Python → m3 → Python` (`test_compile.py`); reverse = `m3 → Pure → grammar parser` (`test_pure_emit.py`). The reverse loop only holds at the grammar parser's fidelity (type args / stereotypes / tags / qualified properties are emitted but not re-captured).
+- **Round-trip tests are the spec.** Forward = `Python → m3 → Python` (`test_compile.py`); reverse = `m3 → Pure → grammar parser` (`test_pure_emit.py`); the full `Python → m3 → Pure → m3 → Python` loop is in `test_full_round_trip.py`. Type arguments, qualified properties and property-level stereotypes / tagged values all survive the reverse loop; the remaining Pure-boundary drops are enum-member values (Pure enums are name-only) and class-level annotations.
 
 `TODO.md` tracks the known fidelity gaps and planned follow-ons.
 

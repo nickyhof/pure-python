@@ -34,12 +34,6 @@ class Person:
     addresses: list[Address]
 
 
-@dataclass
-class Point:
-    x: int
-    y: int
-
-
 def _classes(model: dict) -> dict[str, dict]:
     return {e["name"]: e for e in model["elements"] if e.get("_type") == "class"}
 
@@ -64,7 +58,7 @@ def test_legend_accepts_pure_python_output():
     assert _props(classes["Person"]) == {
         "firstName": ("String", 1, 1),
         "age": ("Integer", 0, 1),
-        "addresses": ("Address", 0, None),
+        "addresses": ("demo::Address", 0, None),  # qualified so Legend can resolve it
     }
 
 
@@ -95,8 +89,12 @@ def test_legend_executes_pure_expressions():
 
 
 def test_legend_executes_over_a_generated_model():
-    model = to_pure_module(compile_class(Point, package="demo"))
+    # Person references Address, so the emitted model must use qualified type
+    # references (`demo::Address`) to compile -- Legend's compiler rejects the
+    # bare `Address`. Constructing and navigating across both classes proves it.
+    model = to_pure_module(compile_class(Person, package="demo"))
     value = bridge.evaluate(
-        "|^demo::Point(x=3, y=4).x + ^demo::Point(x=3, y=4).y", model=model
+        "|^demo::Person(firstName='Ada', addresses=^demo::Address(street='Main')).addresses->size()",
+        model=model,
     )
-    assert value == 7
+    assert value == 1

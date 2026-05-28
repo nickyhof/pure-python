@@ -6,9 +6,8 @@ The inverse of :mod:`pure_python.compile.m3_to_pure`: parse Pure source with
 the ``m3 -> Pure -> m3`` loop.
 
 Fidelity is bounded by the grammar parser: classes, packages, type parameters,
-generalizations, properties (name, type + arguments, multiplicity) and
-enumerations are preserved; stereotypes, tagged values and qualified
-properties are not (the parser skips them).
+generalizations, properties (name, type + arguments, multiplicity), qualified
+properties, and property-level stereotypes / tagged values are preserved.
 """
 
 from __future__ import annotations
@@ -58,10 +57,18 @@ def _generic(
     )
 
 
+def _profile(name: str, profiles: dict[str, m3.Profile]) -> m3.Profile:
+    return profiles.setdefault(name, m3.Profile(name=name))
+
+
 def from_pure(source: str) -> dict[str, m3.Type]:
     """Parse Pure source and return a ``name -> m3 instance`` registry."""
     result = parse_grammar(source)
     registry: dict[str, m3.Type] = {}
+    profiles: dict[str, m3.Profile] = {
+        meta.name: m3.Profile(name=meta.name, package=meta.package or None)
+        for meta in result.profiles
+    }
 
     for meta in result.classes:
         registry[meta.name] = m3.Class(name=meta.name, package=meta.package or None)
@@ -81,7 +88,7 @@ def from_pure(source: str) -> dict[str, m3.Type]:
             cls.generalizations.append(
                 m3.Generalization(general=m3.GenericType(rawType=_resolve(base, registry)), specific=cls)
             )
-        cls.properties = [_property(p, cls, registry) for p in meta.properties]
+        cls.properties = [_property(p, cls, registry, profiles) for p in meta.properties]
         cls.qualifiedProperties = [
             m3.QualifiedProperty(
                 name=q.name,
@@ -94,15 +101,25 @@ def from_pure(source: str) -> dict[str, m3.Type]:
         ]
     for meta in result.associations:
         assoc = registry[meta.name]
-        assoc.properties = [_property(p, assoc, registry) for p in meta.properties]
+        assoc.properties = [_property(p, assoc, registry, profiles) for p in meta.properties]
     return registry
 
 
-def _property(p, owner, registry: dict[str, m3.Type]) -> m3.Property:
+def _property(p, owner, registry: dict[str, m3.Type], profiles: dict[str, m3.Profile]) -> m3.Property:
+    stereotypes = [
+        m3.Stereotype(profile=_profile(profile, profiles), value=value)
+        for profile, value in p.stereotypes
+    ]
+    tagged = [
+        m3.TaggedValue(tag=m3.Tag(profile=_profile(profile, profiles), value=tag), value=value)
+        for profile, tag, value in p.tagged_values
+    ]
     return m3.Property(
         name=p.name,
         genericType=_generic(p.type_name, p.is_type_parameter, p.type_arguments, registry),
         multiplicity=_multiplicity(p.lower, p.upper),
         owner=owner,
         aggregation=m3.AggregationKind.None_,
+        stereotypes=stereotypes,
+        taggedValues=tagged,
     )

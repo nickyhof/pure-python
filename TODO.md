@@ -13,7 +13,9 @@ Grouped by status, with pointers to the relevant code.
 - **Parse the readable Pure grammar.** `codegen/grammar.py` parses
   `relation.pure`, `variant.pure`, `milestoning.pure` and merges them in
   (now 101 classes). Generics are emitted as `typing.TypeVar` /
-  `typing.Generic[...]`.
+  `typing.Generic[...]`. It **skips imports and function definitions** (they are
+  not types) and class/enum-header `<<stereotype>>` / `{tag}` annotations;
+  property-level annotations are captured.
 - **Bidirectional compile layer.** `compile/python_to_m3.py` (dataclasses ->
   `m3.Class`) and `compile/m3_to_python.py` (`m3` -> importable dataclass
   module), including generics, `typing.Annotated` stereotypes/tags, and
@@ -24,9 +26,11 @@ Grouped by status, with pointers to the relevant code.
   source into live `m3` instances, closing the loop. `tests/test_full_round_trip.py`
   drives one model through `Python -> M3 -> Pure -> M3 -> Python` and asserts
   the graph is identical at every M3 stage. (`m3_to_python` now emits
-  `kw_only=True` dataclasses so inheritance survives the trip.) Only stereotypes
-  and tagged values are dropped at the Pure boundary; everything else --
-  including generalizations, type arguments and qualified properties -- survives.
+  `kw_only=True` dataclasses so inheritance survives the trip.) Generalizations,
+  type arguments, qualified properties, and property-level stereotypes / tagged
+  values all survive; the only remaining intentional Pure-boundary drops are
+  enum-member values (Pure enums are name-only) and class-level annotations
+  (never emitted in practice).
 
 ## Tier 1 -- finish the round-trip design
 
@@ -46,16 +50,21 @@ Grouped by status, with pointers to the relevant code.
 - [x] **Parse qualified / derived properties in the readable grammar.**
   `grammar.py` captures them by signature (parameters and lambda body skipped);
   `m3_to_pure` emits `name() {} : Type[mult];` and `pure_to_m3` lifts them into
-  `m3.QualifiedProperty`, so they now survive the round trip (stereotypes and
-  tagged values remain the only features dropped at the Pure boundary).
+  `m3.QualifiedProperty`, so they now survive the round trip.
+- [x] **Preserve property-level stereotypes and tagged values across the Pure
+  boundary.** `grammar.py` now parses `<<profile.value>>` and
+  `{profile.tag = 'v'}` annotations (instead of skipping them) and `pure_to_m3`
+  rebuilds shared `m3.Profile` / `Stereotype` / `Tag` / `TaggedValue` instances,
+  so they survive `Python -> M3 -> Pure -> M3 -> Python` (asserted in
+  `test_full_round_trip.py`).
 - [x] **Support `Annotated` markers nested inside unions.** `_strip_annotations`
   recursively pulls metadata out of unions, so both `Annotated[str | None, Tag]`
   and `Annotated[str, Tag] | None` work.
 - [x] **Preserve Python enum values.** When a member's value differs from its
   name, `python_to_m3` stores it as a tagged value (`pure_python.enumValue`) on
   the `m3.Enum`, and `m3_to_python` emits it back, so `Color.RED = 1` round-trips
-  through the Python <-> M3 loop. (Pure enums are name-only, so the value is
-  dropped at the Pure boundary like other tags.)
+  through the Python <-> M3 loop. (Pure enums are name-only, so this enum-member
+  value is dropped at the Pure boundary, unlike property-level tags.)
 - [x] **Revisit `bytes` mapping.** `m3_to_python._PURE_TO_PY` now maps
   `Byte -> bytes`, so `bytes` fields round-trip (Pure has no richer bytes type).
 
@@ -70,11 +79,12 @@ Grouped by status, with pointers to the relevant code.
   compiler + plan generation + plan executor rather than reimplementing it.
   Tests in `tests/test_legend_bridge.py` (skipped unless the jar is built with
   `mvn -f legend-bridge package`).
-  - [ ] **Emit qualified type references / imports in `m3_to_pure`.** The bridge
-    surfaced a real gap: `m3_to_pure` emits unqualified property types (e.g.
+  - [x] **Emit qualified type references in `m3_to_pure`.** The bridge surfaced
+    a real gap: `m3_to_pure` emitted unqualified property/supertype names (e.g.
     `addresses : Address[*]`), which Legend's grammar parser accepts but its
-    *compiler* rejects with "Can't find type 'Address'". Emit `pkg::Address` (or
-    an `import pkg::*;` section) so cross-type models compile and can be `eval`d.
+    *compiler* rejects with "Can't find type 'Address'". `_type` and
+    `_generalization_names` now emit `pkg::Name`, so cross-type models compile
+    and `eval` (`tests/test_legend_bridge.py` runs one over a two-class model).
   - [ ] **Richer `eval` results.** Only expressions reducing to a `ConstantResult`
     are returned today; TDS/relation/streaming results need a serializer.
 
