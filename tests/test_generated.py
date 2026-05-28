@@ -72,6 +72,13 @@ def test_generic_classes():
     assert "E" in str(values_field.type)
 
 
+def test_type_arguments_are_preserved_in_annotations():
+    source = pathlib.Path(m3.metamodel.__file__).read_text(encoding="utf-8")
+    assert "function: Function[Z]" in source  # from relation.pure FuncColSpec
+    assert "funcSpecs: list[FuncColSpec[Z, Any]]" in source
+    assert "enumeration: Enumeration[Any]" in source  # from the bootstrap EnumStub
+
+
 def test_grammar_sourced_classes_present():
     # relation.pure
     assert issubclass(m3.FuncColSpec, m3.Any)

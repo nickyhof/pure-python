@@ -84,11 +84,11 @@ class Testable(Any):
 
 @dataclass(kw_only=True)
 class Class(Type, PropertyOwner, ElementWithConstraints, PackageableElement, Testable, typing.Generic[T]):
-    properties: list[Property] = field(default_factory=list)
-    originalMilestonedProperties: list[Property] = field(default_factory=list)
-    propertiesFromAssociations: list[Property] = field(default_factory=list)
-    qualifiedProperties: list[QualifiedProperty] = field(default_factory=list)
-    qualifiedPropertiesFromAssociations: list[QualifiedProperty] = field(default_factory=list)
+    properties: list[Property[T, Any]] = field(default_factory=list)
+    originalMilestonedProperties: list[Property[T, Any]] = field(default_factory=list)
+    propertiesFromAssociations: list[Property[T, Any]] = field(default_factory=list)
+    qualifiedProperties: list[QualifiedProperty[Any]] = field(default_factory=list)
+    qualifiedPropertiesFromAssociations: list[QualifiedProperty[Any]] = field(default_factory=list)
     typeParameters: list[TypeParameter] = field(default_factory=list)
     typeVariables: list[VariableExpression] = field(default_factory=list)
     multiplicityParameters: list[InstanceValue] = field(default_factory=list)
@@ -135,7 +135,7 @@ class PrimitiveType(DataType, PackageableElement, ElementWithConstraints):
 @dataclass(kw_only=True)
 class Unit(DataType, Referenceable):
     measure: Measure
-    conversionFunction: FunctionDefinition | None = None
+    conversionFunction: FunctionDefinition[Any] | None = None
 
 @dataclass(kw_only=True)
 class Enumeration(DataType, PackageableElement, typing.Generic[E]):
@@ -155,13 +155,13 @@ class ElementOverride(Any):
 
 @dataclass(kw_only=True)
 class GetterOverride(ElementOverride):
-    getterOverrideToOne: Function | None = None
-    getterOverrideToMany: Function | None = None
+    getterOverrideToOne: Function[typing.Any] | None = None
+    getterOverrideToMany: Function[typing.Any] | None = None
     hiddenPayload: Any | None = None
 
 @dataclass(kw_only=True)
 class ConstraintsOverride(ElementOverride):
-    constraintsManager: Function | None = None
+    constraintsManager: Function[typing.Any] | None = None
 
 @dataclass(kw_only=True)
 class ConstraintsGetterOverride(GetterOverride, ConstraintsOverride):
@@ -244,7 +244,7 @@ class ValueSpecificationContext(Any):
 
 @dataclass(kw_only=True)
 class ExpressionSequenceValueSpecificationContext(ValueSpecificationContext):
-    functionDefinition: FunctionDefinition
+    functionDefinition: FunctionDefinition[Any]
 
 @dataclass(kw_only=True)
 class InstanceValueSpecificationContext(ValueSpecificationContext):
@@ -264,13 +264,13 @@ class KeyValueValueSpecificationContext(ValueSpecificationContext):
 
 @dataclass(kw_only=True)
 class FunctionExpression(Expression):
-    func: Function
+    func: Function[Any]
     importGroup: ImportGroup
     parametersValues: list[ValueSpecification] = field(default_factory=list)
     functionName: str | None = None
     propertyName: InstanceValue | None = None
     qualifiedPropertyName: InstanceValue | None = None
-    originalMilestonedProperty: Function | None = None
+    originalMilestonedProperty: Function[Any] | None = None
     originalMilestonedPropertyParametersValues: list[ValueSpecification] = field(default_factory=list)
     resolvedTypeParameters: list[GenericType] = field(default_factory=list)
     resolvedMultiplicityParameters: list[Multiplicity] = field(default_factory=list)
@@ -294,7 +294,7 @@ class NativeFunction(PackageableFunction, typing.Generic[K]):
 
 @dataclass(kw_only=True)
 class FunctionType(Type, Referenceable):
-    function: list[Function] = field(default_factory=list)
+    function: list[Function[Any]] = field(default_factory=list)
     parameters: list[VariableExpression] = field(default_factory=list)
     returnType: GenericType
     returnMultiplicity: Multiplicity
@@ -321,21 +321,21 @@ class ImportStub(Any):
 
 @dataclass(kw_only=True)
 class PropertyStub(Any):
-    owner: Class
+    owner: Class[Any]
     propertyName: str
-    resolvedProperty: AbstractProperty | None = None
+    resolvedProperty: AbstractProperty[Any] | None = None
 
 @dataclass(kw_only=True)
 class EnumStub(Any):
-    enumeration: Enumeration
+    enumeration: Enumeration[Any]
     enumName: str
     resolvedEnum: Enum | None = None
 
 @dataclass(kw_only=True)
 class Association(PropertyOwner):
-    properties: list[Property] = field(default_factory=list)
-    originalMilestonedProperties: list[Property] = field(default_factory=list)
-    qualifiedProperties: list[QualifiedProperty] = field(default_factory=list)
+    properties: list[Property[Nil, Any]] = field(default_factory=list)
+    originalMilestonedProperties: list[Property[Nil, Any]] = field(default_factory=list)
+    qualifiedProperties: list[QualifiedProperty[Any]] = field(default_factory=list)
 
 @dataclass(kw_only=True)
 class Profile(PackageableElement):
@@ -374,7 +374,7 @@ class ClassProjection(Class, PackageableElement, typing.Generic[T]):
 @dataclass(kw_only=True)
 class AssociationProjection(Association):
     projectedAssociation: Association
-    projections: list[ClassProjection] = field(default_factory=list)
+    projections: list[ClassProjection[Any]] = field(default_factory=list)
 
 @dataclass(kw_only=True)
 class RouteNode(AnnotatedElement):
@@ -382,7 +382,7 @@ class RouteNode(AnnotatedElement):
     includeAll: str
     type: GenericType
     children: list[PropertyRouteNode] = field(default_factory=list)
-    resolvedProperties: list[AbstractProperty] = field(default_factory=list)
+    resolvedProperties: list[AbstractProperty[Any]] = field(default_factory=list)
     included: list[RouteNodePropertyStub] = field(default_factory=list)
     excluded: list[RouteNodePropertyStub] = field(default_factory=list)
 
@@ -402,11 +402,11 @@ class ExistingPropertyRouteNode(PropertyRouteNode):
 @dataclass(kw_only=True)
 class NewPropertyRouteNode(PropertyRouteNode):
     specifications: list[ValueSpecification] = field(default_factory=list)
-    functionDefinition: NewPropertyRouteNodeFunctionDefinition
+    functionDefinition: NewPropertyRouteNodeFunctionDefinition[Nil, Any]
 
 @dataclass(kw_only=True)
 class RouteNodePropertyStub(AnnotatedElement):
-    property: list[AbstractProperty] = field(default_factory=list)
+    property: list[AbstractProperty[Any]] = field(default_factory=list)
     owner: RouteNode
     parameters: list[InstanceValue] = field(default_factory=list)
 
@@ -419,9 +419,9 @@ class Constraint(Any):
     name: str
     owner: str | None = None
     externalId: str | None = None
-    functionDefinition: FunctionDefinition
+    functionDefinition: FunctionDefinition[Any]
     enforcementLevel: str | None = None
-    messageFunction: FunctionDefinition | None = None
+    messageFunction: FunctionDefinition[Any] | None = None
 
 @dataclass(kw_only=True)
 class GrammarInfoStub(Any):
@@ -430,7 +430,7 @@ class GrammarInfoStub(Any):
 
 @dataclass(kw_only=True)
 class DefaultValue(Any):
-    functionDefinition: FunctionDefinition | None = None
+    functionDefinition: FunctionDefinition[Any] | None = None
 
 @dataclass(kw_only=True)
 class Test(Any):
@@ -445,7 +445,7 @@ class GenericTypeOperation(GenericType):
 
 @dataclass(kw_only=True)
 class RelationType(Type, Referenceable, typing.Generic[T]):
-    columns: list[Column] = field(default_factory=list)
+    columns: list[Column[T, Any]] = field(default_factory=list)
 
 @dataclass(kw_only=True)
 class Relation(Any, typing.Generic[T]):
@@ -471,21 +471,21 @@ class ColSpecArray(Any, typing.Generic[T]):
 @dataclass(kw_only=True)
 class FuncColSpec(Any, typing.Generic[Z, T]):
     name: str
-    function: Function
+    function: Function[Z]
 
 @dataclass(kw_only=True)
 class FuncColSpecArray(Any, typing.Generic[Z, T]):
-    funcSpecs: list[FuncColSpec] = field(default_factory=list)
+    funcSpecs: list[FuncColSpec[Z, Any]] = field(default_factory=list)
 
 @dataclass(kw_only=True)
 class AggColSpec(Any, typing.Generic[Z, V, T]):
     name: str
-    map: Function
-    reduce: Function
+    map: Function[Z]
+    reduce: Function[V]
 
 @dataclass(kw_only=True)
 class AggColSpecArray(Any, typing.Generic[A, B, T]):
-    aggSpecs: list[AggColSpec] = field(default_factory=list)
+    aggSpecs: list[AggColSpec[A, B, Any]] = field(default_factory=list)
 
 @dataclass(kw_only=True)
 class Variant(Any):

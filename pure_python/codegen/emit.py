@@ -12,7 +12,7 @@ from __future__ import annotations
 import keyword
 import re
 
-from .schema import MetaClass, MetaModel, MetaProperty
+from .schema import MetaClass, MetaModel, MetaProperty, TypeRef
 
 _PRIMITIVE_PY: dict[str, str] = {
     "String": "str",
@@ -46,14 +46,28 @@ from dataclasses import dataclass, field
 '''
 
 
-def _py_base_type(model: MetaModel, prop: MetaProperty) -> str:
-    if prop.is_type_parameter:
-        return prop.type_name if prop.type_name in model.type_parameter_names else "typing.Any"
-    if prop.type_name is None:
+def _py_name(model: MetaModel, name: str | None, is_type_parameter: bool) -> str:
+    if is_type_parameter:
+        return name if name in model.type_parameter_names else "typing.Any"
+    if name is None:
         return "typing.Any"
-    if prop.type_name in _PRIMITIVE_PY:
-        return _PRIMITIVE_PY[prop.type_name]
-    return prop.type_name  # a metaclass or enumeration -- emitted with this exact name
+    if name in _PRIMITIVE_PY:
+        return _PRIMITIVE_PY[name]
+    return name  # a metaclass or enumeration -- emitted with this exact name
+
+
+def _render_typeref(model: MetaModel, ref: TypeRef) -> str:
+    base = _py_name(model, ref.name, ref.is_type_parameter)
+    if ref.arguments:
+        return f"{base}[{', '.join(_render_typeref(model, a) for a in ref.arguments)}]"
+    return base
+
+
+def _py_base_type(model: MetaModel, prop: MetaProperty) -> str:
+    base = _py_name(model, prop.type_name, prop.is_type_parameter)
+    if prop.type_arguments:
+        return f"{base}[{', '.join(_render_typeref(model, a) for a in prop.type_arguments)}]"
+    return base
 
 
 def _annotation(model: MetaModel, prop: MetaProperty) -> str:

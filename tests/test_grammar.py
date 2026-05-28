@@ -12,7 +12,7 @@ def _classes(name: str):
     return {c.name: c for c in result.classes}, result
 
 
-def test_relation_generics_and_dropped_type_args():
+def test_relation_generics_and_type_args():
     classes, _ = _classes("relation.pure")
     assert set(classes) == {
         "ColSpec",
@@ -24,8 +24,13 @@ def test_relation_generics_and_dropped_type_args():
     }
     assert classes["FuncColSpec"].type_parameters == ["Z", "T"]
     function = next(p for p in classes["FuncColSpec"].properties if p.name == "function")
-    assert function.type_name == "Function"  # Function<Z> -> base name, arg dropped
+    assert function.type_name == "Function"  # Function<Z>
+    (arg,) = function.type_arguments
+    assert arg.name == "Z" and arg.is_type_parameter  # Z is a type parameter of FuncColSpec
     assert (function.lower, function.upper) == (1, 1)
+    # AggColSpec<A, B, Any> -- nested args, mix of type parameters and a concrete type.
+    agg = next(p for p in classes["AggColSpecArray"].properties if p.name == "aggSpecs")
+    assert [a.name for a in agg.type_arguments] == ["A", "B", "Any"]
     names = next(p for p in classes["ColSpecArray"].properties if p.name == "names")
     assert (names.lower, names.upper) == (0, None)  # String[*]
 

@@ -27,11 +27,11 @@ Grouped by status, with pointers to the relevant code.
   bases become `Class.generalizations`; only a class's own fields are emitted.
   `m3_to_python` emits the base list and topologically sorts so bases precede
   subclasses; `m3_to_pure` emits `extends`. Round-trips via import.
-- [ ] **Preserve type arguments end-to-end in the generated metamodel.**
-  `grammar._type_ref` drops `<...>` and the schema's `_raw_type` keeps only the
-  base name, so `function : Function<Z>[1]` becomes `function: Function`. Carry
-  type arguments through `MetaProperty` and emit subscripted annotations
-  (`Function[Z]`), as the compile layer already does via `GenericType.typeArguments`.
+- [x] **Preserve type arguments end-to-end in the generated metamodel.** A
+  recursive `TypeRef` carries arguments on `MetaProperty`; both parsers capture
+  them (the grammar parser splits `>>` to close nested generics) and `emit`
+  renders subscripted annotations -- `function : Function<Z>[1]` is now
+  `function: Function[Z]`, and `Enumeration<Any>` etc. survive from the bootstrap.
 - [ ] **Parse the `Association` grammar.** `codegen/grammar.py` parses
   `Association` for shape but discards it. Represent it (two end properties,
   inline `[2]` bound) and merge like classes.

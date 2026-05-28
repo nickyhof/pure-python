@@ -22,7 +22,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from .schema import MetaClass, MetaEnum, MetaProfile, MetaProperty
+from .schema import MetaClass, MetaEnum, MetaProfile, MetaProperty, TypeRef
 
 _TOKEN_RE = re.compile(
     r"""
@@ -53,6 +53,13 @@ class GrammarResult:
     classes: list[MetaClass] = field(default_factory=list)
     enums: list[MetaEnum] = field(default_factory=list)
     profiles: list[MetaProfile] = field(default_factory=list)
+
+
+def _mark_type_parameters(ref: TypeRef, params: list[str]) -> None:
+    if ref.name in params:
+        ref.is_type_parameter = True
+    for arg in ref.arguments:
+        _mark_type_parameters(arg, params)
 
 
 def _tokenize(text: str) -> list[_Tok]:
@@ -147,22 +154,16 @@ class _GrammarParser:
             parts.append(self._next().value)
         return "::".join(parts[:-1]), parts[-1]
 
-    def _skip_angles(self) -> None:
-        """Consume a balanced ``<...>`` (used to drop type arguments we do not model)."""
-        self._expect("<")
-        depth = 1
-        while depth > 0:
-            tok = self._next()
-            if tok.kind == "EOF":
-                return
-            if tok.value == "<":
-                depth += 1
-            elif tok.kind == "LSTER":
-                depth += 2
-            elif tok.value == ">":
-                depth -= 1
-            elif tok.kind == "RSTER":
-                depth -= 2
+    def _consume_gt(self) -> None:
+        """Consume one ``>``, splitting a ``>>`` token so the enclosing level sees the other."""
+        tok = self._peek()
+        if tok.value == ">":
+            self._next()
+        elif tok.kind == "RSTER":
+            tok.kind = "OP"
+            tok.value = ">"
+        else:
+            raise SyntaxError(f"expected '>' but got {tok.value!r}")
 
     def _type_parameters(self) -> list[str]:
         if self._peek().value != "<":
@@ -176,12 +177,18 @@ class _GrammarParser:
         self._next()  # '>'
         return params
 
-    def _type_ref(self) -> str:
-        """Parse a type reference, returning its simple name (type arguments dropped)."""
+    def _type_ref(self) -> TypeRef:
+        """Parse a type reference (simple name + nested type arguments)."""
         _, simple = self._qualified_name()
+        arguments: list[TypeRef] = []
         if self._peek().value == "<":
-            self._skip_angles()
-        return simple
+            self._next()
+            arguments.append(self._type_ref())
+            while self._peek().value == ",":
+                self._next()
+                arguments.append(self._type_ref())
+            self._consume_gt()
+        return TypeRef(simple, False, arguments)
 
     def _multiplicity(self) -> tuple[int, int | None]:
         self._expect("[")
@@ -211,10 +218,10 @@ class _GrammarParser:
         bases: list[str] = []
         if self._peek().value == "extends":
             self._next()
-            bases.append(self._type_ref())
+            bases.append(self._type_ref().name)
             while self._peek().value == ",":
                 self._next()
-                bases.append(self._type_ref())
+                bases.append(self._type_ref().name)
         if self._peek().value == "[":  # constraints block
             self._skip_to_matching_bracket()
         self._expect("{")
@@ -227,6 +234,8 @@ class _GrammarParser:
         for prop in properties:
             if prop.type_name in type_parameters:
                 prop.is_type_parameter = True
+            for arg in prop.type_arguments:
+                _mark_type_parameters(arg, type_parameters)
         return MetaClass(name, package, bases or ["Any"], properties, type_parameters)
 
     def _skip_to_matching_bracket(self) -> None:
@@ -247,11 +256,11 @@ class _GrammarParser:
             self._skip_to_semicolon()
             return None
         self._expect(":")
-        type_name = self._type_ref()
+        ref = self._type_ref()
         lower, upper = self._multiplicity()
         if self._peek().value == ";":
             self._next()
-        return MetaProperty(name, type_name, lower, upper)
+        return MetaProperty(name, ref.name, lower, upper, type_arguments=ref.arguments)
 
     def _parse_enum(self) -> MetaEnum:
         self._next()  # 'Enum'

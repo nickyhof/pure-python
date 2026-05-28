@@ -23,12 +23,20 @@ _NAMED_MULTIPLICITY: dict[str, tuple[int, int | None]] = {
 
 
 @dataclass
+class TypeRef:
+    name: str | None  # base type / type-parameter simple name; None if unresolved
+    is_type_parameter: bool = False
+    arguments: list["TypeRef"] = field(default_factory=list)
+
+
+@dataclass
 class MetaProperty:
     name: str
     type_name: str | None  # raw type / type-parameter simple name; None if unresolved
     lower: int
     upper: int | None  # None == unbounded
     is_type_parameter: bool = False
+    type_arguments: list[TypeRef] = field(default_factory=list)
 
 
 @dataclass
@@ -130,19 +138,23 @@ def _bound_value(value: Value | None, default: int | None) -> int | None:
     return default
 
 
-def _raw_type(prop: Instance) -> tuple[str | None, bool]:
-    """Return (type name, is_type_parameter). rawType wins; else a typeParameter name."""
-    generic = prop.get("genericType")
-    if isinstance(generic, Instance):
-        raw = generic.get("rawType")
-        if isinstance(raw, Ref):
-            return raw.target, False
+def _type_ref(generic: object) -> TypeRef:
+    """Build a recursive TypeRef from a genericType instance (rawType / typeParameter + args)."""
+    if not isinstance(generic, Instance):
+        return TypeRef(None)
+    raw = generic.get("rawType")
+    if isinstance(raw, Ref):
+        name, is_type_param = raw.target, False
+    else:
         type_param = generic.get("typeParameter")
-        if isinstance(type_param, Instance):
-            name = type_param.get("name") or type_param.name
-            if isinstance(name, str):
-                return name, True
-    return None, False
+        param_name = type_param.get("name") or type_param.name if isinstance(type_param, Instance) else None
+        name, is_type_param = (param_name, True) if isinstance(param_name, str) else (None, False)
+    args_value = generic.get("typeArguments")
+    arguments: list[TypeRef] = []
+    if args_value is not None:
+        items = args_value if isinstance(args_value, list) else [args_value]
+        arguments = [_type_ref(a) for a in items if isinstance(a, Instance)]
+    return TypeRef(name, is_type_param, arguments)
 
 
 def _type_parameters(inst: Instance) -> list[str]:
@@ -172,8 +184,10 @@ def _properties(inst: Instance) -> list[MetaProperty]:
         if not isinstance(name, str):
             continue
         lower, upper = _resolve_multiplicity(prop.get("multiplicity"))
-        type_name, is_type_param = _raw_type(prop)
-        result.append(MetaProperty(name, type_name, lower, upper, is_type_param))
+        ref = _type_ref(prop.get("genericType"))
+        result.append(
+            MetaProperty(name, ref.name, lower, upper, ref.is_type_parameter, ref.arguments)
+        )
     return result
 
 
