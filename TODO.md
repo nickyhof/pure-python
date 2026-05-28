@@ -90,14 +90,14 @@ Grouped by status, with pointers to the relevant code.
 
 - **PCT compatibility report.** `pure_python/report/pct.py`
   (`python -m pure_python.report.pct`) renders a Markdown matrix of Pure
-  functions with a single **pure-python** column (tests passing per function),
-  mirroring Legend's `GeneratePCT`. It reads Legend's serialized PCT data
-  (pinned snapshot under `vendor/legend-pure/pct/`), so it runs offline. The
-  column reflects Legend's compiled-execution adapter (the path `eval` uses).
-  - [ ] **Differentiated pure-python column.** Today the column equals Legend's
-    compiled adapter. A column that round-trips each test's model/function
-    through pure-python's m3 before executing (measuring representation
-    fidelity) needs the expression layer below.
+  functions (rows from `vendor/legend-pure/pct/FUNCTIONS_*.json`) with a single
+  **pure-python** column computed by `_pure_python_passes`. It is `0/total` for
+  everything today -- the honest baseline -- because pure-python has no
+  expression/evaluation layer and so cannot run a PCT test; the compiled-adapter
+  JSON is used only to enumerate each function's tests. Offline (no JVM).
+  - [ ] **Earn passes via reverse PCT** (see the reverse-PCT item below): the
+    column fills in once pure-python can generate + execute Python that
+    round-trips to Pure.
 
 - [ ] **Legend protocol model (`PureModelContextData`).** The deferred fork:
   the legend-engine JSON protocol (Mapping, Connection, Runtime, Service,
@@ -109,6 +109,15 @@ Grouped by status, with pointers to the relevant code.
 - [ ] **Expression / lambda / constraint representation.** The
   `ValueSpecification` tree is generated but nothing populates function bodies,
   constraints, or derived-property expressions.
+- [ ] **Reverse PCT for the pure-python target.** Legend defines reverse PCT as
+  `rev('<pure>', '<python>')` pairs run through a `<<PCT.adapter>>` that executes
+  the generated Python, has it emit Pure back, then evals + compares. The Python
+  corpus is vendored (dormant) at `vendor/legend-engine/reverse-pct/`
+  (1.6k pairs across shared / legendQL / pandasAPI + the framework defs).
+  Consuming it needs an executable Python query layer that round-trips
+  Python -> Pure (PyLegend-shaped -- prefer leaning on PyLegend over reinventing
+  it) plus the `LegendBridge` as the Pure oracle; it builds on the expression
+  layer above. This is how the PCT report's pure-python column earns passes.
 - [ ] **Project hygiene.** Add a `py.typed` marker (downstream typing), a CI
   workflow running the tests + drift check, and a console entry point for the
   generator.

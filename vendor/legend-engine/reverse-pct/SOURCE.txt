@@ -1,0 +1,43 @@
+These .pure files are vendored verbatim from the FINOS legend-engine project.
+
+  repository: https://github.com/finos/legend-engine
+  commit:     9fab757585923900fe3ddd833668d2cc2b927545   (master, fetched 2026-05-28)
+  license:    Apache-2.0 (see the legend-engine repository)
+
+This is Legend's **reverse PCT** corpus for the *Python* targets. Reverse PCT
+pairs each upstream PCT test with the expected target-language form of its Pure
+expression, via the framework helper:
+
+    rev('<pure expression>', '<expected python>')   // attached to a test by  <testFn>->testRev([ rev(...), ... ])
+
+e.g.  rev('|1.0->meta::pure::functions::math::exp()', 'c(1.0).exp()')
+
+An adapter (`<<PCT.adapter>>`, e.g. 'Python - LegendQL') executes the generated
+Python, has it emit Pure back (PyLegend `to_pure(...)`), compiles + evals that
+Pure, and compares to the upstream test result.
+
+Files and their source paths:
+
+  framework/*.pure         <- legend-engine-core/.../legend-engine-pure-code-reversePCT-pure/
+                                  src/main/resources/core_reverse_pct/
+                              (defines `Reverse` / `ReversesForTest` and the `rev` / `revsForTest` / `testRev` helpers)
+  python-shared/*          <- legend-engine-xts-python/legend-engine-xt-python-reversePCT-shared/
+                                  src/main/resources/core_external_python_reverse_pct_shared/
+  python-legendQL/*        <- legend-engine-xts-python/legend-engine-xt-python-reversePCT-legendQL/
+                                  src/main/resources/core_external_python_reverse_pct_legend_ql/
+  python-pandasAPI/*       <- legend-engine-xts-python/legend-engine-xt-python-reversePCT-pandasAPI/
+                                  src/main/resources/core_external_python_reverse_pct_pandas_api/
+
+(The parallel SQL reverse-PCT corpus under legend-engine-xts-sql is a different
+target and is intentionally not vendored.)
+
+STATUS: dormant. Nothing in pure-python consumes this yet. It is the corpus a
+future pure-python reverse-PCT adapter would run: that needs an executable
+Python query layer that round-trips Python -> Pure (PyLegend-shaped) plus a Pure
+compile/eval oracle (the `LegendBridge`). See TODO.md (Tier 2). The pass/fail
+report JSON (`ADAPTER_<group>_compiled_PythonLegendQL.json`, same
+`PCTReportProvider` mechanism as vendor/legend-pure/pct/) is NOT vendored here --
+it is not committed upstream or published to Maven Central, only produced by
+building/running the reversePCT JUnit suites.
+
+To refresh: re-fetch the paths above from legend-engine at the desired commit.
