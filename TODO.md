@@ -98,6 +98,17 @@ Grouped by status, with pointers to the relevant code.
 - [ ] **Expression / lambda / constraint representation.** The
   `ValueSpecification` tree is generated but nothing populates function bodies,
   constraints, or derived-property expressions.
+- [ ] **Reverse PCT for the pure-python target.** Legend defines reverse PCT as
+  `rev('<pure>', '<python>')` pairs run through a `<<PCT.adapter>>` that executes
+  the generated Python, has it emit Pure back, then evals + compares. The Python
+  corpus is vendored (dormant) at `vendor/legend-engine/reverse-pct/`
+  (1.6k pairs across shared / legendQL / pandasAPI + the framework defs).
+  Consuming it needs an executable Python query layer that round-trips
+  Python -> Pure (PyLegend-shaped -- prefer leaning on PyLegend over reinventing
+  it) plus the `LegendBridge` as the Pure oracle; it builds on the expression
+  layer above. (pure-python's own Python -> Pure round-trip is already covered by
+  `tests/test_full_round_trip.py` + the bridge's grammar/compile check; this item
+  is about validating against Legend's reverse-PCT corpus specifically.)
 - [ ] **Project hygiene.** Add a `py.typed` marker (downstream typing), a CI
   workflow running the tests + drift check, and a console entry point for the
   generator.
