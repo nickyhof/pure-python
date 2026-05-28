@@ -21,6 +21,21 @@
       <artifactId>legend-engine-language-pure-grammar</artifactId>
       <version>${legend.engine.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.finos.legend.engine</groupId>
+      <artifactId>legend-engine-language-pure-compiler</artifactId>
+      <version>${legend.engine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.finos.legend.engine</groupId>
+      <artifactId>legend-engine-executionPlan-generation</artifactId>
+      <version>${legend.engine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.finos.legend.engine</groupId>
+      <artifactId>legend-engine-executionPlan-execution</artifactId>
+      <version>${legend.engine.version}</version>
+    </dependency>
   </dependencies>
 
   <build>

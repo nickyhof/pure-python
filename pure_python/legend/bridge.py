@@ -70,3 +70,13 @@ class LegendBridge:
         """Render a ``PureModelContextData`` (dict or JSON string) back to Pure grammar."""
         payload = model if isinstance(model, str) else json.dumps(model)
         return self._run("compose", payload)
+
+    def evaluate(self, expression: str, model: str = "") -> Any:
+        """Compile and execute a Pure expression via Legend, returning its value.
+
+        ``expression`` is a Pure lambda (e.g. ``"|1 + 1"``); ``model`` is optional
+        Pure grammar (classes/functions) the expression may reference. Only
+        expressions that reduce to a constant value are supported.
+        """
+        payload = json.dumps({"model": model, "expression": expression})
+        return json.loads(self._run("eval", payload))["value"]

@@ -62,15 +62,21 @@ Grouped by status, with pointers to the relevant code.
 ## Tier 2 -- new capabilities
 
 - **Legend bridge (execution oracle).** `legend-bridge/` is a small JVM harness
-  built on the published `legend-engine` grammar artifacts; `pure_python/legend/`
+  built on the published `legend-engine` artifacts; `pure_python/legend/`
   shells out to it. `parse` validates pure-python's emitted Pure against Legend's
   *real* grammar and returns `PureModelContextData` JSON; `compose` renders it
-  back. Tests in `tests/test_legend_bridge.py` (skipped unless the jar is built
-  with `mvn -f legend-bridge package`).
-  - [ ] **`eval`: execute Pure via Legend.** Add the compiler + plan
-    generation/execution stack to the harness so a Pure expression compiles and
-    runs, returning the result -- delegating execution to Legend rather than
-    reimplementing it. This is the headline of the execution-oracle direction.
+  back; **`eval` compiles and executes** a Pure expression and returns its value
+  (`LegendBridge.evaluate("|1 + 1") == 2`), delegating execution to Legend's
+  compiler + plan generation + plan executor rather than reimplementing it.
+  Tests in `tests/test_legend_bridge.py` (skipped unless the jar is built with
+  `mvn -f legend-bridge package`).
+  - [ ] **Emit qualified type references / imports in `m3_to_pure`.** The bridge
+    surfaced a real gap: `m3_to_pure` emits unqualified property types (e.g.
+    `addresses : Address[*]`), which Legend's grammar parser accepts but its
+    *compiler* rejects with "Can't find type 'Address'". Emit `pkg::Address` (or
+    an `import pkg::*;` section) so cross-type models compile and can be `eval`d.
+  - [ ] **Richer `eval` results.** Only expressions reducing to a `ConstantResult`
+    are returned today; TDS/relation/streaming results need a serializer.
 
 - [ ] **Legend protocol model (`PureModelContextData`).** The deferred fork:
   the legend-engine JSON protocol (Mapping, Connection, Runtime, Service,

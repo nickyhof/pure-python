@@ -34,6 +34,12 @@ class Person:
     addresses: list[Address]
 
 
+@dataclass
+class Point:
+    x: int
+    y: int
+
+
 def _classes(model: dict) -> dict[str, dict]:
     return {e["name"]: e for e in model["elements"] if e.get("_type") == "class"}
 
@@ -79,3 +85,18 @@ def test_legend_compose_round_trips_back_into_pure_python():
     assert {"Person", "Address"} <= set(recovered)
     person = recovered["Person"]
     assert {p.name for p in person.properties} == {"firstName", "age", "addresses"}
+
+
+def test_legend_executes_pure_expressions():
+    # Delegate execution to Legend: it compiles and runs the expression.
+    assert bridge.evaluate("|1 + 1") == 2
+    assert bridge.evaluate("|[1, 2, 3]->sum()") == 6
+    assert bridge.evaluate("|'a' + 'b'") == "ab"
+
+
+def test_legend_executes_over_a_generated_model():
+    model = to_pure_module(compile_class(Point, package="demo"))
+    value = bridge.evaluate(
+        "|^demo::Point(x=3, y=4).x + ^demo::Point(x=3, y=4).y", model=model
+    )
+    assert value == 7
