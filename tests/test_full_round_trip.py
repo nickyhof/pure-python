@@ -1,19 +1,26 @@
 """End-to-end showcase: Python -> M3 -> Pure -> M3 -> Python.
 
-Drives one domain model through every converter in :mod:`pure_python.compile`
-and asserts the metamodel graph is identical at each M3 stage:
+Drives one domain model through every converter in :mod:`pure_python.compile`:
 
     Python dataclasses
-        --compile_class-->        M3 graph A
-        --to_pure_module-->       Pure grammar source
-        --from_pure-->            M3 graph B
-        --to_module-->            Python source
+        --compile_class-->          M3 graph A
+        --to_pure_module-->         Pure grammar source
+        --from_pure-->              M3 graph B
+        --to_module-->              Python source
         --import + compile_class--> M3 graph C
 
-A, B and C must agree. Fidelity is bounded by the Pure grammar parser, so the
-sample exercises everything that survives that boundary: inheritance, generics
-with type-parameter fields, nested type arguments, enumerations, nested class
-references, and the full range of multiplicities.
+Two kinds of guarantee are asserted, so nothing is silently ignored:
+
+1. **Everything structural round-trips.** A *complete* canonical of the M3
+   graph -- package, type parameters, generalizations, and every property's
+   full (nested) type, multiplicity and aggregation, plus enumeration values --
+   is identical at all three M3 stages (A == B == C).
+
+2. **The three features the Pure grammar parser cannot preserve are tracked,
+   not hidden.** Stereotypes, tagged values and qualified (derived) properties
+   are present in graph A; stereotypes/tagged values are faithfully written to
+   the Pure source while qualified properties are not emitted at all; and
+   `from_pure` drops all three, so graphs B and C contain none of them.
 """
 
 from __future__ import annotations
@@ -26,7 +33,7 @@ import typing
 from decimal import Decimal
 
 from pure_python import m3
-from pure_python.compile import Compiler, from_pure, to_module, to_pure_module
+from pure_python.compile import Compiler, Stereotype, Tag, from_pure, to_module, to_pure_module
 
 RT = typing.TypeVar("RT")
 
@@ -50,17 +57,24 @@ class Wrapper(typing.Generic[RT]):
 
 @dataclasses.dataclass
 class Account:
-    id: str
+    id: typing.Annotated[str, Stereotype("id", "primaryKey")]  # stereotype
     balance: Money  # nested class reference
     tags: list[str]  # [0..*]
     suit: Suit  # enumeration
-    nickname: str | None = None  # [0..1]
+    nickname: typing.Annotated[str | None, Tag("doc", "about", "display name")] = None  # tag + [0..1]
     featured: Wrapper[str] | None = None  # type arguments
+
+    @property
+    def label(self) -> str:  # qualified (derived) property
+        ...
 
 
 @dataclasses.dataclass
 class SavingsAccount(Account):  # inheritance
     rate: float = 0.0
+
+
+ELEMENT_NAMES = {"Money", "Wrapper", "Account", "SavingsAccount", "Suit"}
 
 
 def _load_module(source: str, name: str):
@@ -71,63 +85,72 @@ def _load_module(source: str, name: str):
     return module
 
 
-def _typesig(generic: m3.GenericType | None) -> str:
+# --- a complete, cycle-safe canonical of the structural M3 surface ----------
+
+def _generic(generic: m3.GenericType | None):
     if generic is None:
-        return "None"
+        return None
     if generic.typeParameter is not None:
-        return f"param:{generic.typeParameter.name}"
-    base = getattr(generic.rawType, "name", None) or "Any"
-    if generic.typeArguments:
-        return f"{base}<{','.join(_typesig(a) for a in generic.typeArguments)}>"
-    return base
+        return ("param", generic.typeParameter.name)
+    raw = generic.rawType
+    name = getattr(raw, "name", None) or ("Any" if isinstance(raw, m3.Any) else None)
+    return ("raw", name, tuple(_generic(a) for a in generic.typeArguments))
 
 
-def _bounds(mult: m3.Multiplicity) -> tuple[int, int | None]:
-    return mult.lowerBound.value, (mult.upperBound.value if mult.upperBound else None)
+def _property(prop: m3.Property):
+    upper = prop.multiplicity.upperBound.value if prop.multiplicity.upperBound else None
+    return (_generic(prop.genericType), prop.multiplicity.lowerBound.value, upper, prop.aggregation.value)
 
 
-def _signature(types) -> dict:
-    """A package-independent structural fingerprint of an m3 type graph."""
+def _canonical(types) -> dict:
     out: dict = {}
     for t in types:
         if isinstance(t, m3.Enumeration):
-            out[t.name] = ("enum", tuple(v.name for v in t.values))
+            out[t.name] = ("enum", t.package, tuple(v.name for v in t.values))
         elif isinstance(t, m3.Class):
-            bases = tuple(
-                sorted(
-                    g.general.rawType.name
-                    for g in t.generalizations
-                    if isinstance(g.general.rawType, m3.Class)
-                )
+            out[t.name] = (
+                "class",
+                t.package,
+                tuple(tp.name for tp in t.typeParameters),
+                tuple(
+                    sorted(
+                        g.general.rawType.name
+                        for g in t.generalizations
+                        if isinstance(g.general.rawType, m3.Class)
+                    )
+                ),
+                {p.name: _property(p) for p in t.properties},
             )
-            props = {p.name: (_typesig(p.genericType), *_bounds(p.multiplicity)) for p in t.properties}
-            out[t.name] = ("class", tuple(tp.name for tp in t.typeParameters), bases, props)
     return out
 
 
+def _assert_no_pure_annotations(types) -> None:
+    """Stereotypes, tagged values and qualified properties do not survive Pure."""
+    for t in types:
+        if isinstance(t, m3.Class):
+            assert t.qualifiedProperties == []
+            for p in t.properties:
+                assert p.stereotypes == [] and p.taggedValues == []
+        elif isinstance(t, m3.Enumeration):
+            assert t.stereotypes == [] and t.taggedValues == []
+
+
 def test_python_m3_pure_m3_python_round_trip():
-    # Stage 1: Python -> M3 (graph A). Compiling the leaf class cascades through
-    # its base, field types, enum and generic references.
+    # Stage 1: Python -> M3 (graph A). Compiling the leaf cascades through its
+    # base, field types, enum and generic references.
     forward = Compiler(package="demo")
     forward.to_class(SavingsAccount)
     graph_a = list(forward.classes.values()) + list(forward.enums.values())
 
     # Stage 2: M3 -> Pure source.
     pure_source = to_pure_module(forward.classes[SavingsAccount])
-    assert "Class demo::SavingsAccount extends Account" in pure_source
-    assert "Class demo::Wrapper<RT>" in pure_source
-    assert "featured : Wrapper<String>[0..1];" in pure_source
-    assert "Enum demo::Suit" in pure_source
 
-    # Stage 3: Pure source -> M3 (graph B).
+    # Stage 3: Pure -> M3 (graph B).
     registry_b = from_pure(pure_source)
     graph_b = list(registry_b.values())
 
     # Stage 4: M3 -> Python source.
     python_source = to_module(*[t for t in graph_b if isinstance(t, m3.Class)])
-    assert "class SavingsAccount(Account):" in python_source
-    assert "item: RT" in python_source
-    assert "featured: Wrapper[str] | None = None" in python_source
 
     # Stage 5: Python source -> import -> M3 (graph C).
     module = _load_module(python_source, "pure_python_full_round_trip")
@@ -140,15 +163,35 @@ def test_python_m3_pure_m3_python_round_trip():
             back.to_enumeration(obj)
     graph_c = list(back.classes.values()) + list(back.enums.values())
 
-    # The metamodel graph is identical at every M3 stage.
-    sig_a, sig_b, sig_c = _signature(graph_a), _signature(graph_b), _signature(graph_c)
-    assert sig_a == sig_b == sig_c
+    # (1) The COMPLETE structural canonical is identical at every M3 stage, and
+    #     every element survives -- nothing is dropped or invented.
+    canonical_a, canonical_b, canonical_c = _canonical(graph_a), _canonical(graph_b), _canonical(graph_c)
+    assert set(canonical_a) == ELEMENT_NAMES
+    assert canonical_a == canonical_b == canonical_c
 
-    # Spot-check the surviving structure and confirm the regenerated module works.
-    assert sig_c["SavingsAccount"] == ("class", (), ("Account",), {"rate": ("Float", 1, 1)})
-    assert sig_c["Wrapper"][1] == ("RT",)
-    assert sig_c["Account"][3]["featured"] == ("Wrapper<String>", 0, 1)
+    # (2) The three Pure-boundary-lossy features, tracked through every stage.
+    account_a = forward.classes[Account]
+    id_prop = next(p for p in account_a.properties if p.name == "id")
+    nickname_prop = next(p for p in account_a.properties if p.name == "nickname")
+    assert [(s.profile.name, s.value) for s in id_prop.stereotypes] == [("id", "primaryKey")]
+    assert [(t.tag.profile.name, t.tag.value, t.value) for t in nickname_prop.taggedValues] == [
+        ("doc", "about", "display name")
+    ]
+    assert [q.name for q in account_a.qualifiedProperties] == ["label"]
 
+    # Stereotypes/tagged values are written to Pure faithfully (with their
+    # profiles); qualified properties are not emitted at all.
+    assert "<<id.primaryKey>> id : String[1];" in pure_source
+    assert "{doc.about = 'display name'} nickname : String[0..1];" in pure_source
+    assert "Profile id" in pure_source and "stereotypes: [primaryKey];" in pure_source
+    assert "Profile doc" in pure_source and "tags: [about];" in pure_source
+    assert "label" not in pure_source  # qualified property dropped on the way out
+
+    # ...and so they are absent from graphs B and C.
+    _assert_no_pure_annotations(graph_b)
+    _assert_no_pure_annotations(graph_c)
+
+    # The regenerated module is usable.
     account = module.SavingsAccount(
         id="acc-1",
         balance=module.Money(amount=Decimal("10.00"), currency="USD"),
