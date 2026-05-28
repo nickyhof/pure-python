@@ -13,7 +13,9 @@ Grouped by status, with pointers to the relevant code.
 - **Parse the readable Pure grammar.** `codegen/grammar.py` parses
   `relation.pure`, `variant.pure`, `milestoning.pure` and merges them in
   (now 101 classes). Generics are emitted as `typing.TypeVar` /
-  `typing.Generic[...]`.
+  `typing.Generic[...]`. It **skips imports and function definitions** (they are
+  not types) and class/enum-header `<<stereotype>>` / `{tag}` annotations;
+  property-level annotations are captured.
 - **Bidirectional compile layer.** `compile/python_to_m3.py` (dataclasses ->
   `m3.Class`) and `compile/m3_to_python.py` (`m3` -> importable dataclass
   module), including generics, `typing.Annotated` stereotypes/tags, and
@@ -26,8 +28,9 @@ Grouped by status, with pointers to the relevant code.
   the graph is identical at every M3 stage. (`m3_to_python` now emits
   `kw_only=True` dataclasses so inheritance survives the trip.) Generalizations,
   type arguments, qualified properties, and property-level stereotypes / tagged
-  values all survive; the only Pure-boundary drops left are enum-member values
-  (Pure enums are name-only) and class-level annotations.
+  values all survive; the only remaining intentional Pure-boundary drops are
+  enum-member values (Pure enums are name-only) and class-level annotations
+  (never emitted in practice).
 
 ## Tier 1 -- finish the round-trip design
 
