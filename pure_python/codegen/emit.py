@@ -46,16 +46,18 @@ from dataclasses import dataclass, field
 '''
 
 
-def _py_base_type(model: MetaModel, type_name: str | None) -> str:
-    if type_name is None:
+def _py_base_type(model: MetaModel, prop: MetaProperty) -> str:
+    if prop.is_type_parameter:
+        return prop.type_name if prop.type_name in model.type_parameter_names else "typing.Any"
+    if prop.type_name is None:
         return "typing.Any"
-    if type_name in _PRIMITIVE_PY:
-        return _PRIMITIVE_PY[type_name]
-    return type_name  # a metaclass or enumeration -- emitted with this exact name
+    if prop.type_name in _PRIMITIVE_PY:
+        return _PRIMITIVE_PY[prop.type_name]
+    return prop.type_name  # a metaclass or enumeration -- emitted with this exact name
 
 
 def _annotation(model: MetaModel, prop: MetaProperty) -> str:
-    base = _py_base_type(model, prop.type_name)
+    base = _py_base_type(model, prop)
     if prop.upper is None or prop.upper > 1:
         return f"list[{base}]"
     if prop.lower >= 1:
@@ -106,7 +108,10 @@ def _emit_enum_member(name: str) -> str:
 
 
 def _emit_class(model: MetaModel, cls: MetaClass) -> str:
-    bases = f"({', '.join(cls.bases)})" if cls.bases else ""
+    base_list = list(cls.bases)
+    if cls.type_parameters:
+        base_list.append(f"typing.Generic[{', '.join(cls.type_parameters)}]")
+    bases = f"({', '.join(base_list)})" if base_list else ""
     lines = ["@dataclass(kw_only=True)", f"class {cls.name}{bases}:"]
     seen: set[str] = set()
     body: list[str] = []
@@ -140,6 +145,13 @@ def emit_module(model: MetaModel) -> str:
                 out.append(f'    {_emit_enum_member(v)} = "{v}"')
         else:
             out.append("    pass")
+        out.append("")
+
+    type_params = sorted(model.type_parameter_names)
+    if type_params:
+        out.append("# --- Type parameters " + "-" * 53)
+        for name in type_params:
+            out.append(f'{name} = typing.TypeVar("{name}")')
         out.append("")
 
     out.append("# --- Metaclasses " + "-" * 57)

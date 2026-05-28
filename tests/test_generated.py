@@ -4,10 +4,6 @@ import dataclasses
 import enum
 import pathlib
 
-from pure_python.codegen.emit import emit_module
-from pure_python.codegen.schema import build_metamodel
-from pure_python.codegen.parser import parse
-
 import pure_python.m3 as m3
 
 
@@ -58,11 +54,34 @@ def test_can_build_a_domain_class_with_the_metamodel():
     assert person.properties[0].genericType.rawType is m3.String
 
 
-def test_committed_metamodel_matches_generator(m3_source):
+def test_committed_metamodel_matches_generator():
     """Guards against drift: the checked-in module is exactly what the generator emits."""
-    regenerated = emit_module(build_metamodel(parse(m3_source)))
+    from pure_python.codegen.generate import render
+
     on_disk = pathlib.Path(m3.metamodel.__file__).read_text(encoding="utf-8")
-    assert regenerated == on_disk
+    assert render() == on_disk
+
+
+def test_generic_classes():
+    import typing
+
+    assert typing.Generic in m3.Class.__mro__
+    assert m3.Class[int]  # subscriptable
+    # Enumeration.values is now typed by its type parameter rather than Any.
+    values_field = next(f for f in dataclasses.fields(m3.Enumeration) if f.name == "values")
+    assert "E" in str(values_field.type)
+
+
+def test_grammar_sourced_classes_present():
+    # relation.pure
+    assert issubclass(m3.FuncColSpec, m3.Any)
+    assert m3.ColSpec[int]
+    # variant.pure
+    assert dataclasses.is_dataclass(m3.Variant)
+    # milestoning.pure -- diamond inheritance and keyword-escaped fields
+    assert issubclass(m3.BiTemporalMilestoning, m3.DateMilestoning)
+    fields = {f.name for f in dataclasses.fields(m3.BusinessDateMilestoning)}
+    assert "from_" in fields and "thru" in fields
 
 
 def test_all_generated_classes_are_dataclasses():

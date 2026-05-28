@@ -11,15 +11,55 @@ import sys
 from pathlib import Path
 
 from .emit import emit_module
-from .schema import load_metamodel
+from .grammar import parse_grammar
+from .schema import MetaModel, load_metamodel
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_SOURCE = _REPO_ROOT / "vendor" / "legend-pure" / "m3.pure"
+_VENDOR = _REPO_ROOT / "vendor" / "legend-pure"
+DEFAULT_SOURCE = _VENDOR / "m3.pure"
+DEFAULT_GRAMMAR_SOURCES = (
+    _VENDOR / "relation.pure",
+    _VENDOR / "variant.pure",
+    _VENDOR / "milestoning.pure",
+)
 DEFAULT_OUTPUT = _REPO_ROOT / "pure_python" / "m3" / "metamodel.py"
 
 
-def generate(source: Path = DEFAULT_SOURCE, output: Path = DEFAULT_OUTPUT) -> MetaModelSummary:
+def _merge_grammar(model: MetaModel, source: Path) -> None:
+    result = parse_grammar(source.read_text(encoding="utf-8"))
+    for cls in result.classes:
+        if cls.name in model.classes:
+            raise ValueError(f"duplicate class {cls.name} from {source.name}")
+        model.classes[cls.name] = cls
+    for enumeration in result.enums:
+        model.enums.setdefault(enumeration.name, enumeration)
+    for profile in result.profiles:
+        model.profiles[profile.name] = profile
+
+
+def build_model(
+    source: Path = DEFAULT_SOURCE,
+    grammar_sources: tuple[Path, ...] = DEFAULT_GRAMMAR_SOURCES,
+) -> MetaModel:
     model = load_metamodel(str(source))
+    for grammar_source in grammar_sources:
+        _merge_grammar(model, grammar_source)
+    return model
+
+
+def render(
+    source: Path = DEFAULT_SOURCE,
+    grammar_sources: tuple[Path, ...] = DEFAULT_GRAMMAR_SOURCES,
+) -> str:
+    return emit_module(build_model(source, grammar_sources))
+
+
+def generate(
+    source: Path = DEFAULT_SOURCE,
+    output: Path = DEFAULT_OUTPUT,
+    grammar_sources: tuple[Path, ...] = DEFAULT_GRAMMAR_SOURCES,
+) -> MetaModelSummary:
+    model = build_model(source, grammar_sources)
     output.write_text(emit_module(model), encoding="utf-8")
     return MetaModelSummary(
         classes=len(model.classes),

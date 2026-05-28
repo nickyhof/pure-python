@@ -25,9 +25,10 @@ _NAMED_MULTIPLICITY: dict[str, tuple[int, int | None]] = {
 @dataclass
 class MetaProperty:
     name: str
-    type_name: str | None  # raw type simple name; None for type-parameter / unresolved
+    type_name: str | None  # raw type / type-parameter simple name; None if unresolved
     lower: int
     upper: int | None  # None == unbounded
+    is_type_parameter: bool = False
 
 
 @dataclass
@@ -36,6 +37,7 @@ class MetaClass:
     package: str
     bases: list[str]
     properties: list[MetaProperty]
+    type_parameters: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -61,15 +63,28 @@ class MetaMultiplicity:
 
 
 @dataclass
+class MetaProfile:
+    name: str
+    package: str
+    stereotypes: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+
+
+@dataclass
 class MetaModel:
     classes: dict[str, MetaClass] = field(default_factory=dict)
     enums: dict[str, MetaEnum] = field(default_factory=dict)
     primitives: dict[str, MetaPrimitive] = field(default_factory=dict)
     multiplicities: dict[str, MetaMultiplicity] = field(default_factory=dict)
+    profiles: dict[str, MetaProfile] = field(default_factory=dict)
 
     @property
     def type_names(self) -> set[str]:
         return set(self.classes) | set(self.enums) | set(self.primitives)
+
+    @property
+    def type_parameter_names(self) -> set[str]:
+        return {tp for cls in self.classes.values() for tp in cls.type_parameters}
 
 
 def _package_of(inst: Instance) -> str:
@@ -115,13 +130,33 @@ def _bound_value(value: Value | None, default: int | None) -> int | None:
     return default
 
 
-def _raw_type(prop: Instance) -> str | None:
+def _raw_type(prop: Instance) -> tuple[str | None, bool]:
+    """Return (type name, is_type_parameter). rawType wins; else a typeParameter name."""
     generic = prop.get("genericType")
     if isinstance(generic, Instance):
         raw = generic.get("rawType")
         if isinstance(raw, Ref):
-            return raw.target
-    return None  # type parameter or unresolved
+            return raw.target, False
+        type_param = generic.get("typeParameter")
+        if isinstance(type_param, Instance):
+            name = type_param.get("name") or type_param.name
+            if isinstance(name, str):
+                return name, True
+    return None, False
+
+
+def _type_parameters(inst: Instance) -> list[str]:
+    value = inst.get("typeParameters")
+    if value is None:
+        return []
+    items = value if isinstance(value, list) else [value]
+    names: list[str] = []
+    for item in items:
+        if isinstance(item, Instance):
+            name = item.get("name") or item.name
+            if isinstance(name, str):
+                names.append(name)
+    return names
 
 
 def _properties(inst: Instance) -> list[MetaProperty]:
@@ -137,7 +172,8 @@ def _properties(inst: Instance) -> list[MetaProperty]:
         if not isinstance(name, str):
             continue
         lower, upper = _resolve_multiplicity(prop.get("multiplicity"))
-        result.append(MetaProperty(name, _raw_type(prop), lower, upper))
+        type_name, is_type_param = _raw_type(prop)
+        result.append(MetaProperty(name, type_name, lower, upper, is_type_param))
     return result
 
 
@@ -167,6 +203,7 @@ def build_metamodel(instances: list[Instance]) -> MetaModel:
                 package=_package_of(inst),
                 bases=_generalization_bases(inst),
                 properties=_properties(inst),
+                type_parameters=_type_parameters(inst),
             )
         elif kind == "Enumeration":
             model.enums[inst.name] = MetaEnum(inst.name, _package_of(inst), _enum_values(inst))

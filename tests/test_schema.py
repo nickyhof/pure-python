@@ -36,7 +36,11 @@ def test_every_base_and_property_type_resolves(m3_source):
         for base in cls.bases:
             assert base in model.classes, f"{cls.name} extends unknown {base}"
         for prop in cls.properties:
-            if prop.type_name is not None:
+            if prop.type_name is None:
+                continue
+            if prop.is_type_parameter:
+                assert prop.type_name in model.type_parameter_names
+            else:
                 assert prop.type_name in known, f"{cls.name}.{prop.name}: {prop.type_name}"
 
 

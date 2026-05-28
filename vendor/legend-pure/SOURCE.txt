@@ -1,15 +1,24 @@
-m3.pure is vendored verbatim from the FINOS legend-pure project.
+These .pure files are vendored verbatim from the FINOS legend-pure project.
 
   repository: https://github.com/finos/legend-pure
   commit:     8f4632caebd6367ed8cb368a967a44f419df459e
-  path:       legend-pure-core/legend-pure-m3-core/src/main/resources/platform/pure/grammar/m3.pure
   license:    Apache-2.0 (see the legend-pure repository)
 
-This file is the bootstrap of the Pure M3 metamodel: every metaclass
-(Class, Property, Type, GenericType, Multiplicity, Enumeration, ...) is
-written as an instance of meta::pure::metamodel::type::Class using Pure's
-low-level instance-construction syntax. pure_python.codegen parses it to
-generate the Python representation of the type system.
+Files and their source paths under legend-pure-core/legend-pure-m3-core/src/main/resources/platform/pure/:
 
-To refresh: re-clone legend-pure at the desired commit and copy the file
-above, then run `python -m pure_python.codegen.generate`.
+  m3.pure        <- grammar/m3.pure
+  relation.pure  <- relation.pure
+  variant.pure   <- variant/variant.pure
+  milestoning.pure <- grammar/milestoning.pure
+
+m3.pure is the bootstrap of the Pure M3 metamodel: every metaclass (Class,
+Property, Type, GenericType, Multiplicity, Enumeration, ...) is written as an
+instance of meta::pure::metamodel::type::Class using Pure's low-level
+instance-construction syntax. It is parsed by pure_python.codegen.parser.
+
+relation.pure, variant.pure and milestoning.pure define further platform
+types using Pure's ordinary readable class grammar (Class path<T> extends ...
+{ prop : Type[mult]; }). They are parsed by pure_python.codegen.grammar.
+
+To refresh: re-clone legend-pure at the desired commit, copy the files above,
+then run `python -m pure_python.codegen.generate`.

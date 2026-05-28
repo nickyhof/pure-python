@@ -24,6 +24,16 @@ class GenericTypeOperationType(enum.Enum):
     Subset = "Subset"
     Equal = "Equal"
 
+# --- Type parameters -----------------------------------------------------
+A = typing.TypeVar("A")
+B = typing.TypeVar("B")
+E = typing.TypeVar("E")
+K = typing.TypeVar("K")
+T = typing.TypeVar("T")
+U = typing.TypeVar("U")
+V = typing.TypeVar("V")
+Z = typing.TypeVar("Z")
+
 # --- Metaclasses ---------------------------------------------------------
 @dataclass(kw_only=True)
 class Any:
@@ -73,7 +83,7 @@ class Testable(Any):
     tests: list[Test] = field(default_factory=list)
 
 @dataclass(kw_only=True)
-class Class(Type, PropertyOwner, ElementWithConstraints, PackageableElement, Testable):
+class Class(Type, PropertyOwner, ElementWithConstraints, PackageableElement, Testable, typing.Generic[T]):
     properties: list[Property] = field(default_factory=list)
     originalMilestonedProperties: list[Property] = field(default_factory=list)
     propertiesFromAssociations: list[Property] = field(default_factory=list)
@@ -128,8 +138,8 @@ class Unit(DataType, Referenceable):
     conversionFunction: FunctionDefinition | None = None
 
 @dataclass(kw_only=True)
-class Enumeration(DataType, PackageableElement):
-    values: list[typing.Any] = field(default_factory=list)
+class Enumeration(DataType, PackageableElement, typing.Generic[E]):
+    values: list[E] = field(default_factory=list)
 
 @dataclass(kw_only=True)
 class Enum(AnnotatedElement):
@@ -177,19 +187,19 @@ class Generalization(Any):
     general: GenericType
 
 @dataclass(kw_only=True)
-class Function(Referenceable):
+class Function(Referenceable, typing.Generic[T]):
     name: str | None = None
     functionName: str | None = None
     applications: list[FunctionExpression] = field(default_factory=list)
 
 @dataclass(kw_only=True)
-class AbstractProperty(Function, ModelElement):
+class AbstractProperty(Function, ModelElement, typing.Generic[T]):
     genericType: GenericType
     multiplicity: Multiplicity
     owner: PropertyOwner
 
 @dataclass(kw_only=True)
-class Property(AbstractProperty):
+class Property(AbstractProperty, typing.Generic[U, V]):
     aggregation: AggregationKind
     defaultValue: DefaultValue | None = None
 
@@ -270,16 +280,16 @@ class SimpleFunctionExpression(FunctionExpression):
     pass
 
 @dataclass(kw_only=True)
-class PackageableFunction(PackageableElement, Function):
+class PackageableFunction(PackageableElement, Function, typing.Generic[K]):
     preConstraints: list[Constraint] = field(default_factory=list)
     postConstraints: list[Constraint] = field(default_factory=list)
 
 @dataclass(kw_only=True)
-class FunctionDefinition(Function):
+class FunctionDefinition(Function, typing.Generic[T]):
     expressionSequence: list[ValueSpecification] = field(default_factory=list)
 
 @dataclass(kw_only=True)
-class NativeFunction(PackageableFunction):
+class NativeFunction(PackageableFunction, typing.Generic[K]):
     pass
 
 @dataclass(kw_only=True)
@@ -292,15 +302,15 @@ class FunctionType(Type, Referenceable):
     multiplicityParameters: list[InstanceValue] = field(default_factory=list)
 
 @dataclass(kw_only=True)
-class QualifiedProperty(AbstractProperty, FunctionDefinition):
+class QualifiedProperty(AbstractProperty, FunctionDefinition, typing.Generic[T]):
     id: str
 
 @dataclass(kw_only=True)
-class ConcreteFunctionDefinition(FunctionDefinition, PackageableFunction, Testable):
+class ConcreteFunctionDefinition(FunctionDefinition, PackageableFunction, Testable, typing.Generic[T]):
     pass
 
 @dataclass(kw_only=True)
-class LambdaFunction(FunctionDefinition):
+class LambdaFunction(FunctionDefinition, typing.Generic[T]):
     openVariables: list[str] = field(default_factory=list)
 
 @dataclass(kw_only=True)
@@ -358,7 +368,7 @@ class KeyExpression(Any):
     add: bool | None = None
 
 @dataclass(kw_only=True)
-class ClassProjection(Class, PackageableElement):
+class ClassProjection(Class, PackageableElement, typing.Generic[T]):
     projectionSpecification: RootRouteNode
 
 @dataclass(kw_only=True)
@@ -401,7 +411,7 @@ class RouteNodePropertyStub(AnnotatedElement):
     parameters: list[InstanceValue] = field(default_factory=list)
 
 @dataclass(kw_only=True)
-class NewPropertyRouteNodeFunctionDefinition(FunctionDefinition):
+class NewPropertyRouteNodeFunctionDefinition(FunctionDefinition, typing.Generic[U, V]):
     owner: NewPropertyRouteNode
 
 @dataclass(kw_only=True)
@@ -434,21 +444,90 @@ class GenericTypeOperation(GenericType):
     type: GenericTypeOperationType
 
 @dataclass(kw_only=True)
-class RelationType(Type, Referenceable):
+class RelationType(Type, Referenceable, typing.Generic[T]):
     columns: list[Column] = field(default_factory=list)
 
 @dataclass(kw_only=True)
-class Relation(Any):
+class Relation(Any, typing.Generic[T]):
     pass
 
 @dataclass(kw_only=True)
-class RelationElementAccessor(Relation, Referenceable):
+class RelationElementAccessor(Relation, Referenceable, typing.Generic[T]):
     sourceElementContainer: PackageableElement | None = None
     sourceElement: Any
 
 @dataclass(kw_only=True)
-class Column(Function, AnnotatedElement):
+class Column(Function, AnnotatedElement, typing.Generic[U, V]):
     nameWildCard: bool
+
+@dataclass(kw_only=True)
+class ColSpec(Any, typing.Generic[T]):
+    name: str
+
+@dataclass(kw_only=True)
+class ColSpecArray(Any, typing.Generic[T]):
+    names: list[str] = field(default_factory=list)
+
+@dataclass(kw_only=True)
+class FuncColSpec(Any, typing.Generic[Z, T]):
+    name: str
+    function: Function
+
+@dataclass(kw_only=True)
+class FuncColSpecArray(Any, typing.Generic[Z, T]):
+    funcSpecs: list[FuncColSpec] = field(default_factory=list)
+
+@dataclass(kw_only=True)
+class AggColSpec(Any, typing.Generic[Z, V, T]):
+    name: str
+    map: Function
+    reduce: Function
+
+@dataclass(kw_only=True)
+class AggColSpecArray(Any, typing.Generic[A, B, T]):
+    aggSpecs: list[AggColSpec] = field(default_factory=list)
+
+@dataclass(kw_only=True)
+class Variant(Any):
+    pass
+
+@dataclass(kw_only=True)
+class TemporalStrategy(Any):
+    pass
+
+@dataclass(kw_only=True)
+class SingleDateTemporalStrategy(TemporalStrategy):
+    pass
+
+@dataclass(kw_only=True)
+class ProcessingTemporal(SingleDateTemporalStrategy):
+    pass
+
+@dataclass(kw_only=True)
+class BusinessTemporal(SingleDateTemporalStrategy):
+    pass
+
+@dataclass(kw_only=True)
+class BiTemporal(TemporalStrategy):
+    pass
+
+@dataclass(kw_only=True)
+class DateMilestoning(Any):
+    pass
+
+@dataclass(kw_only=True)
+class ProcessingDateMilestoning(DateMilestoning):
+    in_: datetime.date
+    out: datetime.date
+
+@dataclass(kw_only=True)
+class BusinessDateMilestoning(DateMilestoning):
+    from_: datetime.date
+    thru: datetime.date
+
+@dataclass(kw_only=True)
+class BiTemporalMilestoning(ProcessingDateMilestoning, BusinessDateMilestoning):
+    pass
 
 # --- Primitive types -----------------------------------------------------
 String = PrimitiveType(name="String")
@@ -559,6 +638,22 @@ __all__ = [
     "Relation",
     "RelationElementAccessor",
     "Column",
+    "ColSpec",
+    "ColSpecArray",
+    "FuncColSpec",
+    "FuncColSpecArray",
+    "AggColSpec",
+    "AggColSpecArray",
+    "Variant",
+    "TemporalStrategy",
+    "SingleDateTemporalStrategy",
+    "ProcessingTemporal",
+    "BusinessTemporal",
+    "BiTemporal",
+    "DateMilestoning",
+    "ProcessingDateMilestoning",
+    "BusinessDateMilestoning",
+    "BiTemporalMilestoning",
     "String",
     "Boolean",
     "Byte",
