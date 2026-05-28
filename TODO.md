@@ -20,6 +20,11 @@ Grouped by status, with pointers to the relevant code.
   `@property` -> `QualifiedProperty`.
 - **Pure source emitter.** `compile/m3_to_pure.py` renders `m3` as Pure
   grammar, with a reverse round-trip test through `codegen/grammar.py`.
+- **Pure -> M3 bridge.** `compile/pure_to_m3.from_pure` lifts Pure grammar
+  source into live `m3` instances, closing the loop. `tests/test_full_round_trip.py`
+  drives one model through `Python -> M3 -> Pure -> M3 -> Python` and asserts
+  the graph is identical at every M3 stage. (`m3_to_python` now emits
+  `kw_only=True` dataclasses so inheritance survives the trip.)
 
 ## Tier 1 -- finish the round-trip design
 
@@ -37,8 +42,9 @@ Grouped by status, with pointers to the relevant code.
   inline `[2]` bound) and merge like classes.
 - [ ] **Parse qualified / derived properties in the readable grammar.**
   `_parse_property` skips anything with a `(`. Capture them as
-  `m3.QualifiedProperty`. This also lets `m3_to_pure` emit derived properties
-  (with a body) and enables a full same-type `m3 -> Pure -> m3` loop.
+  `m3.QualifiedProperty`, and have `m3_to_pure` emit derived properties (with a
+  body). They (and stereotypes / tagged values) are currently dropped at the
+  Pure boundary, so they do not survive the `pure_to_m3` round trip yet.
 - [x] **Support `Annotated` markers nested inside unions.** `_strip_annotations`
   recursively pulls metadata out of unions, so both `Annotated[str | None, Tag]`
   and `Annotated[str, Tag] | None` work.

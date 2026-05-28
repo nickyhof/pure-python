@@ -140,8 +140,9 @@ def _qualified_property_source(qp: m3.QualifiedProperty, ctx: _Ctx) -> str:
 def to_source(cls: m3.Class, ctx: _Ctx | None = None) -> str:
     """Render a single dataclass definition (no module header)."""
     context = ctx if ctx is not None else _Ctx()
-    fields = [_field_for(p, context) for p in cls.properties]
-    ordered = [f for f in fields if f.required] + [f for f in fields if not f.required]
+    # kw_only=True so inherited defaulted fields never force an ordering on a
+    # subclass's required fields; field order then just follows the metamodel.
+    ordered = [_field_for(p, context) for p in cls.properties]
 
     base_names = [
         g.general.rawType.name
@@ -156,7 +157,7 @@ def to_source(cls: m3.Class, ctx: _Ctx | None = None) -> str:
         base_names.append(f"typing.Generic[{params}]")
     bases = f"({', '.join(base_names)})" if base_names else ""
 
-    lines = ["@dataclass", f"class {cls.name}{bases}:"]
+    lines = ["@dataclass(kw_only=True)", f"class {cls.name}{bases}:"]
     body = [f.render() for f in ordered]
     qualified = [_qualified_property_source(qp, context) for qp in cls.qualifiedProperties]
     if body and qualified:
