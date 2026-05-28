@@ -53,3 +53,7 @@ Three layers, three packages.
 - **Round-trip tests are the spec.** Forward = `Python → m3 → Python` (`test_compile.py`); reverse = `m3 → Pure → grammar parser` (`test_pure_emit.py`). The reverse loop only holds at the grammar parser's fidelity (type args / stereotypes / tags / qualified properties are emitted but not re-captured).
 
 `TODO.md` tracks the known fidelity gaps and planned follow-ons.
+
+## Git
+
+- Do not include the Claude Code session URL (the `https://claude.ai/code/session_…` trailer) in commit messages or PR descriptions.
