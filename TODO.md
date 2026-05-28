@@ -70,11 +70,12 @@ Grouped by status, with pointers to the relevant code.
   compiler + plan generation + plan executor rather than reimplementing it.
   Tests in `tests/test_legend_bridge.py` (skipped unless the jar is built with
   `mvn -f legend-bridge package`).
-  - [ ] **Emit qualified type references / imports in `m3_to_pure`.** The bridge
-    surfaced a real gap: `m3_to_pure` emits unqualified property types (e.g.
+  - [x] **Emit qualified type references in `m3_to_pure`.** The bridge surfaced
+    a real gap: `m3_to_pure` emitted unqualified property/supertype names (e.g.
     `addresses : Address[*]`), which Legend's grammar parser accepts but its
-    *compiler* rejects with "Can't find type 'Address'". Emit `pkg::Address` (or
-    an `import pkg::*;` section) so cross-type models compile and can be `eval`d.
+    *compiler* rejects with "Can't find type 'Address'". `_type` and
+    `_generalization_names` now emit `pkg::Name`, so cross-type models compile
+    and `eval` (`tests/test_legend_bridge.py` runs one over a two-class model).
   - [ ] **Richer `eval` results.** Only expressions reducing to a `ConstantResult`
     are returned today; TDS/relation/streaming results need a serializer.
 

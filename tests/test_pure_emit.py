@@ -147,7 +147,7 @@ def test_reverse_round_trip_class_signatures():
 
 def test_pure_emits_inheritance_with_extends():
     source = to_pure_module(compile_class(Car, package="demo"))
-    assert "Class demo::Car extends Vehicle" in source
+    assert "Class demo::Car extends demo::Vehicle" in source
     assert "Class demo::Vehicle" in source
     assert "brand : String[1];" in source
     car_block = source.split("Class demo::Car")[1].split("}")[0]  # Car body only
@@ -181,7 +181,7 @@ def test_association_round_trips_through_pure():
     ]
     source = to_pure_module(assoc)
     assert "Association hr::Employment" in source
-    assert "employer : Firm[1];" in source and "employees : Person[*];" in source
+    assert "employer : hr::Firm[1];" in source and "employees : hr::Person[*];" in source
 
     registry = from_pure(source)
     back = registry["Employment"]
