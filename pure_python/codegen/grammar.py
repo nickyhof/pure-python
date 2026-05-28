@@ -126,6 +126,19 @@ class _GrammarParser:
                 self._next()
             self._next()  # '>>'
 
+    def _skip_tagged_values(self) -> None:
+        """Skip an optional ``{ profile.tag = 'value', ... }`` annotation block."""
+        if self._peek().value != "{":
+            return
+        self._next()
+        depth = 1
+        while depth > 0 and self._peek().kind != "EOF":
+            tok = self._next()
+            if tok.value == "{":
+                depth += 1
+            elif tok.value == "}":
+                depth -= 1
+
     def _qualified_name(self) -> tuple[str, str]:
         """Return (package, simple name)."""
         parts = [self._next().value]
@@ -192,6 +205,7 @@ class _GrammarParser:
     def _parse_class(self) -> MetaClass:
         self._next()  # 'Class' / 'Association'
         self._skip_stereotypes()
+        self._skip_tagged_values()
         package, name = self._qualified_name()
         type_parameters = self._type_parameters()
         bases: list[str] = []
@@ -227,6 +241,7 @@ class _GrammarParser:
 
     def _parse_property(self) -> MetaProperty | None:
         self._skip_stereotypes()
+        self._skip_tagged_values()
         name = self._next().value
         if self._peek().value == "(":  # qualified / derived property -> skip it
             self._skip_to_semicolon()

@@ -40,7 +40,10 @@ metamodel. Grouped by area, with pointers to the relevant code.
 
 ## New capability
 
-- [ ] **Emit Pure source from `m3`.** Add an emitter alongside `compile/m3_to_python`
-  that renders `m3` instances as actual Pure grammar
-  (`Class x::Y { prop : Type[mult]; }`), for feeding Legend tooling. Combined
-  with `codegen/grammar.py` this enables an `m3 -> Pure -> m3` round-trip.
+- [x] **Emit Pure source from `m3`.** `compile/m3_to_pure.py` renders `m3`
+  instances as Pure grammar (classes with generics/type-args, stereotypes,
+  tagged values, multiplicities; enumerations; reconstructed profiles). A
+  reverse round-trip test feeds the output back through `codegen/grammar.py`
+  and compares signatures. Still TODO: emit qualified (derived) properties
+  (needs a function body) and a full same-type `m3 -> Pure -> m3` loop once
+  the grammar parser produces `m3` instances / keeps type args & annotations.
