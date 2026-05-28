@@ -202,7 +202,7 @@ def test_qualified_property_round_trips_through_pure():
 
     cls = compile_class(Customer, package="demo")
     source = to_pure_module(cls)
-    assert "greeting() {} : String[1];" in source
+    assert "greeting() { [] } : String[1];" in source
     back = from_pure(source)["Customer"]
     assert [q.name for q in back.qualifiedProperties] == ["greeting"]
     qp = back.qualifiedProperties[0]

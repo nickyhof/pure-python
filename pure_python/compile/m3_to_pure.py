@@ -82,8 +82,9 @@ def _property(prop: m3.Property) -> str:
 
 
 def _qualified_property(qp: m3.QualifiedProperty) -> str:
-    # Empty body placeholder: the expression layer is not modelled.
-    return f"    {qp.name}() {{}} : {_type(qp.genericType)}{_multiplicity(qp.multiplicity)};"
+    # `[]` is a syntactically valid placeholder body: the expression layer is
+    # not modelled, but real Pure grammars reject an empty `{}` body.
+    return f"    {qp.name}() {{ [] }} : {_type(qp.genericType)}{_multiplicity(qp.multiplicity)};"
 
 
 def _generalization_names(cls: m3.Class) -> list[str]:

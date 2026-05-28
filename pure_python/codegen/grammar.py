@@ -1,8 +1,9 @@
-"""Parser for the ordinary readable Pure class grammar.
+"""Parse the readable Pure grammar using legend-pure's own ANTLR grammar.
 
-The bootstrap ``m3.pure`` defines the core metamodel in instance syntax, but
-further platform types (``relation.pure``, ``variant.pure``,
-``milestoning.pure``) use Pure's normal grammar::
+The bootstrap ``m3.pure`` defines the core metamodel in instance syntax (parsed
+by :mod:`pure_python.codegen.parser`), but the further platform types
+(``relation.pure``, ``variant.pure``, ``milestoning.pure``) -- and any Pure that
+``compile.m3_to_pure`` emits -- use Pure's normal grammar::
 
     Class meta::pure::metamodel::relation::FuncColSpec<Z, T> extends Base
     {
@@ -10,43 +11,29 @@ further platform types (``relation.pure``, ``variant.pure``,
         function : Function<Z>[1];
     }
 
-This module parses ``Class`` / ``Association`` / ``Enum`` / ``Profile``
-declarations into the same :mod:`pure_python.codegen.schema` dataclasses the
-bootstrap parser produces, so both feed one merged metamodel. Qualified
-(derived) properties are captured by signature (their parameters and lambda
-body are not modelled); ``import`` statements and function definitions are
-skipped -- they are not types.
+Rather than hand-roll a parser, this walks the parse tree produced by
+legend-pure's *real* ``M3CoreParser`` grammar (vendored and generated for the
+ANTLR Python target in :mod:`pure_python.codegen._pure_antlr`) and lowers the
+``Class`` / ``Association`` / ``Enum`` / ``Profile`` declarations into the
+:mod:`pure_python.codegen.schema` dataclasses. ``import`` statements, functions,
+primitives, measures and bare instances are ignored -- they are not class-like
+types. Type parameters, type arguments, qualified (derived) properties (by
+signature), and property-level stereotypes / tagged values are all captured.
+
+Because it is the real grammar it is strict: e.g. an empty qualified-property
+body (``foo() {}``) is a syntax error -- ``m3_to_pure`` emits ``foo() { [] }``.
 """
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 
+from antlr4 import CommonTokenStream, InputStream
+from antlr4.error.ErrorListener import ErrorListener
+
+from ._pure_antlr.M3CoreLexer import M3CoreLexer
+from ._pure_antlr.M3CoreParser import M3CoreParser
 from .schema import MetaAssociation, MetaClass, MetaEnum, MetaProfile, MetaProperty, TypeRef
-
-_TOKEN_RE = re.compile(
-    r"""
-      (?P<COMMENT>//[^\n]*)
-    | (?P<WS>\s+)
-    | (?P<STRING>'(?:\\.|[^'])*')
-    | (?P<DCOLON>::)
-    | (?P<DOTDOT>\.\.)
-    | (?P<LSTER><<)
-    | (?P<RSTER>>>)
-    | (?P<ARROW>->)
-    | (?P<NUMBER>\d+)
-    | (?P<IDENT>[A-Za-z_][A-Za-z0-9_]*)
-    | (?P<OP>[{}\[\]<>:;,=()*.@|])
-    """,
-    re.VERBOSE,
-)
-
-
-@dataclass
-class _Tok:
-    kind: str
-    value: str
 
 
 @dataclass
@@ -64,323 +51,148 @@ def _mark_type_parameters(ref: TypeRef, params: list[str]) -> None:
         _mark_type_parameters(arg, params)
 
 
-def _tokenize(text: str) -> list[_Tok]:
-    tokens: list[_Tok] = []
-    for m in _TOKEN_RE.finditer(text):
-        kind = m.lastgroup
-        if kind in ("WS", "COMMENT"):
-            continue
-        tokens.append(_Tok(kind, m.group()))
-    tokens.append(_Tok("EOF", ""))
-    return tokens
+class _Raise(ErrorListener):
+    def syntaxError(self, recognizer, symbol, line, column, message, error):
+        raise SyntaxError(f"line {line}:{column} {message}")
 
 
-class _GrammarParser:
-    def __init__(self, tokens: list[_Tok]):
-        self.toks = tokens
-        self.pos = 0
+# -- parse-tree -> schema --------------------------------------------------
 
-    def _peek(self) -> _Tok:
-        return self.toks[self.pos]
+def _qualified(ctx) -> tuple[str, str]:
+    """Return (package, simple name) from a ``qualifiedName`` context."""
+    package = ""
+    path = ctx.packagePath()
+    if path is not None:
+        package = "::".join(segment.getText() for segment in path.identifier())
+    return package, ctx.identifier().getText()
 
-    def _next(self) -> _Tok:
-        tok = self.toks[self.pos]
-        self.pos += 1
-        return tok
 
-    def _expect(self, value: str) -> _Tok:
-        tok = self._next()
-        if tok.value != value:
-            raise SyntaxError(f"expected {value!r} but got {tok.value!r}")
-        return tok
+def _type_ref(tctx) -> TypeRef:
+    name = tctx.qualifiedName()
+    if name is None:  # a function / column / unit type -- not modelled
+        return TypeRef(None)
+    _, simple = _qualified(name)
+    arguments: list[TypeRef] = []
+    type_arguments = tctx.typeArguments()
+    if type_arguments is not None:
+        arguments = [_type_ref(op.type_()) for op in type_arguments.typeWithOperation()]
+    return TypeRef(simple, False, arguments)
 
-    def parse(self) -> GrammarResult:
-        result = GrammarResult()
-        while self._peek().kind != "EOF":
-            keyword = self._peek().value
-            if keyword == "import":
-                self._skip_to_semicolon()
-            elif keyword in ("native", "function"):
-                self._skip_to_semicolon()
-            elif keyword == "Class":
-                result.classes.append(self._parse_class())
-            elif keyword in ("Enum", "Enumeration"):
-                result.enums.append(self._parse_enum())
-            elif keyword == "Profile":
-                result.profiles.append(self._parse_profile())
-            elif keyword == "Association":
-                result.associations.append(self._parse_association())
-            else:
-                self._next()  # be forgiving about anything we do not model yet
-        return result
 
-    # -- helpers -------------------------------------------------------
-    def _skip_to_semicolon(self) -> None:
-        depth = 0
-        while True:
-            tok = self._next()
-            if tok.kind == "EOF":
-                return
-            if tok.value in ("{", "[", "("):
-                depth += 1
-            elif tok.value in ("}", "]", ")"):
-                depth -= 1
-            elif tok.value == ";" and depth <= 0:
-                return
+def _multiplicity(mctx) -> tuple[int, int | None]:
+    argument = mctx.multiplicityArgument()
+    if argument.identifier() is not None:  # a multiplicity parameter, e.g. [k]
+        return (0, None)
+    to_text = argument.toMultiplicity().getText()
+    upper = None if to_text == "*" else int(to_text)
+    lower_ctx = argument.fromMultiplicity()
+    lower = int(lower_ctx.getText()) if lower_ctx is not None else (0 if to_text == "*" else upper)
+    return (lower, upper)
 
-    def _skip_stereotypes(self) -> None:
-        if self._peek().kind == "LSTER":
-            self._next()
-            while self._peek().kind not in ("RSTER", "EOF"):
-                self._next()
-            self._next()  # '>>'
 
-    def _skip_tagged_values(self) -> None:
-        """Skip an optional ``{ profile.tag = 'value', ... }`` annotation block."""
-        if self._peek().value != "{":
-            return
-        self._next()
-        depth = 1
-        while depth > 0 and self._peek().kind != "EOF":
-            tok = self._next()
-            if tok.value == "{":
-                depth += 1
-            elif tok.value == "}":
-                depth -= 1
+def _stereotypes(sctx) -> list[tuple[str, str]]:
+    if sctx is None:
+        return []
+    return [(s.qualifiedName().getText(), s.identifier().getText()) for s in sctx.stereotype()]
 
-    def _parse_stereotypes(self) -> list[tuple[str, str]]:
-        """Parse ``<< profile.value, ... >>`` into (profile, value) pairs."""
-        if self._peek().kind != "LSTER":
-            return []
-        self._next()  # '<<'
-        out: list[tuple[str, str]] = []
-        while self._peek().kind not in ("RSTER", "EOF"):
-            profile = self._next().value
-            value = profile
-            if self._peek().value == ".":
-                self._next()
-                value = self._next().value
-            else:
-                profile = ""
-            out.append((profile, value))
-            if self._peek().value == ",":
-                self._next()
-        if self._peek().kind == "RSTER":
-            self._next()  # '>>'
-        return out
 
-    def _parse_tagged_values(self) -> list[tuple[str, str, str]]:
-        """Parse ``{ profile.tag = 'value', ... }`` into (profile, tag, value) triples."""
-        if self._peek().value != "{":
-            return []
-        self._next()  # '{'
-        out: list[tuple[str, str, str]] = []
-        while self._peek().value != "}" and self._peek().kind != "EOF":
-            profile = self._next().value
-            tag = profile
-            if self._peek().value == ".":
-                self._next()
-                tag = self._next().value
-            else:
-                profile = ""
-            self._expect("=")
-            tok = self._next()
-            value = tok.value[1:-1] if tok.kind == "STRING" else tok.value
-            out.append((profile, tag, value))
-            if self._peek().value == ",":
-                self._next()
-        if self._peek().value == "}":
-            self._next()  # '}'
-        return out
+def _tagged_values(tctx) -> list[tuple[str, str, str]]:
+    if tctx is None:
+        return []
+    out: list[tuple[str, str, str]] = []
+    for tagged in tctx.taggedValue():
+        value = "".join(s.getText()[1:-1] for s in tagged.STRING())
+        out.append((tagged.qualifiedName().getText(), tagged.identifier().getText(), value))
+    return out
 
-    def _qualified_name(self) -> tuple[str, str]:
-        """Return (package, simple name)."""
-        parts = [self._next().value]
-        while self._peek().kind == "DCOLON":
-            self._next()
-            parts.append(self._next().value)
-        return "::".join(parts[:-1]), parts[-1]
 
-    def _consume_gt(self) -> None:
-        """Consume one ``>``, splitting a ``>>`` token so the enclosing level sees the other."""
-        tok = self._peek()
-        if tok.value == ">":
-            self._next()
-        elif tok.kind == "RSTER":
-            tok.kind = "OP"
-            tok.value = ">"
-        else:
-            raise SyntaxError(f"expected '>' but got {tok.value!r}")
+def _property_name(pn) -> str:
+    return pn.STRING().getText()[1:-1] if pn.STRING() is not None else pn.identifier().getText()
 
-    def _type_parameters(self) -> list[str]:
-        if self._peek().value != "<":
-            return []
-        self._next()
-        params: list[str] = []
-        while self._peek().value not in (">", "") and self._peek().kind != "RSTER":
-            tok = self._next()
-            if tok.kind == "IDENT":
-                params.append(tok.value)
-        self._next()  # '>'
-        return params
 
-    def _type_ref(self) -> TypeRef:
-        """Parse a type reference (simple name + nested type arguments)."""
-        _, simple = self._qualified_name()
-        arguments: list[TypeRef] = []
-        if self._peek().value == "<":
-            self._next()
-            arguments.append(self._type_ref())
-            while self._peek().value == ",":
-                self._next()
-                arguments.append(self._type_ref())
-            self._consume_gt()
-        return TypeRef(simple, False, arguments)
+def _return_type(rt) -> tuple[TypeRef, int, int | None]:
+    ref = _type_ref(rt.type_())
+    lower, upper = _multiplicity(rt.multiplicity())
+    return ref, lower, upper
 
-    def _multiplicity(self) -> tuple[int, int | None]:
-        self._expect("[")
-        if self._peek().value == "*":
-            self._next()
-            self._expect("]")
-            return 0, None
-        lower = int(self._next().value)
-        upper: int | None = lower
-        if self._peek().kind == "DOTDOT":
-            self._next()
-            if self._peek().value == "*":
-                self._next()
-                upper = None
-            else:
-                upper = int(self._next().value)
-        self._expect("]")
-        return lower, upper
 
-    # -- declarations --------------------------------------------------
-    def _parse_class(self) -> MetaClass:
-        self._next()  # 'Class' / 'Association'
-        self._skip_stereotypes()
-        self._skip_tagged_values()
-        package, name = self._qualified_name()
-        type_parameters = self._type_parameters()
-        bases: list[str] = []
-        if self._peek().value == "extends":
-            self._next()
-            bases.append(self._type_ref().name)
-            while self._peek().value == ",":
-                self._next()
-                bases.append(self._type_ref().name)
-        if self._peek().value == "[":  # constraints block
-            self._skip_to_matching_bracket()
-        properties, qualified = self._parse_body()
-        for prop in properties + qualified:
-            if prop.type_name in type_parameters:
-                prop.is_type_parameter = True
-            for arg in prop.type_arguments:
-                _mark_type_parameters(arg, type_parameters)
-        return MetaClass(
-            name, package, bases or ["Any"], properties, type_parameters, qualified_properties=qualified
-        )
+def _property(p) -> MetaProperty:
+    ref, lower, upper = _return_type(p.propertyReturnType())
+    return MetaProperty(
+        _property_name(p.propertyName()), ref.name, lower, upper,
+        type_arguments=ref.arguments,
+        stereotypes=_stereotypes(p.stereotypes()),
+        tagged_values=_tagged_values(p.taggedValues()),
+    )
 
-    def _parse_association(self) -> MetaAssociation:
-        self._next()  # 'Association'
-        self._skip_stereotypes()
-        self._skip_tagged_values()
-        package, name = self._qualified_name()
-        if self._peek().value == "[":
-            self._skip_to_matching_bracket()
-        properties, _ = self._parse_body()  # the two ends; qualified properties n/a
-        return MetaAssociation(name, package, properties)
 
-    def _parse_body(self) -> tuple[list[MetaProperty], list[MetaProperty]]:
-        """Parse a ``{ ... }`` body, returning (simple properties, qualified properties)."""
-        self._expect("{")
-        simple: list[MetaProperty] = []
-        qualified: list[MetaProperty] = []
-        while self._peek().value != "}" and self._peek().kind != "EOF":
-            is_qualified, prop = self._parse_property()
-            (qualified if is_qualified else simple).append(prop)
-        self._expect("}")
-        return simple, qualified
+def _qualified_property(q) -> MetaProperty:
+    ref, lower, upper = _return_type(q.propertyReturnType())
+    return MetaProperty(
+        q.identifier().getText(), ref.name, lower, upper,
+        type_arguments=ref.arguments,
+        stereotypes=_stereotypes(q.stereotypes()),
+        tagged_values=_tagged_values(q.taggedValues()),
+    )
 
-    def _skip_to_matching_bracket(self) -> None:
-        self._skip_balanced("[", "]")
 
-    def _skip_balanced(self, open_token: str, close_token: str) -> None:
-        self._expect(open_token)
-        depth = 1
-        while depth > 0 and self._peek().kind != "EOF":
-            tok = self._next()
-            if tok.value == open_token:
-                depth += 1
-            elif tok.value == close_token:
-                depth -= 1
+def _class(c) -> MetaClass:
+    package, name = _qualified(c.qualifiedName())
+    type_parameters: list[str] = []
+    params = c.typeParametersWithContravarianceAndMultiplicityParameters()
+    if params is not None and params.contravarianceTypeParameters() is not None:
+        type_parameters = [
+            p.identifier().getText()
+            for p in params.contravarianceTypeParameters().contravarianceTypeParameter()
+        ]
+    bases = [ref.name for t in c.type_() if (ref := _type_ref(t)).name]
+    simple: list[MetaProperty] = []
+    qualified: list[MetaProperty] = []
+    body = c.classBody()
+    if body is not None and body.properties() is not None:
+        simple = [_property(p) for p in body.properties().property_()]
+        qualified = [_qualified_property(q) for q in body.properties().qualifiedProperty()]
+    for prop in simple + qualified:
+        if prop.type_name in type_parameters:
+            prop.is_type_parameter = True
+        for arg in prop.type_arguments:
+            _mark_type_parameters(arg, type_parameters)
+    return MetaClass(name, package, bases or ["Any"], simple, type_parameters, qualified_properties=qualified)
 
-    def _parse_property(self) -> tuple[bool, MetaProperty]:
-        """Return (is_qualified, property). Qualified properties keep only their signature."""
-        stereotypes = self._parse_stereotypes()
-        tagged_values = self._parse_tagged_values()
-        name = self._next().value
-        qualified = self._peek().value == "("
-        if qualified:
-            self._skip_balanced("(", ")")  # parameters -- not modelled
-            if self._peek().value == "{":
-                self._skip_balanced("{", "}")  # lambda body -- not modelled
-        self._expect(":")
-        ref = self._type_ref()
-        lower, upper = self._multiplicity()
-        if self._peek().value == ";":
-            self._next()
-        return qualified, MetaProperty(
-            name,
-            ref.name,
-            lower,
-            upper,
-            type_arguments=ref.arguments,
-            stereotypes=stereotypes,
-            tagged_values=tagged_values,
-        )
 
-    def _parse_enum(self) -> MetaEnum:
-        self._next()  # 'Enum'
-        self._skip_stereotypes()
-        package, name = self._qualified_name()
-        self._expect("{")
-        values: list[str] = []
-        while self._peek().value != "}" and self._peek().kind != "EOF":
-            self._skip_stereotypes()
-            tok = self._next()
-            if tok.kind == "IDENT":
-                values.append(tok.value)
-            if self._peek().value == ",":
-                self._next()
-        self._expect("}")
-        return MetaEnum(name, package, values)
+def _enum(e) -> MetaEnum:
+    package, name = _qualified(e.qualifiedName())
+    return MetaEnum(name, package, [v.identifier().getText() for v in e.enumValue()])
 
-    def _parse_profile(self) -> MetaProfile:
-        self._next()  # 'Profile'
-        package, name = self._qualified_name()
-        self._expect("{")
-        stereotypes: list[str] = []
-        tags: list[str] = []
-        while self._peek().value != "}" and self._peek().kind != "EOF":
-            key = self._next().value
-            self._expect(":")
-            self._expect("[")
-            items: list[str] = []
-            while self._peek().value != "]" and self._peek().kind != "EOF":
-                tok = self._next()
-                if tok.kind in ("IDENT", "STRING"):
-                    items.append(tok.value.strip("'"))
-            self._expect("]")
-            if self._peek().value == ";":
-                self._next()
-            if key == "stereotypes":
-                stereotypes = items
-            elif key == "tags":
-                tags = items
-        self._expect("}")
-        return MetaProfile(name, package, stereotypes, tags)
+
+def _profile(p) -> MetaProfile:
+    package, name = _qualified(p.qualifiedName())
+    stereotype_defs = p.stereotypeDefinitions()
+    tag_defs = p.tagDefinitions()
+    stereotypes = [i.getText() for i in stereotype_defs.identifier()] if stereotype_defs is not None else []
+    tags = [i.getText() for i in tag_defs.identifier()] if tag_defs is not None else []
+    return MetaProfile(name, package, stereotypes, tags)
+
+
+def _association(a) -> MetaAssociation:
+    package, name = _qualified(a.qualifiedName())
+    properties: list[MetaProperty] = []
+    body = a.associationBody()
+    if body is not None and body.properties() is not None:
+        properties = [_property(p) for p in body.properties().property_()]
+    return MetaAssociation(name, package, properties)
 
 
 def parse_grammar(text: str) -> GrammarResult:
-    return _GrammarParser(_tokenize(text)).parse()
+    """Parse Pure grammar source into the neutral schema dataclasses."""
+    parser = M3CoreParser(CommonTokenStream(M3CoreLexer(InputStream(text))))
+    parser.removeErrorListeners()
+    parser.addErrorListener(_Raise())
+    tree = parser.definition()
+
+    result = GrammarResult()
+    result.classes = [_class(c) for c in tree.classDefinition()]
+    result.enums = [_enum(e) for e in tree.enumDefinition()]
+    result.profiles = [_profile(p) for p in tree.profile()]
+    result.associations = [_association(a) for a in tree.association()]
+    return result
