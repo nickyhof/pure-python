@@ -1,20 +1,25 @@
-"""Recursive-descent parser for the Pure M3 bootstrap instance syntax.
+"""Lift the Pure M3 bootstrap instance syntax (``m3.pure``) into an object graph.
 
-Grammar (informal)::
+``m3.pure`` is plain instance data -- ``^`` instance markers, brace bodies,
+bracket collections / path keys, ``@`` package clauses, string / number
+literals and dotted reference paths::
 
-    file        := instance*
-    instance    := '^' path IDENT? ('@' path)? body
-    body        := '{' (assignment (',' assignment)*)? '}'
-    assignment  := path ':' value
-    value       := STRING | NUMBER | 'true' | 'false' | instance | collection | ref
-    collection  := '[' (value (',' value)*)? ']'
-    ref         := path
-    path        := IDENT segment*
-    segment     := '.' IDENT ('[' key ']')?
-    key         := IDENT | NUMBER | STRING
+    ^Package meta @Root.children
+    {
+        Root.children[meta]...properties[name] : 'meta',
+        Package.properties[children] : []
+    }
 
-Every metaclass in ``m3.pure`` is an ``instance`` whose ``path`` classifier
-ends in ``[Class]`` / ``[Enumeration]`` / ``[PrimitiveType]`` etc.
+Rather than hand-roll a tokenizer + parser, this walks the parse tree produced
+by legend-pure's own **M4** ANTLR grammar (``M4AntlrParser`` / ``M4AntlrLexer``,
+vendored and generated for the ANTLR Python target in
+:mod:`pure_python.codegen._pure_antlr`) and lowers it into the ``Instance`` /
+``Ref`` / ``Path`` graph that :mod:`pure_python.codegen.schema` consumes. The
+semantic interpretation -- in particular ``_split_lhs``, which reads the
+``<owner>.properties[<prop>]`` assignment paths -- is unchanged.
+
+Every metaclass in ``m3.pure`` is an ``instance`` whose classifier path ends in
+``[Class]`` / ``[Enumeration]`` / ``[PrimitiveType]`` etc.
 """
 
 from __future__ import annotations
@@ -22,7 +27,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Union
 
-from .lexer import Kind, Token, tokenize
+from antlr4 import CommonTokenStream, InputStream
+from antlr4.error.ErrorListener import ErrorListener
+
+from ._pure_antlr.M4AntlrLexer import M4AntlrLexer
+from ._pure_antlr.M4AntlrParser import M4AntlrParser
 
 
 @dataclass
@@ -93,130 +102,94 @@ class Assignment:
     value: Value
 
 
-class Parser:
-    def __init__(self, tokens: list[Token]):
-        self.toks = tokens
-        self.pos = 0
+def _split_lhs(lhs: Path) -> tuple[str | None, str]:
+    """Read ``<owner>.properties[<prop>]`` into (owner type, property name)."""
+    prop_idx = next(
+        (i for i in range(len(lhs.steps) - 1, -1, -1) if lhs.steps[i][0] == "properties"),
+        None,
+    )
+    if prop_idx is None:
+        # e.g. AggregationKind.values[None] should not appear on an LHS, but be safe.
+        name, key = lhs.steps[-1]
+        return None, (key if key is not None else name)
+    prop = lhs.steps[prop_idx][1] or ""
+    if prop_idx == 0:
+        return None, prop
+    owner_name, owner_key = lhs.steps[prop_idx - 1]
+    return (owner_key if owner_key is not None else owner_name), prop
 
-    # -- token helpers -------------------------------------------------
-    def _peek(self) -> Token:
-        return self.toks[self.pos]
 
-    def _next(self) -> Token:
-        tok = self.toks[self.pos]
-        self.pos += 1
-        return tok
+# -- ANTLR parse tree -> object graph --------------------------------------
 
-    def _expect(self, kind: Kind) -> Token:
-        tok = self._next()
-        if tok.kind is not kind:
-            raise SyntaxError(f"Expected {kind} but got {tok.kind} ({tok.value!r}) at line {tok.line}")
-        return tok
+def _unescape(inner: str) -> str:
+    """Drop backslash escapes (``\\'`` -> ``'``), matching the original lexer."""
+    out: list[str] = []
+    i = 0
+    while i < len(inner):
+        if inner[i] == "\\" and i + 1 < len(inner):
+            out.append(inner[i + 1])
+            i += 2
+        else:
+            out.append(inner[i])
+            i += 1
+    return "".join(out)
 
-    # -- grammar -------------------------------------------------------
-    def parse_file(self) -> list[Instance]:
-        instances: list[Instance] = []
-        while self._peek().kind is not Kind.EOF:
-            instances.append(self.parse_instance())
-        return instances
 
-    def parse_instance(self) -> Instance:
-        self._expect(Kind.CARET)
-        classifier = self.parse_path()
-        name: str | None = None
-        if self._peek().kind is Kind.IDENT:
-            name = self._next().value
-        package: Path | None = None
-        if self._peek().kind is Kind.AT:
-            self._next()
-            package = self.parse_path()
-        body = self.parse_body()
-        return Instance(classifier, name, package, body)
+def _path(ctx) -> Path:
+    """Build a Path from a ``path`` / ``instance`` / ``nameSpace`` context."""
+    steps: list[tuple[str, str | None]] = [(ctx.name().getText(), None)]
+    for owner in ctx.classifierOwner():
+        in_array = owner.keyInArray()
+        steps.append((owner.key().getText(), in_array.getText() if in_array is not None else None))
+    return Path(steps)
 
-    def parse_body(self) -> list[Assignment]:
-        self._expect(Kind.LBRACE)
-        assignments: list[Assignment] = []
-        if self._peek().kind is not Kind.RBRACE:
-            assignments.append(self.parse_assignment())
-            while self._peek().kind is Kind.COMMA:
-                self._next()
-                if self._peek().kind is Kind.RBRACE:  # tolerate trailing comma
-                    break
-                assignments.append(self.parse_assignment())
-        self._expect(Kind.RBRACE)
-        return assignments
 
-    def parse_assignment(self) -> Assignment:
-        lhs = self.parse_path()
-        self._expect(Kind.COLON)
-        value = self.parse_value()
-        owner, prop = self._split_lhs(lhs)
-        return Assignment(owner, prop, value)
+def _literal(lit) -> Value:
+    if lit.STRING() is not None:
+        return _unescape(lit.STRING().getText()[1:-1])
+    if lit.INTEGER() is not None:
+        return int(lit.INTEGER().getText())
+    if lit.FLOAT() is not None:
+        return float(lit.FLOAT().getText())
+    if lit.BOOLEAN() is not None:
+        return lit.BOOLEAN().getText() == "true"
+    return lit.getText()  # DATE / STRICTTIME -- not used by m3.pure
 
-    @staticmethod
-    def _split_lhs(lhs: Path) -> tuple[str | None, str]:
-        prop_idx = next(
-            (i for i in range(len(lhs.steps) - 1, -1, -1) if lhs.steps[i][0] == "properties"),
-            None,
-        )
-        if prop_idx is None:
-            # e.g. AggregationKind.values[None] should not appear on an LHS, but be safe.
-            name, key = lhs.steps[-1]
-            return None, (key if key is not None else name)
-        prop = lhs.steps[prop_idx][1] or ""
-        if prop_idx == 0:
-            return None, prop
-        owner_name, owner_key = lhs.steps[prop_idx - 1]
-        return (owner_key if owner_key is not None else owner_name), prop
 
-    def parse_value(self) -> Value:
-        tok = self._peek()
-        if tok.kind is Kind.STRING:
-            return self._next().value
-        if tok.kind is Kind.NUMBER:
-            raw = self._next().value
-            return float(raw) if "." in raw else int(raw)
-        if tok.kind is Kind.CARET:
-            return self.parse_instance()
-        if tok.kind is Kind.LBRACK:
-            return self.parse_collection()
-        if tok.kind is Kind.IDENT:
-            if tok.value in ("true", "false"):
-                self._next()
-                return tok.value == "true"
-            return Ref(self.parse_path())
-        raise SyntaxError(f"Unexpected value token {tok.kind} ({tok.value!r}) at line {tok.line}")
+def _element(element) -> Value:
+    if element.metaClass() is not None:
+        return _instance(element.metaClass())
+    if element.literalElement() is not None:
+        return _literal(element.literalElement())
+    if element.instance() is not None:  # a bare reference path
+        return Ref(_path(element.instance()))
+    return Ref(Path([("self", None)]))  # SELF -- not used by m3.pure
 
-    def parse_collection(self) -> list[Value]:
-        self._expect(Kind.LBRACK)
-        items: list[Value] = []
-        if self._peek().kind is not Kind.RBRACK:
-            items.append(self.parse_value())
-            while self._peek().kind is Kind.COMMA:
-                self._next()
-                if self._peek().kind is Kind.RBRACK:
-                    break
-                items.append(self.parse_value())
-        self._expect(Kind.RBRACK)
-        return items
 
-    def parse_path(self) -> Path:
-        head = self._expect(Kind.IDENT).value
-        steps: list[tuple[str, str | None]] = [(head, None)]
-        while self._peek().kind is Kind.DOT:
-            self._next()
-            name = self._expect(Kind.IDENT).value
-            key: str | None = None
-            if self._peek().kind is Kind.LBRACK:
-                self._next()
-                ktok = self._next()
-                if ktok.kind not in (Kind.IDENT, Kind.NUMBER, Kind.STRING):
-                    raise SyntaxError(f"Bad path key {ktok.value!r} at line {ktok.line}")
-                key = ktok.value
-                self._expect(Kind.RBRACK)
-            steps.append((name, key))
-        return Path(steps)
+def _right_side(rs) -> Value:
+    if rs.BRACKET_OPEN() is not None:  # a collection, possibly empty
+        return [_element(e) for e in rs.element()]
+    return _element(rs.element(0))
+
+
+def _instance(mc) -> Instance:
+    classifier = _path(mc.instance())
+    name = mc.newTypeStr().getText() if mc.newTypeStr() is not None else None
+    package = _path(mc.nameSpace()) if mc.nameSpace() is not None else None
+    body: list[Assignment] = []
+    for prop in mc.properties():
+        owner, name_ = _split_lhs(_path(prop.path()))
+        body.append(Assignment(owner, name_, _right_side(prop.rightSide())))
+    return Instance(classifier, name, package, body)
+
+
+class _Raise(ErrorListener):
+    def syntaxError(self, recognizer, symbol, line, column, message, error):
+        raise SyntaxError(f"line {line}:{column} {message}")
 
 
 def parse(text: str) -> list[Instance]:
-    return Parser(tokenize(text)).parse_file()
+    parser = M4AntlrParser(CommonTokenStream(M4AntlrLexer(InputStream(text))))
+    parser.removeErrorListeners()
+    parser.addErrorListener(_Raise())
+    return [_instance(mc) for mc in parser.definition().metaClass()]
