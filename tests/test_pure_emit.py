@@ -6,7 +6,15 @@ import typing
 
 from pure_python import m3
 from pure_python.codegen.grammar import parse_grammar
-from pure_python.compile import Compiler, Stereotype, Tag, compile_class, to_pure, to_pure_module
+from pure_python.compile import (
+    Compiler,
+    Stereotype,
+    Tag,
+    compile_class,
+    from_pure,
+    to_pure,
+    to_pure_module,
+)
 from pure_python.compile.m3_to_pure import _multiplicity
 
 RT = typing.TypeVar("RT")
@@ -144,6 +152,62 @@ def test_pure_emits_inheritance_with_extends():
     assert "brand : String[1];" in source
     car_block = source.split("Class demo::Car")[1].split("}")[0]  # Car body only
     assert "wheels" not in car_block  # inherited field is not redeclared on the subclass
+
+
+def _end(prop):
+    upper = prop.multiplicity.upperBound.value if prop.multiplicity.upperBound else None
+    return prop.genericType.rawType.name, prop.multiplicity.lowerBound.value, upper
+
+
+def test_association_round_trips_through_pure():
+    person = m3.Class(name="Person", package="hr")
+    firm = m3.Class(name="Firm", package="hr")
+    assoc = m3.Association(name="Employment", package="hr")
+    assoc.properties = [
+        m3.Property(
+            name="employer",
+            genericType=m3.GenericType(rawType=firm),
+            multiplicity=m3.PureOne,
+            owner=assoc,
+            aggregation=m3.AggregationKind.None_,
+        ),
+        m3.Property(
+            name="employees",
+            genericType=m3.GenericType(rawType=person),
+            multiplicity=m3.ZeroMany,
+            owner=assoc,
+            aggregation=m3.AggregationKind.None_,
+        ),
+    ]
+    source = to_pure_module(assoc)
+    assert "Association hr::Employment" in source
+    assert "employer : Firm[1];" in source and "employees : Person[*];" in source
+
+    registry = from_pure(source)
+    back = registry["Employment"]
+    assert isinstance(back, m3.Association) and back.package == "hr"
+    ends = {p.name: _end(p) for p in back.properties}
+    assert ends == {"employer": ("Firm", 1, 1), "employees": ("Person", 0, None)}
+    # the ends resolve to the round-tripped Class instances, not fresh ones
+    assert back.properties[0].genericType.rawType is registry["Firm"]
+
+
+def test_qualified_property_round_trips_through_pure():
+    @dataclasses.dataclass
+    class Customer:
+        firstName: str
+
+        @property
+        def greeting(self) -> str: ...
+
+    cls = compile_class(Customer, package="demo")
+    source = to_pure_module(cls)
+    assert "greeting() {} : String[1];" in source
+    back = from_pure(source)["Customer"]
+    assert [q.name for q in back.qualifiedProperties] == ["greeting"]
+    qp = back.qualifiedProperties[0]
+    assert qp.genericType.rawType.name == "String"
+    assert (qp.multiplicity.lowerBound.value, qp.multiplicity.upperBound.value) == (1, 1)
 
 
 def test_reverse_round_trip_enum_and_profiles():

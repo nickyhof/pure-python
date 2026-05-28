@@ -24,7 +24,9 @@ Grouped by status, with pointers to the relevant code.
   source into live `m3` instances, closing the loop. `tests/test_full_round_trip.py`
   drives one model through `Python -> M3 -> Pure -> M3 -> Python` and asserts
   the graph is identical at every M3 stage. (`m3_to_python` now emits
-  `kw_only=True` dataclasses so inheritance survives the trip.)
+  `kw_only=True` dataclasses so inheritance survives the trip.) Only stereotypes
+  and tagged values are dropped at the Pure boundary; everything else --
+  including generalizations, type arguments and qualified properties -- survives.
 
 ## Tier 1 -- finish the round-trip design
 
@@ -37,20 +39,23 @@ Grouped by status, with pointers to the relevant code.
   them (the grammar parser splits `>>` to close nested generics) and `emit`
   renders subscripted annotations -- `function : Function<Z>[1]` is now
   `function: Function[Z]`, and `Enumeration<Any>` etc. survive from the bootstrap.
-- [ ] **Parse the `Association` grammar.** `codegen/grammar.py` parses
-  `Association` for shape but discards it. Represent it (two end properties,
-  inline `[2]` bound) and merge like classes.
-- [ ] **Parse qualified / derived properties in the readable grammar.**
-  `_parse_property` skips anything with a `(`. Capture them as
-  `m3.QualifiedProperty`, and have `m3_to_pure` emit derived properties (with a
-  body). They (and stereotypes / tagged values) are currently dropped at the
-  Pure boundary, so they do not survive the `pure_to_m3` round trip yet.
+- [x] **Parse the `Association` grammar.** `grammar.py` parses `Association`
+  into a `MetaAssociation` (two end properties), `generate.py` merges them,
+  `m3_to_pure` emits `Association` blocks and `pure_to_m3` lifts them back, with
+  an `m3 -> Pure -> m3` round-trip test.
+- [x] **Parse qualified / derived properties in the readable grammar.**
+  `grammar.py` captures them by signature (parameters and lambda body skipped);
+  `m3_to_pure` emits `name() {} : Type[mult];` and `pure_to_m3` lifts them into
+  `m3.QualifiedProperty`, so they now survive the round trip (stereotypes and
+  tagged values remain the only features dropped at the Pure boundary).
 - [x] **Support `Annotated` markers nested inside unions.** `_strip_annotations`
   recursively pulls metadata out of unions, so both `Annotated[str | None, Tag]`
   and `Annotated[str, Tag] | None` work.
-- [ ] **Preserve Python enum values.** Enum members round-trip by name; a Python
-  value such as `Color.RED = 1` is lost (Pure enums are name-only). `m3.Enum` is
-  an `AnnotatedElement`, so a tagged-value convention could carry the value.
+- [x] **Preserve Python enum values.** When a member's value differs from its
+  name, `python_to_m3` stores it as a tagged value (`pure_python.enumValue`) on
+  the `m3.Enum`, and `m3_to_python` emits it back, so `Color.RED = 1` round-trips
+  through the Python <-> M3 loop. (Pure enums are name-only, so the value is
+  dropped at the Pure boundary like other tags.)
 - [x] **Revisit `bytes` mapping.** `m3_to_python._PURE_TO_PY` now maps
   `Byte -> bytes`, so `bytes` fields round-trip (Pure has no richer bytes type).
 

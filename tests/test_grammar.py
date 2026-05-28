@@ -62,3 +62,32 @@ def test_variant_minimal():
     classes, _ = _classes("variant.pure")
     assert set(classes) == {"Variant"}
     assert classes["Variant"].properties == []
+
+
+def test_qualified_property_parsing():
+    source = """
+    Class my::Person
+    {
+        firstName : String[1];
+        fullName() {$this.firstName} : String[1];
+        scores(n: Integer[1]) {[]} : Integer[1..*];
+    }
+    """
+    cls = parse_grammar(source).classes[0]
+    assert [p.name for p in cls.properties] == ["firstName"]  # simple properties only
+    qualified = {q.name: (q.type_name, q.lower, q.upper) for q in cls.qualified_properties}
+    assert qualified == {"fullName": ("String", 1, 1), "scores": ("Integer", 1, None)}
+
+
+def test_association_parsing():
+    source = """
+    Association my::Employment
+    {
+        employer : my::Firm[1];
+        employees : my::Person[*];
+    }
+    """
+    assoc = parse_grammar(source).associations[0]
+    assert assoc.name == "Employment" and assoc.package == "my"
+    ends = {p.name: (p.type_name, p.lower, p.upper) for p in assoc.properties}
+    assert ends == {"employer": ("Firm", 1, 1), "employees": ("Person", 0, None)}

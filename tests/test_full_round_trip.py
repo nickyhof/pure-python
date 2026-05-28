@@ -16,11 +16,10 @@ Two kinds of guarantee are asserted, so nothing is silently ignored:
    full (nested) type, multiplicity and aggregation, plus enumeration values --
    is identical at all three M3 stages (A == B == C).
 
-2. **The three features the Pure grammar parser cannot preserve are tracked,
-   not hidden.** Stereotypes, tagged values and qualified (derived) properties
-   are present in graph A; stereotypes/tagged values are faithfully written to
-   the Pure source while qualified properties are not emitted at all; and
-   `from_pure` drops all three, so graphs B and C contain none of them.
+2. **The two features the Pure grammar parser cannot preserve are tracked, not
+   hidden.** Stereotypes and tagged values are present in graph A and faithfully
+   written to the Pure source, but `from_pure` drops them, so graphs B and C
+   contain none. (Qualified/derived properties *do* now survive by signature.)
 """
 
 from __future__ import annotations
@@ -102,6 +101,11 @@ def _property(prop: m3.Property):
     return (_generic(prop.genericType), prop.multiplicity.lowerBound.value, upper, prop.aggregation.value)
 
 
+def _qualified(qp: m3.QualifiedProperty):
+    upper = qp.multiplicity.upperBound.value if qp.multiplicity.upperBound else None
+    return (_generic(qp.genericType), qp.multiplicity.lowerBound.value, upper)
+
+
 def _canonical(types) -> dict:
     out: dict = {}
     for t in types:
@@ -120,15 +124,15 @@ def _canonical(types) -> dict:
                     )
                 ),
                 {p.name: _property(p) for p in t.properties},
+                {q.name: _qualified(q) for q in t.qualifiedProperties},
             )
     return out
 
 
-def _assert_no_pure_annotations(types) -> None:
-    """Stereotypes, tagged values and qualified properties do not survive Pure."""
+def _assert_no_stereotypes_or_tags(types) -> None:
+    """Stereotypes and tagged values do not survive the Pure grammar boundary."""
     for t in types:
         if isinstance(t, m3.Class):
-            assert t.qualifiedProperties == []
             for p in t.properties:
                 assert p.stereotypes == [] and p.taggedValues == []
         elif isinstance(t, m3.Enumeration):
@@ -169,7 +173,14 @@ def test_python_m3_pure_m3_python_round_trip():
     assert set(canonical_a) == ELEMENT_NAMES
     assert canonical_a == canonical_b == canonical_c
 
-    # (2) The three Pure-boundary-lossy features, tracked through every stage.
+    # (2a) Qualified/derived properties now survive by signature: the canonical
+    #      above already requires Account.label to match across A, B and C.
+    assert [q.name for q in forward.classes[Account].qualifiedProperties] == ["label"]
+    assert "label() {} : String[1];" in pure_source  # emitted with an empty body placeholder
+    assert canonical_c["Account"][5]["label"] == (("raw", "String", ()), 1, 1)
+
+    # (2b) Stereotypes and tagged values are the features the grammar cannot
+    #      preserve -- tracked through every stage rather than hidden.
     account_a = forward.classes[Account]
     id_prop = next(p for p in account_a.properties if p.name == "id")
     nickname_prop = next(p for p in account_a.properties if p.name == "nickname")
@@ -177,19 +188,13 @@ def test_python_m3_pure_m3_python_round_trip():
     assert [(t.tag.profile.name, t.tag.value, t.value) for t in nickname_prop.taggedValues] == [
         ("doc", "about", "display name")
     ]
-    assert [q.name for q in account_a.qualifiedProperties] == ["label"]
-
-    # Stereotypes/tagged values are written to Pure faithfully (with their
-    # profiles); qualified properties are not emitted at all.
     assert "<<id.primaryKey>> id : String[1];" in pure_source
     assert "{doc.about = 'display name'} nickname : String[0..1];" in pure_source
     assert "Profile id" in pure_source and "stereotypes: [primaryKey];" in pure_source
     assert "Profile doc" in pure_source and "tags: [about];" in pure_source
-    assert "label" not in pure_source  # qualified property dropped on the way out
-
-    # ...and so they are absent from graphs B and C.
-    _assert_no_pure_annotations(graph_b)
-    _assert_no_pure_annotations(graph_c)
+    # ...and so stereotypes/tagged values are absent from graphs B and C.
+    _assert_no_stereotypes_or_tags(graph_b)
+    _assert_no_stereotypes_or_tags(graph_c)
 
     # The regenerated module is usable.
     account = module.SavingsAccount(

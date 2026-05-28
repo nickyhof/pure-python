@@ -29,6 +29,7 @@ import typing
 
 from pure_python import m3
 
+from .annotations import ENUM_VALUE_PROFILE, ENUM_VALUE_TAG
 from .annotations import Stereotype as StereotypeMarker
 from .annotations import Tag as TagMarker
 
@@ -140,8 +141,19 @@ class Compiler:
             return self.enums[py_enum]
         enumeration = m3.Enumeration(name=py_enum.__name__, package=self.package)
         self.enums[py_enum] = enumeration
-        enumeration.values = [m3.Enum(name=member.name) for member in py_enum]
+        enumeration.values = [self._enum_value(member) for member in py_enum]
         return enumeration
+
+    def _enum_value(self, member) -> m3.Enum:
+        value = m3.Enum(name=member.name)
+        if member.value != member.name:  # Pure enums are name-only; carry the value as a tag
+            value.taggedValues = [
+                m3.TaggedValue(
+                    tag=m3.Tag(profile=self._profile(ENUM_VALUE_PROFILE), value=ENUM_VALUE_TAG),
+                    value=repr(member.value),
+                )
+            ]
+        return value
 
     def to_type(self, annotation: object) -> m3.Type:
         if isinstance(annotation, type):

@@ -14,6 +14,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Convention for carrying a Python enum member's value (when it differs from the
+# member name) across the name-only Pure enumeration model, as a tagged value.
+ENUM_VALUE_PROFILE = "pure_python"
+ENUM_VALUE_TAG = "enumValue"
+
 
 @dataclass(frozen=True)
 class Stereotype:

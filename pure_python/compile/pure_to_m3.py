@@ -69,6 +69,8 @@ def from_pure(source: str) -> dict[str, m3.Type]:
         enumeration = m3.Enumeration(name=meta.name, package=meta.package or None)
         enumeration.values = [m3.Enum(name=value) for value in meta.values]
         registry[meta.name] = enumeration
+    for meta in result.associations:
+        registry[meta.name] = m3.Association(name=meta.name, package=meta.package or None)
 
     for meta in result.classes:
         cls = registry[meta.name]
@@ -79,14 +81,28 @@ def from_pure(source: str) -> dict[str, m3.Type]:
             cls.generalizations.append(
                 m3.Generalization(general=m3.GenericType(rawType=_resolve(base, registry)), specific=cls)
             )
-        cls.properties = [
-            m3.Property(
-                name=p.name,
-                genericType=_generic(p.type_name, p.is_type_parameter, p.type_arguments, registry),
-                multiplicity=_multiplicity(p.lower, p.upper),
+        cls.properties = [_property(p, cls, registry) for p in meta.properties]
+        cls.qualifiedProperties = [
+            m3.QualifiedProperty(
+                name=q.name,
+                id=f"{q.name}()",
+                genericType=_generic(q.type_name, q.is_type_parameter, q.type_arguments, registry),
+                multiplicity=_multiplicity(q.lower, q.upper),
                 owner=cls,
-                aggregation=m3.AggregationKind.None_,
             )
-            for p in meta.properties
+            for q in meta.qualified_properties
         ]
+    for meta in result.associations:
+        assoc = registry[meta.name]
+        assoc.properties = [_property(p, assoc, registry) for p in meta.properties]
     return registry
+
+
+def _property(p, owner, registry: dict[str, m3.Type]) -> m3.Property:
+    return m3.Property(
+        name=p.name,
+        genericType=_generic(p.type_name, p.is_type_parameter, p.type_arguments, registry),
+        multiplicity=_multiplicity(p.lower, p.upper),
+        owner=owner,
+        aggregation=m3.AggregationKind.None_,
+    )

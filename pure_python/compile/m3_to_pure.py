@@ -11,8 +11,9 @@ classes / enumerations it references) and render readable Pure::
     }
 
 Type parameters, type arguments, stereotypes and tagged values are all
-rendered. Qualified (derived) properties are skipped -- Pure requires a
-function body for them, which the metamodel instances do not carry.
+rendered. Qualified (derived) properties are emitted by signature with an empty
+body placeholder (the metamodel instances do not carry an expression body).
+Associations are emitted too.
 """
 
 from __future__ import annotations
@@ -79,6 +80,11 @@ def _property(prop: m3.Property) -> str:
     return f"    {annotations}{prop.name} : {_type(prop.genericType)}{_multiplicity(prop.multiplicity)};"
 
 
+def _qualified_property(qp: m3.QualifiedProperty) -> str:
+    # Empty body placeholder: the expression layer is not modelled.
+    return f"    {qp.name}() {{}} : {_type(qp.genericType)}{_multiplicity(qp.multiplicity)};"
+
+
 def _generalization_names(cls: m3.Class) -> list[str]:
     names: list[str] = []
     for generalization in cls.generalizations:
@@ -99,9 +105,15 @@ def to_pure(cls: m3.Class) -> str:
     extends = f" extends {', '.join(bases)}" if bases else ""
     header = f"Class {_stereotypes(cls)}{_qualified_name(cls)}{params}{extends}"
     body = [_property(p) for p in cls.properties]
+    body += [_qualified_property(qp) for qp in cls.qualifiedProperties]
     if body:
         return header + "\n{\n" + "\n".join(body) + "\n}"
     return header + "\n{\n}"
+
+
+def _association(assoc: m3.Association) -> str:
+    body = "\n".join(_property(p) for p in assoc.properties)
+    return f"Association {_qualified_name(assoc)}\n{{\n{body}\n}}"
 
 
 def _enum(enumeration: m3.Enumeration) -> str:
@@ -138,9 +150,10 @@ def _profiles_from(classes: list[m3.Class]) -> list[str]:
     return blocks
 
 
-def _collect(roots: tuple[m3.Type, ...]) -> tuple[list[m3.Class], list[m3.Enumeration]]:
+def _collect(roots: tuple[m3.Type, ...]):
     classes: list[m3.Class] = []
     enums: list[m3.Enumeration] = []
+    associations: list[m3.Association] = []
     seen: set[int] = set()
     stack: list[m3.Type] = list(roots)
     while stack:
@@ -148,17 +161,23 @@ def _collect(roots: tuple[m3.Type, ...]) -> tuple[list[m3.Class], list[m3.Enumer
         if id(node) in seen:
             continue
         seen.add(id(node))
-        if isinstance(node, m3.Enumeration):
+        if isinstance(node, m3.Association):
+            associations.append(node)
+            for prop in node.properties:
+                stack.extend(_referenced(prop.genericType))
+        elif isinstance(node, m3.Enumeration):
             enums.append(node)
         elif isinstance(node, m3.Class):
             classes.append(node)
             for prop in node.properties:
                 stack.extend(_referenced(prop.genericType))
+            for qp in node.qualifiedProperties:
+                stack.extend(_referenced(qp.genericType))
             for generalization in node.generalizations:
                 raw = generalization.general.rawType if generalization.general else None
                 if isinstance(raw, m3.Class):
                     stack.append(raw)
-    return classes, enums
+    return classes, enums, associations
 
 
 def _referenced(generic: m3.GenericType | None) -> list[m3.Type]:
@@ -173,9 +192,10 @@ def _referenced(generic: m3.GenericType | None) -> list[m3.Type]:
 
 
 def to_pure_module(*roots: m3.Type) -> str:
-    """Render Pure source for the given classes/enumerations, their deps and profiles."""
-    classes, enums = _collect(roots)
+    """Render Pure source for the given elements, their dependencies and profiles."""
+    classes, enums, associations = _collect(roots)
     blocks = _profiles_from(classes)
     blocks += [_enum(e) for e in enums]
     blocks += [to_pure(c) for c in classes]
+    blocks += [_association(a) for a in associations]
     return "\n\n".join(blocks) + "\n"

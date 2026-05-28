@@ -10,11 +10,12 @@ further platform types (``relation.pure``, ``variant.pure``,
         function : Function<Z>[1];
     }
 
-This module parses ``Class`` / ``Enum`` / ``Profile`` declarations into the
-same :mod:`pure_python.codegen.schema` dataclasses the bootstrap parser
-produces, so both feed one merged metamodel. ``import`` statements, function
-definitions and qualified (derived) properties are recognised and skipped --
-they are not types.
+This module parses ``Class`` / ``Association`` / ``Enum`` / ``Profile``
+declarations into the same :mod:`pure_python.codegen.schema` dataclasses the
+bootstrap parser produces, so both feed one merged metamodel. Qualified
+(derived) properties are captured by signature (their parameters and lambda
+body are not modelled); ``import`` statements and function definitions are
+skipped -- they are not types.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from .schema import MetaClass, MetaEnum, MetaProfile, MetaProperty, TypeRef
+from .schema import MetaAssociation, MetaClass, MetaEnum, MetaProfile, MetaProperty, TypeRef
 
 _TOKEN_RE = re.compile(
     r"""
@@ -53,6 +54,7 @@ class GrammarResult:
     classes: list[MetaClass] = field(default_factory=list)
     enums: list[MetaEnum] = field(default_factory=list)
     profiles: list[MetaProfile] = field(default_factory=list)
+    associations: list[MetaAssociation] = field(default_factory=list)
 
 
 def _mark_type_parameters(ref: TypeRef, params: list[str]) -> None:
@@ -107,7 +109,7 @@ class _GrammarParser:
             elif keyword == "Profile":
                 result.profiles.append(self._parse_profile())
             elif keyword == "Association":
-                self._parse_class()  # parsed for shape, but associations are skipped for now
+                result.associations.append(self._parse_association())
             else:
                 self._next()  # be forgiving about anything we do not model yet
         return result
@@ -224,43 +226,66 @@ class _GrammarParser:
                 bases.append(self._type_ref().name)
         if self._peek().value == "[":  # constraints block
             self._skip_to_matching_bracket()
-        self._expect("{")
-        properties: list[MetaProperty] = []
-        while self._peek().value != "}" and self._peek().kind != "EOF":
-            prop = self._parse_property()
-            if prop is not None:
-                properties.append(prop)
-        self._expect("}")
-        for prop in properties:
+        properties, qualified = self._parse_body()
+        for prop in properties + qualified:
             if prop.type_name in type_parameters:
                 prop.is_type_parameter = True
             for arg in prop.type_arguments:
                 _mark_type_parameters(arg, type_parameters)
-        return MetaClass(name, package, bases or ["Any"], properties, type_parameters)
+        return MetaClass(
+            name, package, bases or ["Any"], properties, type_parameters, qualified_properties=qualified
+        )
+
+    def _parse_association(self) -> MetaAssociation:
+        self._next()  # 'Association'
+        self._skip_stereotypes()
+        self._skip_tagged_values()
+        package, name = self._qualified_name()
+        if self._peek().value == "[":
+            self._skip_to_matching_bracket()
+        properties, _ = self._parse_body()  # the two ends; qualified properties n/a
+        return MetaAssociation(name, package, properties)
+
+    def _parse_body(self) -> tuple[list[MetaProperty], list[MetaProperty]]:
+        """Parse a ``{ ... }`` body, returning (simple properties, qualified properties)."""
+        self._expect("{")
+        simple: list[MetaProperty] = []
+        qualified: list[MetaProperty] = []
+        while self._peek().value != "}" and self._peek().kind != "EOF":
+            is_qualified, prop = self._parse_property()
+            (qualified if is_qualified else simple).append(prop)
+        self._expect("}")
+        return simple, qualified
 
     def _skip_to_matching_bracket(self) -> None:
-        self._expect("[")
+        self._skip_balanced("[", "]")
+
+    def _skip_balanced(self, open_token: str, close_token: str) -> None:
+        self._expect(open_token)
         depth = 1
         while depth > 0 and self._peek().kind != "EOF":
             tok = self._next()
-            if tok.value == "[":
+            if tok.value == open_token:
                 depth += 1
-            elif tok.value == "]":
+            elif tok.value == close_token:
                 depth -= 1
 
-    def _parse_property(self) -> MetaProperty | None:
+    def _parse_property(self) -> tuple[bool, MetaProperty]:
+        """Return (is_qualified, property). Qualified properties keep only their signature."""
         self._skip_stereotypes()
         self._skip_tagged_values()
         name = self._next().value
-        if self._peek().value == "(":  # qualified / derived property -> skip it
-            self._skip_to_semicolon()
-            return None
+        qualified = self._peek().value == "("
+        if qualified:
+            self._skip_balanced("(", ")")  # parameters -- not modelled
+            if self._peek().value == "{":
+                self._skip_balanced("{", "}")  # lambda body -- not modelled
         self._expect(":")
         ref = self._type_ref()
         lower, upper = self._multiplicity()
         if self._peek().value == ";":
             self._next()
-        return MetaProperty(name, ref.name, lower, upper, type_arguments=ref.arguments)
+        return qualified, MetaProperty(name, ref.name, lower, upper, type_arguments=ref.arguments)
 
     def _parse_enum(self) -> MetaEnum:
         self._next()  # 'Enum'

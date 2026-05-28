@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 
 from pure_python import m3
 
+from .annotations import ENUM_VALUE_PROFILE, ENUM_VALUE_TAG
 from .annotations import Stereotype as StereotypeMarker
 from .annotations import Tag as TagMarker
 
@@ -179,11 +180,19 @@ def _enum_member(name: str) -> str:
     return ident
 
 
+def _enum_value_source(value: m3.Enum) -> str:
+    for tagged in getattr(value, "taggedValues", []):
+        tag = tagged.tag
+        if tag and tag.profile and tag.profile.name == ENUM_VALUE_PROFILE and tag.value == ENUM_VALUE_TAG:
+            return tagged.value  # a Python repr, e.g. '1' or "'HEARTS'"
+    return f'"{value.name}"'
+
+
 def _enum_source(enumeration: m3.Enumeration) -> str:
     lines = [f"class {enumeration.name}(enum.Enum):"]
     if enumeration.values:
         for value in enumeration.values:
-            lines.append(f'    {_enum_member(value.name or "")} = "{value.name}"')
+            lines.append(f'    {_enum_member(value.name or "")} = {_enum_value_source(value)}')
     else:
         lines.append("    pass")
     return "\n".join(lines)

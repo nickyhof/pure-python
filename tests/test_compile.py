@@ -9,7 +9,14 @@ import importlib.util
 import pytest
 
 from pure_python import m3
-from pure_python.compile import Compiler, Stereotype, Tag, compile_class, to_module
+from pure_python.compile import (
+    Compiler,
+    Stereotype,
+    Tag,
+    compile_class,
+    compile_enumeration,
+    to_module,
+)
 
 import typing
 
@@ -46,6 +53,16 @@ class Dog(Animal):
     breed: str
     nickname: typing.Annotated[str, Tag("doc", "about", "pet")] | None = None
     payload: bytes = b""
+
+
+class Priority(enum.Enum):
+    LOW = 1
+    HIGH = 10
+
+
+@dataclasses.dataclass
+class Task:
+    priority: Priority
 
 
 class Color(enum.Enum):
@@ -301,6 +318,15 @@ def test_bytes_field_round_trips_via_byte():
     assert payload_field.type == "bytes"
     back = compile_class(module.Dog)
     assert next(p for p in back.properties if p.name == "payload").genericType.rawType.name == "Byte"
+
+
+def test_enum_member_values_preserved():
+    enumeration = compile_enumeration(Priority)
+    low = next(v for v in enumeration.values if v.name == "LOW")
+    assert low.taggedValues and low.taggedValues[0].value == "1"  # value carried as a tag
+    module = _load_module(to_module(compile_class(Task)), "pure_python_enum_values")
+    assert module.Priority.LOW.value == 1
+    assert module.Priority.HIGH.value == 10
 
 
 def test_inheritance_round_trip_via_import():

@@ -35,6 +35,8 @@ def _merge_grammar(model: MetaModel, source: Path) -> None:
         model.enums.setdefault(enumeration.name, enumeration)
     for profile in result.profiles:
         model.profiles[profile.name] = profile
+    for association in result.associations:
+        model.associations[association.name] = association
 
 
 def build_model(

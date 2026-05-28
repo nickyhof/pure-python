@@ -46,6 +46,14 @@ class MetaClass:
     bases: list[str]
     properties: list[MetaProperty]
     type_parameters: list[str] = field(default_factory=list)
+    qualified_properties: list[MetaProperty] = field(default_factory=list)
+
+
+@dataclass
+class MetaAssociation:
+    name: str
+    package: str
+    properties: list[MetaProperty]  # exactly the two ends
 
 
 @dataclass
@@ -85,6 +93,7 @@ class MetaModel:
     primitives: dict[str, MetaPrimitive] = field(default_factory=dict)
     multiplicities: dict[str, MetaMultiplicity] = field(default_factory=dict)
     profiles: dict[str, MetaProfile] = field(default_factory=dict)
+    associations: dict[str, MetaAssociation] = field(default_factory=dict)
 
     @property
     def type_names(self) -> set[str]:
