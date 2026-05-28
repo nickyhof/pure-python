@@ -20,5 +20,22 @@ relation.pure, variant.pure and milestoning.pure define further platform
 types using Pure's ordinary readable class grammar (Class path<T> extends ...
 { prop : Type[mult]; }). They are parsed by pure_python.codegen.grammar.
 
+The grammar/ subdirectory holds legend-pure's own ANTLR grammars, vendored from
+the same commit, used to generate the parsers committed in
+pure_python/codegen/_pure_antlr/. Source paths under legend-pure-core/:
+
+  grammar/M3CoreLexer.g4   <- legend-pure-m3-core/.../m3parser/antlr/core/M3CoreLexer.g4
+  grammar/M3CoreParser.g4  <- legend-pure-m3-core/.../m3parser/antlr/core/M3CoreParser.g4
+  grammar/M4AntlrLexer.g4  <- legend-pure-m4/.../serialization/grammar/M4AntlrLexer.g4
+  grammar/M4AntlrParser.g4 <- legend-pure-m4/.../serialization/grammar/M4AntlrParser.g4
+  grammar/M4Fragment.g4    <- legend-pure-m4/.../serialization/grammar/core/M4Fragment.g4
+
+The M3Core* grammars feed pure_python.codegen.grammar; the M4Antlr* grammars
+feed pure_python.codegen.parser. M4Fragment.g4 is shared fragments imported by
+both lexers (inlined by ANTLR at generation time, so it has no generated .py).
+The only edit to any vendored grammar is one added line in M3CoreParser.g4 --
+`options { tokenVocab=M3CoreLexer; }` -- so the split lexer/parser pair can be
+generated standalone.
+
 To refresh: re-clone legend-pure at the desired commit, copy the files above,
 then run `python -m pure_python.codegen.generate`.

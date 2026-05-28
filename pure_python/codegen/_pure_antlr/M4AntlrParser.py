@@ -160,20 +160,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_definition
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefinition" ):
-                listener.enterDefinition(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefinition" ):
-                listener.exitDefinition(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefinition" ):
-                return visitor.visitDefinition(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -255,20 +241,6 @@ class M4AntlrParser ( Parser ):
 
         def getRuleIndex(self):
             return M4AntlrParser.RULE_metaClass
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMetaClass" ):
-                listener.enterMetaClass(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMetaClass" ):
-                listener.exitMetaClass(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMetaClass" ):
-                return visitor.visitMetaClass(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -364,20 +336,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_properties
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProperties" ):
-                listener.enterProperties(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProperties" ):
-                listener.exitProperties(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProperties" ):
-                return visitor.visitProperties(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -430,20 +388,6 @@ class M4AntlrParser ( Parser ):
 
         def getRuleIndex(self):
             return M4AntlrParser.RULE_rightSide
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRightSide" ):
-                listener.enterRightSide(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRightSide" ):
-                listener.exitRightSide(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRightSide" ):
-                return visitor.visitRightSide(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -526,20 +470,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_element
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterElement" ):
-                listener.enterElement(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitElement" ):
-                listener.exitElement(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitElement" ):
-                return visitor.visitElement(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -611,20 +541,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_literalElement
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLiteralElement" ):
-                listener.enterLiteralElement(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLiteralElement" ):
-                listener.exitLiteralElement(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLiteralElement" ):
-                return visitor.visitLiteralElement(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -681,20 +597,6 @@ class M4AntlrParser ( Parser ):
 
         def getRuleIndex(self):
             return M4AntlrParser.RULE_sourceInfo
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSourceInfo" ):
-                listener.enterSourceInfo(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSourceInfo" ):
-                listener.exitSourceInfo(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSourceInfo" ):
-                return visitor.visitSourceInfo(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -763,20 +665,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_path
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPath" ):
-                listener.enterPath(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPath" ):
-                listener.exitPath(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPath" ):
-                return visitor.visitPath(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -821,20 +709,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_newTypeStr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNewTypeStr" ):
-                listener.enterNewTypeStr(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNewTypeStr" ):
-                listener.exitNewTypeStr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNewTypeStr" ):
-                return visitor.visitNewTypeStr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -875,20 +749,6 @@ class M4AntlrParser ( Parser ):
 
         def getRuleIndex(self):
             return M4AntlrParser.RULE_instance
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstance" ):
-                listener.enterInstance(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstance" ):
-                listener.exitInstance(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstance" ):
-                return visitor.visitInstance(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -948,20 +808,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_classifierOwner
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterClassifierOwner" ):
-                listener.enterClassifierOwner(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitClassifierOwner" ):
-                listener.exitClassifierOwner(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitClassifierOwner" ):
-                return visitor.visitClassifierOwner(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1018,20 +864,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_nameSpace
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNameSpace" ):
-                listener.enterNameSpace(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNameSpace" ):
-                listener.exitNameSpace(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNameSpace" ):
-                return visitor.visitNameSpace(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1076,20 +908,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_name
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterName" ):
-                listener.enterName(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitName" ):
-                listener.exitName(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitName" ):
-                return visitor.visitName(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1123,20 +941,6 @@ class M4AntlrParser ( Parser ):
         def getRuleIndex(self):
             return M4AntlrParser.RULE_key
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKey" ):
-                listener.enterKey(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKey" ):
-                listener.exitKey(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKey" ):
-                return visitor.visitKey(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1169,20 +973,6 @@ class M4AntlrParser ( Parser ):
 
         def getRuleIndex(self):
             return M4AntlrParser.RULE_keyInArray
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKeyInArray" ):
-                listener.enterKeyInArray(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKeyInArray" ):
-                listener.exitKeyInArray(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKeyInArray" ):
-                return visitor.visitKeyInArray(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 

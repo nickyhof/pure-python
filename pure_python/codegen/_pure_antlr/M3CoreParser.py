@@ -1127,20 +1127,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_identifier
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIdentifier" ):
-                listener.enterIdentifier(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIdentifier" ):
-                listener.exitIdentifier(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIdentifier" ):
-                return visitor.visitIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1184,20 +1170,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_qualifiedName
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterQualifiedName" ):
-                listener.enterQualifiedName(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitQualifiedName" ):
-                listener.exitQualifiedName(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitQualifiedName" ):
-                return visitor.visitQualifiedName(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1250,20 +1222,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_packagePath
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPackagePath" ):
-                listener.enterPackagePath(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPackagePath" ):
-                listener.exitPackagePath(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPackagePath" ):
-                return visitor.visitPackagePath(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1314,20 +1272,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_imports
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImports" ):
-                listener.enterImports(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImports" ):
-                listener.exitImports(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImports" ):
-                return visitor.visitImports(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1380,20 +1324,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_import_statement
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImport_statement" ):
-                listener.enterImport_statement(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImport_statement" ):
-                listener.exitImport_statement(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImport_statement" ):
-                return visitor.visitImport_statement(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1500,20 +1430,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_definition
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefinition" ):
-                listener.enterDefinition(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefinition" ):
-                listener.exitDefinition(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefinition" ):
-                return visitor.visitDefinition(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1652,20 +1568,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_classDefinition
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterClassDefinition" ):
-                listener.enterClassDefinition(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitClassDefinition" ):
-                listener.exitClassDefinition(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitClassDefinition" ):
-                return visitor.visitClassDefinition(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1796,20 +1698,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeVariableParameters
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeVariableParameters" ):
-                listener.enterTypeVariableParameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeVariableParameters" ):
-                listener.exitTypeVariableParameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeVariableParameters" ):
-                return visitor.visitTypeVariableParameters(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1892,20 +1780,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_primitiveDefinition
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPrimitiveDefinition" ):
-                listener.enterPrimitiveDefinition(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPrimitiveDefinition" ):
-                listener.exitPrimitiveDefinition(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPrimitiveDefinition" ):
-                return visitor.visitPrimitiveDefinition(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1995,20 +1869,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_measureDefinition
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMeasureDefinition" ):
-                listener.enterMeasureDefinition(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMeasureDefinition" ):
-                listener.exitMeasureDefinition(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMeasureDefinition" ):
-                return visitor.visitMeasureDefinition(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2083,20 +1943,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_measureBody
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMeasureBody" ):
-                listener.enterMeasureBody(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMeasureBody" ):
-                listener.exitMeasureBody(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMeasureBody" ):
-                return visitor.visitMeasureBody(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2182,20 +2028,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_canonicalUnitExpr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCanonicalUnitExpr" ):
-                listener.enterCanonicalUnitExpr(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCanonicalUnitExpr" ):
-                listener.exitCanonicalUnitExpr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCanonicalUnitExpr" ):
-                return visitor.visitCanonicalUnitExpr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2239,20 +2071,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_unitExpr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnitExpr" ):
-                listener.enterUnitExpr(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnitExpr" ):
-                listener.exitUnitExpr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnitExpr" ):
-                return visitor.visitUnitExpr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2293,20 +2111,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_nonConvertibleUnitExpr
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNonConvertibleUnitExpr" ):
-                listener.enterNonConvertibleUnitExpr(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNonConvertibleUnitExpr" ):
-                listener.exitNonConvertibleUnitExpr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNonConvertibleUnitExpr" ):
-                return visitor.visitNonConvertibleUnitExpr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2350,20 +2154,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_unitConversionExpr
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnitConversionExpr" ):
-                listener.enterUnitConversionExpr(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnitConversionExpr" ):
-                listener.exitUnitConversionExpr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnitConversionExpr" ):
-                return visitor.visitUnitConversionExpr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2425,20 +2215,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_mapping
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMapping" ):
-                listener.enterMapping(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMapping" ):
-                listener.exitMapping(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMapping" ):
-                return visitor.visitMapping(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2542,20 +2318,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_mappingLine
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMappingLine" ):
-                listener.enterMappingLine(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMappingLine" ):
-                listener.exitMappingLine(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMappingLine" ):
-                return visitor.visitMappingLine(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2656,20 +2418,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_sourceAndTargetMappingId
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSourceAndTargetMappingId" ):
-                listener.enterSourceAndTargetMappingId(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSourceAndTargetMappingId" ):
-                listener.exitSourceAndTargetMappingId(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSourceAndTargetMappingId" ):
-                return visitor.visitSourceAndTargetMappingId(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2719,20 +2467,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_sourceId
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSourceId" ):
-                listener.enterSourceId(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSourceId" ):
-                listener.exitSourceId(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSourceId" ):
-                return visitor.visitSourceId(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2766,20 +2500,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_targetId
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTargetId" ):
-                listener.enterTargetId(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTargetId" ):
-                listener.exitTargetId(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTargetId" ):
-                return visitor.visitTargetId(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2820,20 +2540,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_classBody
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterClassBody" ):
-                listener.enterClassBody(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitClassBody" ):
-                listener.exitClassBody(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitClassBody" ):
-                return visitor.visitClassBody(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2882,20 +2588,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_properties
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProperties" ):
-                listener.enterProperties(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProperties" ):
-                listener.exitProperties(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProperties" ):
-                return visitor.visitProperties(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2954,20 +2646,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_propertyName
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPropertyName" ):
-                listener.enterPropertyName(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPropertyName" ):
-                listener.exitPropertyName(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPropertyName" ):
-                return visitor.visitPropertyName(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3040,20 +2718,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_property
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProperty" ):
-                listener.enterProperty(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProperty" ):
-                listener.exitProperty(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProperty" ):
-                return visitor.visitProperty(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3150,20 +2814,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_qualifiedProperty
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterQualifiedProperty" ):
-                listener.enterQualifiedProperty(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitQualifiedProperty" ):
-                listener.exitQualifiedProperty(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitQualifiedProperty" ):
-                return visitor.visitQualifiedProperty(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3248,20 +2898,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_qualifiedPropertyBody
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterQualifiedPropertyBody" ):
-                listener.enterQualifiedPropertyBody(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitQualifiedPropertyBody" ):
-                listener.exitQualifiedPropertyBody(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitQualifiedPropertyBody" ):
-                return visitor.visitQualifiedPropertyBody(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3344,20 +2980,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_association
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAssociation" ):
-                listener.enterAssociation(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAssociation" ):
-                listener.exitAssociation(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAssociation" ):
-                return visitor.visitAssociation(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3431,20 +3053,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_associationBody
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAssociationBody" ):
-                listener.enterAssociationBody(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAssociationBody" ):
-                listener.exitAssociationBody(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAssociationBody" ):
-                return visitor.visitAssociationBody(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3497,20 +3105,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_associationProjection
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAssociationProjection" ):
-                listener.enterAssociationProjection(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAssociationProjection" ):
-                listener.exitAssociationProjection(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAssociationProjection" ):
-                return visitor.visitAssociationProjection(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3587,20 +3181,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_enumDefinition
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEnumDefinition" ):
-                listener.enterEnumDefinition(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEnumDefinition" ):
-                listener.exitEnumDefinition(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitEnumDefinition" ):
-                return visitor.visitEnumDefinition(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3681,20 +3261,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_enumValue
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEnumValue" ):
-                listener.enterEnumValue(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEnumValue" ):
-                listener.exitEnumValue(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitEnumValue" ):
-                return visitor.visitEnumValue(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3770,20 +3336,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_nativeFunction
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNativeFunction" ):
-                listener.enterNativeFunction(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNativeFunction" ):
-                listener.exitNativeFunction(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNativeFunction" ):
-                return visitor.visitNativeFunction(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3877,20 +3429,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_functionTypeSignature
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionTypeSignature" ):
-                listener.enterFunctionTypeSignature(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionTypeSignature" ):
-                listener.exitFunctionTypeSignature(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionTypeSignature" ):
-                return visitor.visitFunctionTypeSignature(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3987,20 +3525,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_functionDefinition
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionDefinition" ):
-                listener.enterFunctionDefinition(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionDefinition" ):
-                listener.exitFunctionDefinition(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionDefinition" ):
-                return visitor.visitFunctionDefinition(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -4101,20 +3625,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_functionDescriptor
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionDescriptor" ):
-                listener.enterFunctionDescriptor(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionDescriptor" ):
-                listener.exitFunctionDescriptor(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionDescriptor" ):
-                return visitor.visitFunctionDescriptor(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -4204,20 +3714,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_nonArrowOrEqualExpression
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNonArrowOrEqualExpression" ):
-                listener.enterNonArrowOrEqualExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNonArrowOrEqualExpression" ):
-                listener.exitNonArrowOrEqualExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNonArrowOrEqualExpression" ):
-                return visitor.visitNonArrowOrEqualExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -4299,20 +3795,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_expression
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpression" ):
-                listener.enterExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpression" ):
-                listener.exitExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpression" ):
-                return visitor.visitExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -4380,20 +3862,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_instanceBlock
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceBlock" ):
-                listener.enterInstanceBlock(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceBlock" ):
-                listener.exitInstanceBlock(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceBlock" ):
-                return visitor.visitInstanceBlock(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -4515,20 +3983,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_instance
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstance" ):
-                listener.enterInstance(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstance" ):
-                listener.exitInstance(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstance" ):
-                return visitor.visitInstance(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -4675,20 +4129,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_unitInstance
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnitInstance" ):
-                listener.enterUnitInstance(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnitInstance" ):
-                listener.exitUnitInstance(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnitInstance" ):
-                return visitor.visitUnitInstance(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -4731,20 +4171,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_unitName
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnitName" ):
-                listener.enterUnitName(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnitName" ):
-                listener.exitUnitName(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnitName" ):
-                return visitor.visitUnitName(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -4791,20 +4217,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_instancePropertyAssignment
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstancePropertyAssignment" ):
-                listener.enterInstancePropertyAssignment(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstancePropertyAssignment" ):
-                listener.exitInstancePropertyAssignment(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstancePropertyAssignment" ):
-                return visitor.visitInstancePropertyAssignment(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -4846,20 +4258,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_instanceRightSide
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceRightSide" ):
-                listener.enterInstanceRightSide(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceRightSide" ):
-                listener.exitInstanceRightSide(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceRightSide" ):
-                return visitor.visitInstanceRightSide(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -4907,20 +4305,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_instanceAtomicRightSideScalar
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceAtomicRightSideScalar" ):
-                listener.enterInstanceAtomicRightSideScalar(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceAtomicRightSideScalar" ):
-                listener.exitInstanceAtomicRightSideScalar(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceAtomicRightSideScalar" ):
-                return visitor.visitInstanceAtomicRightSideScalar(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -4970,20 +4354,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_instanceAtomicRightSideVector
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceAtomicRightSideVector" ):
-                listener.enterInstanceAtomicRightSideVector(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceAtomicRightSideVector" ):
-                listener.exitInstanceAtomicRightSideVector(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceAtomicRightSideVector" ):
-                return visitor.visitInstanceAtomicRightSideVector(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5068,20 +4438,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_instanceAtomicRightSide
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceAtomicRightSide" ):
-                listener.enterInstanceAtomicRightSide(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceAtomicRightSide" ):
-                listener.exitInstanceAtomicRightSide(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceAtomicRightSide" ):
-                return visitor.visitInstanceAtomicRightSide(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5173,20 +4529,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_enumReference
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEnumReference" ):
-                listener.enterEnumReference(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEnumReference" ):
-                listener.exitEnumReference(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitEnumReference" ):
-                return visitor.visitEnumReference(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -5231,20 +4573,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_stereotypeReference
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStereotypeReference" ):
-                listener.enterStereotypeReference(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStereotypeReference" ):
-                listener.exitStereotypeReference(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStereotypeReference" ):
-                return visitor.visitStereotypeReference(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5291,20 +4619,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_tagReference
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTagReference" ):
-                listener.enterTagReference(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTagReference" ):
-                listener.exitTagReference(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTagReference" ):
-                return visitor.visitTagReference(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -5346,20 +4660,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_propertyReturnType
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPropertyReturnType" ):
-                listener.enterPropertyReturnType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPropertyReturnType" ):
-                listener.exitPropertyReturnType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPropertyReturnType" ):
-                return visitor.visitPropertyReturnType(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5417,20 +4717,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_stereotypes
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStereotypes" ):
-                listener.enterStereotypes(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStereotypes" ):
-                listener.exitStereotypes(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStereotypes" ):
-                return visitor.visitStereotypes(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5494,20 +4780,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_stereotype
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStereotype" ):
-                listener.enterStereotype(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStereotype" ):
-                listener.exitStereotype(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStereotype" ):
-                return visitor.visitStereotype(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -5560,20 +4832,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_taggedValues
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTaggedValues" ):
-                listener.enterTaggedValues(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTaggedValues" ):
-                listener.exitTaggedValues(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTaggedValues" ):
-                return visitor.visitTaggedValues(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5648,20 +4906,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_taggedValue
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTaggedValue" ):
-                listener.enterTaggedValue(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTaggedValue" ):
-                listener.exitTaggedValue(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTaggedValue" ):
-                return visitor.visitTaggedValue(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -5720,20 +4964,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_defaultValue
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefaultValue" ):
-                listener.enterDefaultValue(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefaultValue" ):
-                listener.exitDefaultValue(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefaultValue" ):
-                return visitor.visitDefaultValue(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -5785,20 +5015,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_defaultValueExpression
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefaultValueExpression" ):
-                listener.enterDefaultValueExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefaultValueExpression" ):
-                listener.exitDefaultValueExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefaultValueExpression" ):
-                return visitor.visitDefaultValueExpression(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5874,20 +5090,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_defaultValueExpressionsArray
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDefaultValueExpressionsArray" ):
-                listener.enterDefaultValueExpressionsArray(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDefaultValueExpressionsArray" ):
-                listener.exitDefaultValueExpressionsArray(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDefaultValueExpressionsArray" ):
-                return visitor.visitDefaultValueExpressionsArray(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5970,20 +5172,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_profile
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProfile" ):
-                listener.enterProfile(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProfile" ):
-                listener.exitProfile(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProfile" ):
-                return visitor.visitProfile(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -6082,20 +5270,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_stereotypeDefinitions
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStereotypeDefinitions" ):
-                listener.enterStereotypeDefinitions(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStereotypeDefinitions" ):
-                listener.exitStereotypeDefinitions(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStereotypeDefinitions" ):
-                return visitor.visitStereotypeDefinitions(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6177,20 +5351,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_tagDefinitions
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTagDefinitions" ):
-                listener.enterTagDefinitions(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTagDefinitions" ):
-                listener.exitTagDefinitions(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTagDefinitions" ):
-                return visitor.visitTagDefinitions(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6257,20 +5417,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_codeBlock
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCodeBlock" ):
-                listener.enterCodeBlock(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCodeBlock" ):
-                listener.exitCodeBlock(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCodeBlock" ):
-                return visitor.visitCodeBlock(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6330,20 +5476,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_programLine
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProgramLine" ):
-                listener.enterProgramLine(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProgramLine" ):
-                listener.exitProgramLine(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProgramLine" ):
-                return visitor.visitProgramLine(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6397,20 +5529,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_equalNotEqual
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEqualNotEqual" ):
-                listener.enterEqualNotEqual(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEqualNotEqual" ):
-                listener.exitEqualNotEqual(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitEqualNotEqual" ):
-                return visitor.visitEqualNotEqual(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6460,20 +5578,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_combinedArithmeticOnly
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCombinedArithmeticOnly" ):
-                listener.enterCombinedArithmeticOnly(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCombinedArithmeticOnly" ):
-                listener.exitCombinedArithmeticOnly(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCombinedArithmeticOnly" ):
-                return visitor.visitCombinedArithmeticOnly(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6522,20 +5626,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_expressionPart
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionPart" ):
-                listener.enterExpressionPart(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionPart" ):
-                listener.exitExpressionPart(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionPart" ):
-                return visitor.visitExpressionPart(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -6594,20 +5684,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_letExpression
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLetExpression" ):
-                listener.enterLetExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLetExpression" ):
-                listener.exitLetExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLetExpression" ):
-                return visitor.visitLetExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6655,20 +5731,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_combinedExpression
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCombinedExpression" ):
-                listener.enterCombinedExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCombinedExpression" ):
-                listener.exitCombinedExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCombinedExpression" ):
-                return visitor.visitCombinedExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6713,20 +5775,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_expressionOrExpressionGroup
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionOrExpressionGroup" ):
-                listener.enterExpressionOrExpressionGroup(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionOrExpressionGroup" ):
-                listener.exitExpressionOrExpressionGroup(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionOrExpressionGroup" ):
-                return visitor.visitExpressionOrExpressionGroup(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -6776,20 +5824,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_expressionsArray
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionsArray" ):
-                listener.enterExpressionsArray(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionsArray" ):
-                listener.exitExpressionsArray(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionsArray" ):
-                return visitor.visitExpressionsArray(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -6852,20 +5886,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_propertyOrFunctionExpression
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPropertyOrFunctionExpression" ):
-                listener.enterPropertyOrFunctionExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPropertyOrFunctionExpression" ):
-                listener.exitPropertyOrFunctionExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPropertyOrFunctionExpression" ):
-                return visitor.visitPropertyOrFunctionExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -6923,20 +5943,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_propertyExpression
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPropertyExpression" ):
-                listener.enterPropertyExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPropertyExpression" ):
-                listener.exitPropertyExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPropertyExpression" ):
-                return visitor.visitPropertyExpression(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -7002,20 +6008,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_functionExpression
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionExpression" ):
-                listener.enterFunctionExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionExpression" ):
-                listener.exitFunctionExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionExpression" ):
-                return visitor.visitFunctionExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -7080,20 +6072,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_functionExpressionLatestMilestoningDateParameter
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionExpressionLatestMilestoningDateParameter" ):
-                listener.enterFunctionExpressionLatestMilestoningDateParameter(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionExpressionLatestMilestoningDateParameter" ):
-                listener.exitFunctionExpressionLatestMilestoningDateParameter(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionExpressionLatestMilestoningDateParameter" ):
-                return visitor.visitFunctionExpressionLatestMilestoningDateParameter(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -7157,20 +6135,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_functionExpressionParameters
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionExpressionParameters" ):
-                listener.enterFunctionExpressionParameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionExpressionParameters" ):
-                listener.exitFunctionExpressionParameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionExpressionParameters" ):
-                return visitor.visitFunctionExpressionParameters(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -7267,20 +6231,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_atomicExpression
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAtomicExpression" ):
-                listener.enterAtomicExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAtomicExpression" ):
-                listener.exitAtomicExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAtomicExpression" ):
-                return visitor.visitAtomicExpression(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -7403,20 +6353,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_columnBuilders
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterColumnBuilders" ):
-                listener.enterColumnBuilders(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitColumnBuilders" ):
-                listener.exitColumnBuilders(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitColumnBuilders" ):
-                return visitor.visitColumnBuilders(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -7515,20 +6451,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_oneColSpec
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOneColSpec" ):
-                listener.enterOneColSpec(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOneColSpec" ):
-                listener.exitOneColSpec(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOneColSpec" ):
-                return visitor.visitOneColSpec(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -7621,20 +6543,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_extraFunction
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExtraFunction" ):
-                listener.enterExtraFunction(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExtraFunction" ):
-                listener.exitExtraFunction(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExtraFunction" ):
-                return visitor.visitExtraFunction(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -7681,20 +6589,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_instanceReference
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceReference" ):
-                listener.enterInstanceReference(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceReference" ):
-                listener.exitInstanceReference(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceReference" ):
-                return visitor.visitInstanceReference(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -7762,20 +6656,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_anyLambda
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAnyLambda" ):
-                listener.enterAnyLambda(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAnyLambda" ):
-                listener.exitAnyLambda(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAnyLambda" ):
-                return visitor.visitAnyLambda(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -7850,20 +6730,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_lambdaFunction
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLambdaFunction" ):
-                listener.enterLambdaFunction(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLambdaFunction" ):
-                listener.exitLambdaFunction(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLambdaFunction" ):
-                return visitor.visitLambdaFunction(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -7926,20 +6792,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_variable
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterVariable" ):
-                listener.enterVariable(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitVariable" ):
-                listener.exitVariable(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitVariable" ):
-                return visitor.visitVariable(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -7991,20 +6843,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_allOrFunction
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAllOrFunction" ):
-                listener.enterAllOrFunction(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAllOrFunction" ):
-                listener.exitAllOrFunction(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAllOrFunction" ):
-                return visitor.visitAllOrFunction(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -8079,20 +6917,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_allFunction
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAllFunction" ):
-                listener.enterAllFunction(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAllFunction" ):
-                listener.exitAllFunction(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAllFunction" ):
-                return visitor.visitAllFunction(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -8140,20 +6964,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_allVersionsFunction
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAllVersionsFunction" ):
-                listener.enterAllVersionsFunction(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAllVersionsFunction" ):
-                listener.exitAllVersionsFunction(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAllVersionsFunction" ):
-                return visitor.visitAllVersionsFunction(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -8212,20 +7022,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_allVersionsInRangeFunction
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAllVersionsInRangeFunction" ):
-                listener.enterAllVersionsInRangeFunction(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAllVersionsInRangeFunction" ):
-                listener.exitAllVersionsInRangeFunction(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAllVersionsInRangeFunction" ):
-                return visitor.visitAllVersionsInRangeFunction(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -8291,20 +7087,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_allFunctionWithMilestoning
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAllFunctionWithMilestoning" ):
-                listener.enterAllFunctionWithMilestoning(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAllFunctionWithMilestoning" ):
-                listener.exitAllFunctionWithMilestoning(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAllFunctionWithMilestoning" ):
-                return visitor.visitAllFunctionWithMilestoning(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -8363,20 +7145,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_buildMilestoningVariableExpression
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBuildMilestoningVariableExpression" ):
-                listener.enterBuildMilestoningVariableExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBuildMilestoningVariableExpression" ):
-                listener.exitBuildMilestoningVariableExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBuildMilestoningVariableExpression" ):
-                return visitor.visitBuildMilestoningVariableExpression(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -8480,20 +7248,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_expressionInstance
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionInstance" ):
-                listener.enterExpressionInstance(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionInstance" ):
-                listener.exitExpressionInstance(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionInstance" ):
-                return visitor.visitExpressionInstance(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -8612,20 +7366,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_expressionInstanceRightSide
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionInstanceRightSide" ):
-                listener.enterExpressionInstanceRightSide(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionInstanceRightSide" ):
-                listener.exitExpressionInstanceRightSide(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionInstanceRightSide" ):
-                return visitor.visitExpressionInstanceRightSide(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -8667,20 +7407,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_expressionInstanceAtomicRightSide
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionInstanceAtomicRightSide" ):
-                listener.enterExpressionInstanceAtomicRightSide(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionInstanceAtomicRightSide" ):
-                listener.exitExpressionInstanceAtomicRightSide(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionInstanceAtomicRightSide" ):
-                return visitor.visitExpressionInstanceAtomicRightSide(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -8753,20 +7479,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_expressionInstanceParserPropertyAssignment
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionInstanceParserPropertyAssignment" ):
-                listener.enterExpressionInstanceParserPropertyAssignment(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionInstanceParserPropertyAssignment" ):
-                listener.exitExpressionInstanceParserPropertyAssignment(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionInstanceParserPropertyAssignment" ):
-                return visitor.visitExpressionInstanceParserPropertyAssignment(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -8841,20 +7553,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_sliceExpression
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSliceExpression" ):
-                listener.enterSliceExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSliceExpression" ):
-                listener.exitSliceExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSliceExpression" ):
-                return visitor.visitSliceExpression(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -8940,20 +7638,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_constraints
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraints" ):
-                listener.enterConstraints(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraints" ):
-                listener.exitConstraints(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraints" ):
-                return visitor.visitConstraints(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -9009,20 +7693,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_constraint
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraint" ):
-                listener.enterConstraint(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraint" ):
-                listener.exitConstraint(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraint" ):
-                return visitor.visitConstraint(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -9073,20 +7743,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_simpleConstraint
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSimpleConstraint" ):
-                listener.enterSimpleConstraint(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSimpleConstraint" ):
-                listener.exitSimpleConstraint(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSimpleConstraint" ):
-                return visitor.visitSimpleConstraint(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -9154,20 +7810,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_complexConstraint
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComplexConstraint" ):
-                listener.enterComplexConstraint(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComplexConstraint" ):
-                listener.exitComplexConstraint(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComplexConstraint" ):
-                return visitor.visitComplexConstraint(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -9247,20 +7889,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_constraintOwner
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraintOwner" ):
-                listener.enterConstraintOwner(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraintOwner" ):
-                listener.exitConstraintOwner(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraintOwner" ):
-                return visitor.visitConstraintOwner(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -9303,20 +7931,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_constraintExternalId
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraintExternalId" ):
-                listener.enterConstraintExternalId(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraintExternalId" ):
-                listener.exitConstraintExternalId(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraintExternalId" ):
-                return visitor.visitConstraintExternalId(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -9362,20 +7976,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_constraintFunction
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraintFunction" ):
-                listener.enterConstraintFunction(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraintFunction" ):
-                listener.exitConstraintFunction(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraintFunction" ):
-                return visitor.visitConstraintFunction(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -9418,20 +8018,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_constraintEnforcementLevel
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraintEnforcementLevel" ):
-                listener.enterConstraintEnforcementLevel(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraintEnforcementLevel" ):
-                listener.exitConstraintEnforcementLevel(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraintEnforcementLevel" ):
-                return visitor.visitConstraintEnforcementLevel(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -9477,20 +8063,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_constraintMessage
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraintMessage" ):
-                listener.enterConstraintMessage(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraintMessage" ):
-                listener.exitConstraintMessage(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraintMessage" ):
-                return visitor.visitConstraintMessage(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -9531,20 +8103,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_constraintId
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraintId" ):
-                listener.enterConstraintId(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraintId" ):
-                listener.exitConstraintId(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraintId" ):
-                return visitor.visitConstraintId(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -9583,20 +8141,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_notExpression
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNotExpression" ):
-                listener.enterNotExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNotExpression" ):
-                listener.exitNotExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNotExpression" ):
-                return visitor.visitNotExpression(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -9639,20 +8183,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_signedExpression
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSignedExpression" ):
-                listener.enterSignedExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSignedExpression" ):
-                listener.exitSignedExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSignedExpression" ):
-                return visitor.visitSignedExpression(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -9699,20 +8229,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_lambdaPipe
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLambdaPipe" ):
-                listener.enterLambdaPipe(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLambdaPipe" ):
-                listener.exitLambdaPipe(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLambdaPipe" ):
-                return visitor.visitLambdaPipe(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -9752,20 +8268,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_lambdaParam
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLambdaParam" ):
-                listener.enterLambdaParam(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLambdaParam" ):
-                listener.exitLambdaParam(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLambdaParam" ):
-                return visitor.visitLambdaParam(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -9816,20 +8318,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_lambdaParamType
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLambdaParamType" ):
-                listener.enterLambdaParamType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLambdaParamType" ):
-                listener.exitLambdaParamType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLambdaParamType" ):
-                return visitor.visitLambdaParamType(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -9883,20 +8371,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_instanceLiteral
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceLiteral" ):
-                listener.enterInstanceLiteral(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceLiteral" ):
-                listener.exitInstanceLiteral(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceLiteral" ):
-                return visitor.visitInstanceLiteral(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -10004,20 +8478,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_instanceLiteralToken
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceLiteralToken" ):
-                listener.enterInstanceLiteralToken(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceLiteralToken" ):
-                listener.exitInstanceLiteralToken(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceLiteralToken" ):
-                return visitor.visitInstanceLiteralToken(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -10068,20 +8528,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_unitInstanceLiteral
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnitInstanceLiteral" ):
-                listener.enterUnitInstanceLiteral(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnitInstanceLiteral" ):
-                listener.exitUnitInstanceLiteral(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnitInstanceLiteral" ):
-                return visitor.visitUnitInstanceLiteral(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -10223,20 +8669,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_arithmeticPart
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterArithmeticPart" ):
-                listener.enterArithmeticPart(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitArithmeticPart" ):
-                listener.exitArithmeticPart(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitArithmeticPart" ):
-                return visitor.visitArithmeticPart(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -10393,20 +8825,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_booleanPart
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBooleanPart" ):
-                listener.enterBooleanPart(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBooleanPart" ):
-                listener.exitBooleanPart(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBooleanPart" ):
-                return visitor.visitBooleanPart(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -10473,20 +8891,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_functionVariableExpression
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionVariableExpression" ):
-                listener.enterFunctionVariableExpression(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionVariableExpression" ):
-                listener.exitFunctionVariableExpression(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionVariableExpression" ):
-                return visitor.visitFunctionVariableExpression(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -10595,20 +8999,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_type
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterType" ):
-                listener.enterType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitType" ):
-                listener.exitType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitType" ):
-                return visitor.visitType(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -10766,20 +9156,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeVariableValues
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeVariableValues" ):
-                listener.enterTypeVariableValues(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeVariableValues" ):
-                listener.exitTypeVariableValues(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeVariableValues" ):
-                return visitor.visitTypeVariableValues(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -10848,20 +9224,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_columnType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterColumnType" ):
-                listener.enterColumnType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitColumnType" ):
-                listener.exitColumnType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitColumnType" ):
-                return visitor.visitColumnType(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -10912,20 +9274,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_mayColumnName
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMayColumnName" ):
-                listener.enterMayColumnName(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMayColumnName" ):
-                listener.exitMayColumnName(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMayColumnName" ):
-                return visitor.visitMayColumnName(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -10975,20 +9323,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_mayColumnType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMayColumnType" ):
-                listener.enterMayColumnType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMayColumnType" ):
-                listener.exitMayColumnType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMayColumnType" ):
-                return visitor.visitMayColumnType(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -11037,20 +9371,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_columnName
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterColumnName" ):
-                listener.enterColumnName(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitColumnName" ):
-                listener.exitColumnName(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitColumnName" ):
-                return visitor.visitColumnName(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -11105,20 +9425,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_multiplicity
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMultiplicity" ):
-                listener.enterMultiplicity(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMultiplicity" ):
-                listener.exitMultiplicity(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMultiplicity" ):
-                return visitor.visitMultiplicity(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -11156,20 +9462,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_fromMultiplicity
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFromMultiplicity" ):
-                listener.enterFromMultiplicity(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFromMultiplicity" ):
-                listener.exitFromMultiplicity(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFromMultiplicity" ):
-                return visitor.visitFromMultiplicity(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -11205,20 +9497,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_toMultiplicity
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterToMultiplicity" ):
-                listener.enterToMultiplicity(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitToMultiplicity" ):
-                listener.exitToMultiplicity(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitToMultiplicity" ):
-                return visitor.visitToMultiplicity(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -11263,20 +9541,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_projection
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProjection" ):
-                listener.enterProjection(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProjection" ):
-                listener.exitProjection(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProjection" ):
-                return visitor.visitProjection(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -11329,20 +9593,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_functionTypePureType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunctionTypePureType" ):
-                listener.enterFunctionTypePureType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunctionTypePureType" ):
-                listener.exitFunctionTypePureType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunctionTypePureType" ):
-                return visitor.visitFunctionTypePureType(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -11388,20 +9638,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeAndMultiplicityParameters
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeAndMultiplicityParameters" ):
-                listener.enterTypeAndMultiplicityParameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeAndMultiplicityParameters" ):
-                listener.exitTypeAndMultiplicityParameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeAndMultiplicityParameters" ):
-                return visitor.visitTypeAndMultiplicityParameters(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -11472,20 +9708,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeParametersWithContravarianceAndMultiplicityParameters
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeParametersWithContravarianceAndMultiplicityParameters" ):
-                listener.enterTypeParametersWithContravarianceAndMultiplicityParameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeParametersWithContravarianceAndMultiplicityParameters" ):
-                listener.exitTypeParametersWithContravarianceAndMultiplicityParameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeParametersWithContravarianceAndMultiplicityParameters" ):
-                return visitor.visitTypeParametersWithContravarianceAndMultiplicityParameters(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -11554,20 +9776,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeParameters
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeParameters" ):
-                listener.enterTypeParameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeParameters" ):
-                listener.exitTypeParameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeParameters" ):
-                return visitor.visitTypeParameters(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -11615,20 +9823,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeParameter
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeParameter" ):
-                listener.enterTypeParameter(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeParameter" ):
-                listener.exitTypeParameter(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeParameter" ):
-                return visitor.visitTypeParameter(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -11671,20 +9865,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_contravarianceTypeParameters
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterContravarianceTypeParameters" ):
-                listener.enterContravarianceTypeParameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitContravarianceTypeParameters" ):
-                listener.exitContravarianceTypeParameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitContravarianceTypeParameters" ):
-                return visitor.visitContravarianceTypeParameters(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -11735,20 +9915,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_contravarianceTypeParameter
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterContravarianceTypeParameter" ):
-                listener.enterContravarianceTypeParameter(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitContravarianceTypeParameter" ):
-                listener.exitContravarianceTypeParameter(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitContravarianceTypeParameter" ):
-                return visitor.visitContravarianceTypeParameter(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -11801,20 +9967,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_multiplicityArguments
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMultiplicityArguments" ):
-                listener.enterMultiplicityArguments(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMultiplicityArguments" ):
-                listener.exitMultiplicityArguments(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMultiplicityArguments" ):
-                return visitor.visitMultiplicityArguments(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -11873,20 +10025,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_multiplicityArgument
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMultiplicityArgument" ):
-                listener.enterMultiplicityArgument(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMultiplicityArgument" ):
-                listener.exitMultiplicityArgument(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMultiplicityArgument" ):
-                return visitor.visitMultiplicityArgument(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -11954,20 +10092,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeArguments
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeArguments" ):
-                listener.enterTypeArguments(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeArguments" ):
-                listener.exitTypeArguments(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeArguments" ):
-                return visitor.visitTypeArguments(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12029,20 +10153,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeWithOperation
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeWithOperation" ):
-                listener.enterTypeWithOperation(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeWithOperation" ):
-                listener.exitTypeWithOperation(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeWithOperation" ):
-                return visitor.visitTypeWithOperation(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -12109,20 +10219,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_typeAddSubOperation
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypeAddSubOperation" ):
-                listener.enterTypeAddSubOperation(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypeAddSubOperation" ):
-                listener.exitTypeAddSubOperation(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypeAddSubOperation" ):
-                return visitor.visitTypeAddSubOperation(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12173,20 +10269,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_addType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAddType" ):
-                listener.enterAddType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAddType" ):
-                listener.exitAddType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAddType" ):
-                return visitor.visitAddType(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12225,20 +10307,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_subType
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubType" ):
-                listener.enterSubType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubType" ):
-                listener.exitSubType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubType" ):
-                return visitor.visitSubType(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -12279,20 +10347,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_subsetType
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubsetType" ):
-                listener.enterSubsetType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubsetType" ):
-                listener.exitSubsetType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubsetType" ):
-                return visitor.visitSubsetType(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12331,20 +10385,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_equalType
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEqualType" ):
-                listener.enterEqualType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEqualType" ):
-                listener.exitEqualType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitEqualType" ):
-                return visitor.visitEqualType(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -12394,20 +10434,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_multiplictyParameters
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMultiplictyParameters" ):
-                listener.enterMultiplictyParameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMultiplictyParameters" ):
-                listener.exitMultiplictyParameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMultiplictyParameters" ):
-                return visitor.visitMultiplictyParameters(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12456,20 +10482,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_dsl
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDsl" ):
-                listener.enterDsl(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDsl" ):
-                listener.exitDsl(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDsl" ):
-                return visitor.visitDsl(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12508,20 +10520,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_aggregation
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggregation" ):
-                listener.enterAggregation(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggregation" ):
-                listener.exitAggregation(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggregation" ):
-                return visitor.visitAggregation(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -12594,20 +10592,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_aggregateSpecification
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggregateSpecification" ):
-                listener.enterAggregateSpecification(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggregateSpecification" ):
-                listener.exitAggregateSpecification(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggregateSpecification" ):
-                return visitor.visitAggregateSpecification(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -12687,20 +10671,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_groupByFunctionSpecifications
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGroupByFunctionSpecifications" ):
-                listener.enterGroupByFunctionSpecifications(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGroupByFunctionSpecifications" ):
-                listener.exitGroupByFunctionSpecifications(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGroupByFunctionSpecifications" ):
-                return visitor.visitGroupByFunctionSpecifications(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12748,20 +10718,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_groupByFunctionSpecification
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGroupByFunctionSpecification" ):
-                listener.enterGroupByFunctionSpecification(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGroupByFunctionSpecification" ):
-                listener.exitGroupByFunctionSpecification(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGroupByFunctionSpecification" ):
-                return visitor.visitGroupByFunctionSpecification(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12804,20 +10760,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_aggregationFunctionSpecifications
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggregationFunctionSpecifications" ):
-                listener.enterAggregationFunctionSpecifications(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggregationFunctionSpecifications" ):
-                listener.exitAggregationFunctionSpecifications(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggregationFunctionSpecifications" ):
-                return visitor.visitAggregationFunctionSpecifications(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -12890,20 +10832,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_aggregationFunctionSpecification
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAggregationFunctionSpecification" ):
-                listener.enterAggregationFunctionSpecification(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAggregationFunctionSpecification" ):
-                listener.exitAggregationFunctionSpecification(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAggregationFunctionSpecification" ):
-                return visitor.visitAggregationFunctionSpecification(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -12969,20 +10897,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_treePath
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTreePath" ):
-                listener.enterTreePath(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTreePath" ):
-                listener.exitTreePath(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTreePath" ):
-                return visitor.visitTreePath(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -13065,20 +10979,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_treePathClassBody
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTreePathClassBody" ):
-                listener.enterTreePathClassBody(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTreePathClassBody" ):
-                listener.exitTreePathClassBody(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTreePathClassBody" ):
-                return visitor.visitTreePathClassBody(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -13149,20 +11049,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_alias
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAlias" ):
-                listener.enterAlias(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAlias" ):
-                listener.exitAlias(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAlias" ):
-                return visitor.visitAlias(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -13222,20 +11108,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_simplePropertyFilter
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSimplePropertyFilter" ):
-                listener.enterSimplePropertyFilter(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSimplePropertyFilter" ):
-                listener.exitSimplePropertyFilter(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSimplePropertyFilter" ):
-                return visitor.visitSimplePropertyFilter(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -13317,20 +11189,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_simpleProperty
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSimpleProperty" ):
-                listener.enterSimpleProperty(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSimpleProperty" ):
-                listener.exitSimpleProperty(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSimpleProperty" ):
-                return visitor.visitSimpleProperty(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -13397,20 +11255,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_complexProperty
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComplexProperty" ):
-                listener.enterComplexProperty(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComplexProperty" ):
-                listener.exitComplexProperty(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComplexProperty" ):
-                return visitor.visitComplexProperty(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -13507,20 +11351,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_derivedProperty
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDerivedProperty" ):
-                listener.enterDerivedProperty(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDerivedProperty" ):
-                listener.exitDerivedProperty(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDerivedProperty" ):
-                return visitor.visitDerivedProperty(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -13622,20 +11452,6 @@ class M3CoreParser ( Parser ):
         def getRuleIndex(self):
             return M3CoreParser.RULE_propertyRef
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPropertyRef" ):
-                listener.enterPropertyRef(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPropertyRef" ):
-                listener.exitPropertyRef(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPropertyRef" ):
-                return visitor.visitPropertyRef(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -13706,20 +11522,6 @@ class M3CoreParser ( Parser ):
 
         def getRuleIndex(self):
             return M3CoreParser.RULE_treePathPropertyParameterType
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTreePathPropertyParameterType" ):
-                listener.enterTreePathPropertyParameterType(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTreePathPropertyParameterType" ):
-                listener.exitTreePathPropertyParameterType(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTreePathPropertyParameterType" ):
-                return visitor.visitTreePathPropertyParameterType(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
