@@ -1,0 +1,862 @@
+{
+  "reportScope" : {
+    "_package" : "meta::pure::functions",
+    "filePath" : "/core_functions_standard/",
+    "module" : "standard"
+  },
+  "functionDefinitions" : [ {
+    "_package" : "meta::pure::functions::math",
+    "name" : "tanh",
+    "sourceId" : "/core_functions_standard/math/trigonometry/tanh.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::tanh(Number[1]):Float[1]",
+      "id" : "meta::pure::functions::math::tanh_Number_1__Float_1_",
+      "documentation" : "tanh returns the hyperbolic tangent of a number",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 5
+  }, {
+    "_package" : "meta::pure::functions::collection",
+    "name" : "greatest",
+    "sourceId" : "/core_functions_standard/collection/greatest.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::collection::greatest(X[1..*]):X[1]",
+      "id" : "meta::pure::functions::collection::greatest_X_$1_MANY$__X_1_",
+      "documentation" : "greatest returns largest value from the list by type order; supports all primitive data types",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::collection::greatest(X[*]):X[0..1]",
+      "id" : "meta::pure::functions::collection::greatest_X_MANY__X_$0_1$_",
+      "documentation" : "greatest returns largest value from the list by type order; supports all primitive data types",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 10
+  }, {
+    "_package" : "meta::pure::functions::hash",
+    "name" : "hashCode",
+    "sourceId" : "/core_functions_standard/tbd/hashCode.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::hash::hashCode(Any[*]):Integer[1]",
+      "id" : "meta::pure::functions::hash::hashCode_Any_MANY__Integer_1_",
+      "documentation" : "",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::string::generation",
+    "name" : "generateGuid",
+    "sourceId" : "/core_functions_standard/tbd/generateGuid.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::generation::generateGuid():String[1]",
+      "id" : "meta::pure::functions::string::generation::generateGuid__String_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "bitShiftLeft",
+    "sourceId" : "/core_functions_standard/tbd/bitShiftLeft.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::bitShiftLeft(Integer[1], Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::math::bitShiftLeft_Integer_1__Integer_1__Integer_1_",
+      "documentation" : "bitwise LEFT SHIFT operator returns a Number representing the arg Number input shifted by n bits to the LEFT",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::date",
+    "name" : "dayOfWeek",
+    "sourceId" : "/core_functions_standard/date/extract/dayOfWeek.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::date::dayOfWeek(Date[1]):DayOfWeek[1]",
+      "id" : "meta::pure::functions::date::dayOfWeek_Date_1__DayOfWeek_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 1,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::collection",
+    "name" : "or",
+    "sourceId" : "/core_functions_standard/collection/or.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::collection::or(Boolean[*]):Boolean[1]",
+      "id" : "meta::pure::functions::collection::or_Boolean_MANY__Boolean_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::collection::or(Boolean[1..*]):Boolean[1]",
+      "id" : "meta::pure::functions::collection::or_Boolean_$1_MANY$__Boolean_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 1
+  }, {
+    "_package" : "meta::pure::functions::collection",
+    "name" : "and",
+    "sourceId" : "/core_functions_standard/collection/and.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::collection::and(Boolean[*]):Boolean[1]",
+      "id" : "meta::pure::functions::collection::and_Boolean_MANY__Boolean_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 1
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "average",
+    "sourceId" : "/core_functions_standard/math/aggregator/average.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::average(Number[*]):Float[1]",
+      "id" : "meta::pure::functions::math::average_Number_MANY__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::average(Integer[*]):Float[1]",
+      "id" : "meta::pure::functions::math::average_Integer_MANY__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::average(Float[*]):Float[1]",
+      "id" : "meta::pure::functions::math::average_Float_MANY__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::average(Relation<T>[1], _Window<T>[1], T[1], ColSpec<(?:Number)⊆T>[1]):Float[1]",
+      "id" : "meta::pure::functions::math::average_Relation_1___Window_1__T_1__ColSpec_1__Float_1_",
+      "documentation" : "Returns the average of the non-NULL values on the given column of the current window, and frame for the current row",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 10
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "minBy",
+    "sourceId" : "/core_functions_standard/math/aggregator/minBy.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::minBy(T[*], Number[*]):T[0..1]",
+      "id" : "meta::pure::functions::math::minBy_T_MANY__Number_MANY__T_$0_1$_",
+      "documentation" : "Finds the row(s) containing the minimum value for a column and returns the value of another column in that row.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::minBy(T[*], Number[*], Integer[1]):T[*]",
+      "id" : "meta::pure::functions::math::minBy_T_MANY__Number_MANY__Integer_1__T_MANY_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "covarSample",
+    "sourceId" : "/core_functions_standard/math/aggregator/covarSample.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::covarSample(Number[*], Number[*]):Number[0..1]",
+      "id" : "meta::pure::functions::math::covarSample_Number_MANY__Number_MANY__Number_$0_1$_",
+      "documentation" : "Returns the sample covariance for non-null pairs in a group.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "sinh",
+    "sourceId" : "/core_functions_standard/math/trigonometry/sinh.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::sinh(Number[1]):Float[1]",
+      "id" : "meta::pure::functions::math::sinh_Number_1__Float_1_",
+      "documentation" : "sinh returns the hyperbolic sine of a number",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 5
+  }, {
+    "_package" : "meta::pure::functions::boolean",
+    "name" : "xor",
+    "sourceId" : "/core_functions_standard/boolean/operation/xor.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::boolean::xor(Boolean[1], Boolean[1]):Boolean[1]",
+      "id" : "meta::pure::functions::boolean::xor_Boolean_1__Boolean_1__Boolean_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "bitXor",
+    "sourceId" : "/core_functions_standard/tbd/bitXor.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::bitXor(Integer[1], Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::math::bitXor_Integer_1__Integer_1__Integer_1_",
+      "documentation" : "bitwise XOR operator returns an Number representing the bitwise XOR of the Number input params",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "covarPopulation",
+    "sourceId" : "/core_functions_standard/math/aggregator/covarPopulation.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::covarPopulation(Number[*], Number[*]):Number[0..1]",
+      "id" : "meta::pure::functions::math::covarPopulation_Number_MANY__Number_MANY__Number_$0_1$_",
+      "documentation" : "Returns the population covariance for non-null pairs in a group.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::boolean",
+    "name" : "between",
+    "sourceId" : "/core_functions_standard/boolean/inequality/between.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::boolean::between(Number[0..1], Number[0..1], Number[0..1]):Boolean[1]",
+      "id" : "meta::pure::functions::boolean::between_Number_$0_1$__Number_$0_1$__Number_$0_1$__Boolean_1_",
+      "documentation" : "between returns true if the value is >= lower and <= upper; supports numeric values and bounds",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::boolean::between(String[0..1], String[0..1], String[0..1]):Boolean[1]",
+      "id" : "meta::pure::functions::boolean::between_String_$0_1$__String_$0_1$__String_$0_1$__Boolean_1_",
+      "documentation" : "between returns true if the value is >= lower and <= upper; supports string values and bounds",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::boolean::between(StrictDate[0..1], StrictDate[0..1], StrictDate[0..1]):Boolean[1]",
+      "id" : "meta::pure::functions::boolean::between_StrictDate_$0_1$__StrictDate_$0_1$__StrictDate_$0_1$__Boolean_1_",
+      "documentation" : "between returns true if the value is >= lower and <= upper; supports StrictDate (e.g. 2025-04-09) values and bounds",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::boolean::between(DateTime[0..1], DateTime[0..1], DateTime[0..1]):Boolean[1]",
+      "id" : "meta::pure::functions::boolean::between_DateTime_$0_1$__DateTime_$0_1$__DateTime_$0_1$__Boolean_1_",
+      "documentation" : "between returns true if the value is >= lower and <= upper; supports DateTime values and bounds",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 6
+  }, {
+    "_package" : "meta::pure::functions::date",
+    "name" : "timeBucket",
+    "sourceId" : "/core_functions_standard/date/operation/timeBucket.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::date::timeBucket(DateTime[1], Integer[1], DurationUnit[1]):DateTime[1]",
+      "id" : "meta::pure::functions::date::timeBucket_DateTime_1__Integer_1__DurationUnit_1__DateTime_1_",
+      "documentation" : "calculates a time bucket for DateTime, where the bucket is of size quantity unit (e.g. 5 Hours). Uses unix Epoch as the origin for the calculation.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::timeBucket(StrictDate[1], Integer[1], DurationUnit[1]):StrictDate[1]",
+      "id" : "meta::pure::functions::date::timeBucket_StrictDate_1__Integer_1__DurationUnit_1__StrictDate_1_",
+      "documentation" : "calculates a time bucket for StrictDate, where the bucket is of size quantity unit (e.g. 5 Months). Only units in the set (YEARS, DAYS, MONTHS, WEEKS) are allowed.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::timeBucket(DateTime[0..1], Integer[1], DurationUnit[1]):DateTime[0..1]",
+      "id" : "meta::pure::functions::date::timeBucket_DateTime_$0_1$__Integer_1__DurationUnit_1__DateTime_$0_1$_",
+      "documentation" : "calculates a time bucket for DateTime, where the bucket is of size quantity unit (e.g. 5 Hours). Uses unix Epoch as the origin for the calculation. Multiplicity 0..1 is allowed.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::timeBucket(StrictDate[0..1], Integer[1], DurationUnit[1]):StrictDate[0..1]",
+      "id" : "meta::pure::functions::date::timeBucket_StrictDate_$0_1$__Integer_1__DurationUnit_1__StrictDate_$0_1$_",
+      "documentation" : "calculates a time bucket for StrictDate, where the bucket is of size quantity unit (e.g. 5 months). Only units in the set (YEARS, DAYS, MONTHS, WEEKS) are allowed. Multiplicity 0..1 is allowed.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 14
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "bitOr",
+    "sourceId" : "/core_functions_standard/tbd/bitOr.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::bitOr(Integer[1], Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::math::bitOr_Integer_1__Integer_1__Integer_1_",
+      "documentation" : "bitwise OR operator returns an Number representing the bitwise OR of the Number input params",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "stdDevPopulation",
+    "sourceId" : "/core_functions_standard/math/aggregator/stdDevPopulation.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::stdDevPopulation(Number[*]):Number[1]",
+      "id" : "meta::pure::functions::math::stdDevPopulation_Number_MANY__Number_1_",
+      "documentation" : "Returns the population standard deviation (square root of variance) of non-NULL values.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::stdDevPopulation(Number[1..*]):Number[1]",
+      "id" : "meta::pure::functions::math::stdDevPopulation_Number_$1_MANY$__Number_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::stdDevPopulation(Relation<T>[1], _Window<T>[1], T[1], ColSpec<(?:Number)⊆T>[1]):Number[1]",
+      "id" : "meta::pure::functions::math::stdDevPopulation_Relation_1___Window_1__T_1__ColSpec_1__Number_1_",
+      "documentation" : "Returns the population standard deviation (square root of variance) of non-NULL values on the given column of the current window, and frame for the current row",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "toRadians",
+    "sourceId" : "/core_functions_standard/math/numeric/toRadians.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::toRadians(Number[1]):Float[1]",
+      "id" : "meta::pure::functions::math::toRadians_Number_1__Float_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 1
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "covariance",
+    "sourceId" : "/core_functions_standard/math/aggregator/covariance.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::covariance(Number[*], Number[*], Integer[1], Boolean[1]):Number[0..1]",
+      "id" : "meta::pure::functions::math::covariance_Number_MANY__Number_MANY__Integer_1__Boolean_1__Number_$0_1$_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 0
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "median",
+    "sourceId" : "/core_functions_standard/math/aggregator/median.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::median(Number[*]):Float[1]",
+      "id" : "meta::pure::functions::math::median_Number_MANY__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::median(Integer[*]):Float[1]",
+      "id" : "meta::pure::functions::math::median_Integer_MANY__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::median(Float[*]):Float[1]",
+      "id" : "meta::pure::functions::math::median_Float_MANY__Float_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 9
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "bitNot",
+    "sourceId" : "/core_functions_standard/tbd/bitNot.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::bitNot(Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::math::bitNot_Integer_1__Integer_1_",
+      "documentation" : "bitwise NOT operator returns a Number representing the bitwise NOT of the Number input param",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "varianceSample",
+    "sourceId" : "/core_functions_standard/math/aggregator/varianceSample.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::varianceSample(Number[*]):Number[1]",
+      "id" : "meta::pure::functions::math::varianceSample_Number_MANY__Number_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "percentile",
+    "sourceId" : "/core_functions_standard/math/aggregator/percentile.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::percentile(Number[*], Float[1]):Number[0..1]",
+      "id" : "meta::pure::functions::math::percentile_Number_MANY__Float_1__Number_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::percentile(Number[*], Float[1], Boolean[1], Boolean[1]):Number[0..1]",
+      "id" : "meta::pure::functions::math::percentile_Number_MANY__Float_1__Boolean_1__Boolean_1__Number_$0_1$_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "sum",
+    "sourceId" : "/core_functions_standard/math/aggregator/sum.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::sum(Number[*]):Number[1]",
+      "id" : "meta::pure::functions::math::sum_Number_MANY__Number_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::sum(Integer[*]):Integer[1]",
+      "id" : "meta::pure::functions::math::sum_Integer_MANY__Integer_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::sum(Float[*]):Float[1]",
+      "id" : "meta::pure::functions::math::sum_Float_MANY__Float_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 9
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "max",
+    "sourceId" : "/core_functions_standard/math/aggregator/max.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::max(Integer[1], Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::math::max_Integer_1__Integer_1__Integer_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::max(Float[1], Float[1]):Float[1]",
+      "id" : "meta::pure::functions::math::max_Float_1__Float_1__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::max(Number[1], Number[1]):Number[1]",
+      "id" : "meta::pure::functions::math::max_Number_1__Number_1__Number_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::max(Integer[*]):Integer[0..1]",
+      "id" : "meta::pure::functions::math::max_Integer_MANY__Integer_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::max(Integer[1..*]):Integer[1]",
+      "id" : "meta::pure::functions::math::max_Integer_$1_MANY$__Integer_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::max(Float[*]):Float[0..1]",
+      "id" : "meta::pure::functions::math::max_Float_MANY__Float_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::max(Float[1..*]):Float[1]",
+      "id" : "meta::pure::functions::math::max_Float_$1_MANY$__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::max(Number[*]):Number[0..1]",
+      "id" : "meta::pure::functions::math::max_Number_MANY__Number_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::max(Number[1..*]):Number[1]",
+      "id" : "meta::pure::functions::math::max_Number_$1_MANY$__Number_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 12
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "min",
+    "sourceId" : "/core_functions_standard/math/aggregator/min.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::min(Integer[1], Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::math::min_Integer_1__Integer_1__Integer_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::min(Float[1], Float[1]):Float[1]",
+      "id" : "meta::pure::functions::math::min_Float_1__Float_1__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::min(Number[1], Number[1]):Number[1]",
+      "id" : "meta::pure::functions::math::min_Number_1__Number_1__Number_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::min(Integer[1..*]):Integer[1]",
+      "id" : "meta::pure::functions::math::min_Integer_$1_MANY$__Integer_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::min(Integer[*]):Integer[0..1]",
+      "id" : "meta::pure::functions::math::min_Integer_MANY__Integer_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::min(Float[1..*]):Float[1]",
+      "id" : "meta::pure::functions::math::min_Float_$1_MANY$__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::min(Float[*]):Float[0..1]",
+      "id" : "meta::pure::functions::math::min_Float_MANY__Float_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::min(Number[1..*]):Number[1]",
+      "id" : "meta::pure::functions::math::min_Number_$1_MANY$__Number_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::min(Number[*]):Number[0..1]",
+      "id" : "meta::pure::functions::math::min_Number_MANY__Number_$0_1$_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 12
+  }, {
+    "_package" : "meta::pure::functions::collection",
+    "name" : "count",
+    "sourceId" : "/core_functions_standard/collection/count.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::collection::count(Any[*]):Integer[1]",
+      "id" : "meta::pure::functions::collection::count_Any_MANY__Integer_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 0
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "variance",
+    "sourceId" : "/core_functions_standard/math/aggregator/variance.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::variance(Number[*], Boolean[1]):Number[1]",
+      "id" : "meta::pure::functions::math::variance_Number_MANY__Boolean_1__Number_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::date",
+    "name" : "max",
+    "sourceId" : "/core_functions_standard/date/aggregator/max.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::date::max(Date[1], Date[1]):Date[1]",
+      "id" : "meta::pure::functions::date::max_Date_1__Date_1__Date_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::max(StrictDate[1], StrictDate[1]):StrictDate[1]",
+      "id" : "meta::pure::functions::date::max_StrictDate_1__StrictDate_1__StrictDate_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::max(DateTime[1], DateTime[1]):DateTime[1]",
+      "id" : "meta::pure::functions::date::max_DateTime_1__DateTime_1__DateTime_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::max(Date[*]):Date[0..1]",
+      "id" : "meta::pure::functions::date::max_Date_MANY__Date_$0_1$_",
+      "documentation" : "max returns smallest Date value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::max(Date[1..*]):Date[1]",
+      "id" : "meta::pure::functions::date::max_Date_$1_MANY$__Date_1_",
+      "documentation" : "max returns smallest Date value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::max(StrictDate[*]):StrictDate[0..1]",
+      "id" : "meta::pure::functions::date::max_StrictDate_MANY__StrictDate_$0_1$_",
+      "documentation" : "max returns smallest StrictDate value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::max(StrictDate[1..*]):StrictDate[1]",
+      "id" : "meta::pure::functions::date::max_StrictDate_$1_MANY$__StrictDate_1_",
+      "documentation" : "max returns smallest Date value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::max(DateTime[*]):DateTime[0..1]",
+      "id" : "meta::pure::functions::date::max_DateTime_MANY__DateTime_$0_1$_",
+      "documentation" : "max returns smallest DateTime value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::max(DateTime[1..*]):DateTime[1]",
+      "id" : "meta::pure::functions::date::max_DateTime_$1_MANY$__DateTime_1_",
+      "documentation" : "max returns smallest Date value from the list",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 7
+  }, {
+    "_package" : "meta::pure::functions::collection",
+    "name" : "in",
+    "sourceId" : "/core_functions_standard/collection/in.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::collection::in(Any[0..1], Any[*]):Boolean[1]",
+      "id" : "meta::pure::functions::collection::in_Any_$0_1$__Any_MANY__Boolean_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::collection::in(Any[1], Any[*]):Boolean[1]",
+      "id" : "meta::pure::functions::collection::in_Any_1__Any_MANY__Boolean_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 6
+  }, {
+    "_package" : "meta::pure::functions::collection",
+    "name" : "min",
+    "sourceId" : "/core_functions_standard/collection/min.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::collection::min(X[1..*]):X[1]",
+      "id" : "meta::pure::functions::collection::min_X_$1_MANY$__X_1_",
+      "documentation" : "min returns smallest value from the list by type order",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::collection::min(X[*]):X[0..1]",
+      "id" : "meta::pure::functions::collection::min_X_MANY__X_$0_1$_",
+      "documentation" : "min returns smallest value from the list by type order",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::collection::min(T[1..*], Function<{T[1], T[1]->Integer[1]}>[1]):T[1]",
+      "id" : "meta::pure::functions::collection::min_T_$1_MANY$__Function_1__T_1_",
+      "documentation" : "min returns smallest value from the list by type order based on the supplied comp function",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 1
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "stdDevSample",
+    "sourceId" : "/core_functions_standard/math/aggregator/stdDevSample.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::stdDevSample(Number[*]):Number[1]",
+      "id" : "meta::pure::functions::math::stdDevSample_Number_MANY__Number_1_",
+      "documentation" : "Returns the sample standard deviation (square root of sample variance) of non-NULL values.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::stdDevSample(Number[1..*]):Number[1]",
+      "id" : "meta::pure::functions::math::stdDevSample_Number_$1_MANY$__Number_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 6
+  }, {
+    "_package" : "meta::pure::functions::date",
+    "name" : "min",
+    "sourceId" : "/core_functions_standard/date/aggregator/min.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::date::min(Date[1], Date[1]):Date[1]",
+      "id" : "meta::pure::functions::date::min_Date_1__Date_1__Date_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::min(StrictDate[1], StrictDate[1]):StrictDate[1]",
+      "id" : "meta::pure::functions::date::min_StrictDate_1__StrictDate_1__StrictDate_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::min(DateTime[1], DateTime[1]):DateTime[1]",
+      "id" : "meta::pure::functions::date::min_DateTime_1__DateTime_1__DateTime_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::min(Date[*]):Date[0..1]",
+      "id" : "meta::pure::functions::date::min_Date_MANY__Date_$0_1$_",
+      "documentation" : "min returns smallest Date value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::min(Date[1..*]):Date[1]",
+      "id" : "meta::pure::functions::date::min_Date_$1_MANY$__Date_1_",
+      "documentation" : "min returns smallest Date value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::min(StrictDate[*]):StrictDate[0..1]",
+      "id" : "meta::pure::functions::date::min_StrictDate_MANY__StrictDate_$0_1$_",
+      "documentation" : "min returns smallest StrictDate value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::min(StrictDate[1..*]):StrictDate[1]",
+      "id" : "meta::pure::functions::date::min_StrictDate_$1_MANY$__StrictDate_1_",
+      "documentation" : "min returns smallest Date value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::min(DateTime[*]):DateTime[0..1]",
+      "id" : "meta::pure::functions::date::min_DateTime_MANY__DateTime_$0_1$_",
+      "documentation" : "min returns smallest DateTime value from the list",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::date::min(DateTime[1..*]):DateTime[1]",
+      "id" : "meta::pure::functions::date::min_DateTime_$1_MANY$__DateTime_1_",
+      "documentation" : "min returns smallest Date value from the list",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 7
+  }, {
+    "_package" : "meta::pure::functions::collection",
+    "name" : "least",
+    "sourceId" : "/core_functions_standard/collection/least.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::collection::least(X[*]):X[0..1]",
+      "id" : "meta::pure::functions::collection::least_X_MANY__X_$0_1$_",
+      "documentation" : "least returns smallest value from the list by type order; supports all primitive data types",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::collection::least(X[1..*]):X[1]",
+      "id" : "meta::pure::functions::collection::least_X_$1_MANY$__X_1_",
+      "documentation" : "least returns smallest value from the list by type order; supports all primitive data types",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 10
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "wavg",
+    "sourceId" : "/core_functions_standard/math/aggregator/wavg.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::wavg(Number[*], Number[*]):Float[1]",
+      "id" : "meta::pure::functions::math::wavg_Number_MANY__Number_MANY__Float_1_",
+      "documentation" : "Performs weighted average on a given data field with its respective weight field",
+      "grammarDoc" : "wavg is used by wavg(Number[*], Number[*])",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "pi",
+    "sourceId" : "/core_functions_standard/math/numeric/pi.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::pi():Float[1]",
+      "id" : "meta::pure::functions::math::pi__Float_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 1
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "corr",
+    "sourceId" : "/core_functions_standard/math/aggregator/corr.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::corr(Number[*], Number[*]):Number[0..1]",
+      "id" : "meta::pure::functions::math::corr_Number_MANY__Number_MANY__Number_$0_1$_",
+      "documentation" : "Returns the correlation coefficient for non-null pairs in a group.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "zScore",
+    "sourceId" : "/core_functions_standard/math/aggregator/zScore.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::zScore(Relation<T>[1], _Window<T>[1], T[1], ColSpec<(?:Number)⊆T>[1]):Float[1]",
+      "id" : "meta::pure::functions::math::zScore_Relation_1___Window_1__T_1__ColSpec_1__Float_1_",
+      "documentation" : "Returns how many standard deviations a value is from the mean within its window partition. A z-score of 0 indicates the value equals the mean; positive values are above average, negative below. Commonly used for outlier detection and normalizing data.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "mean",
+    "sourceId" : "/core_functions_standard/math/aggregator/mean.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::mean(Number[*]):Float[1]",
+      "id" : "meta::pure::functions::math::mean_Number_MANY__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::mean(Integer[*]):Float[1]",
+      "id" : "meta::pure::functions::math::mean_Integer_MANY__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::mean(Float[*]):Float[1]",
+      "id" : "meta::pure::functions::math::mean_Float_MANY__Float_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 0
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "variancePopulation",
+    "sourceId" : "/core_functions_standard/math/aggregator/variancePopulation.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::variancePopulation(Number[*]):Number[1]",
+      "id" : "meta::pure::functions::math::variancePopulation_Number_MANY__Number_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "bitAnd",
+    "sourceId" : "/core_functions_standard/tbd/bitAnd.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::bitAnd(Integer[1], Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::math::bitAnd_Integer_1__Integer_1__Integer_1_",
+      "documentation" : "bitwise AND operator returns a Number representing the bitwise AND of the Number input params",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "bitShiftRight",
+    "sourceId" : "/core_functions_standard/tbd/bitShiftRight.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::bitShiftRight(Integer[1], Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::math::bitShiftRight_Integer_1__Integer_1__Integer_1_",
+      "documentation" : "bitwise RIGHT SHIFT operator returns a Number representing the arg Number input shifted by n bits to the RIGHT",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "toDegrees",
+    "sourceId" : "/core_functions_standard/math/numeric/toDegrees.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::toDegrees(Number[1]):Float[1]",
+      "id" : "meta::pure::functions::math::toDegrees_Number_1__Float_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 1
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "maxBy",
+    "sourceId" : "/core_functions_standard/math/aggregator/maxBy.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::maxBy(T[*], Number[*]):T[0..1]",
+      "id" : "meta::pure::functions::math::maxBy_T_MANY__Number_MANY__T_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::maxBy(T[*], Number[*], Integer[1]):T[*]",
+      "id" : "meta::pure::functions::math::maxBy_T_MANY__Number_MANY__Integer_1__T_MANY_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "mode",
+    "sourceId" : "/core_functions_standard/math/aggregator/mode.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::mode(Number[*]):Number[1]",
+      "id" : "meta::pure::functions::math::mode_Number_MANY__Number_1_",
+      "documentation" : "Returns the most frequent value for the values within expr1. NULL values are ignored.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::mode(Float[*]):Float[1]",
+      "id" : "meta::pure::functions::math::mode_Float_MANY__Float_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::math::mode(Integer[*]):Integer[1]",
+      "id" : "meta::pure::functions::math::mode_Integer_MANY__Integer_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 9
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "cosh",
+    "sourceId" : "/core_functions_standard/math/trigonometry/cosh.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::cosh(Number[1]):Float[1]",
+      "id" : "meta::pure::functions::math::cosh_Number_1__Float_1_",
+      "documentation" : "cosh returns the hyperbolic cosine of a number",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 5
+  }, {
+    "_package" : "meta::pure::functions::collection",
+    "name" : "max",
+    "sourceId" : "/core_functions_standard/collection/max.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::collection::max(X[1..*]):X[1]",
+      "id" : "meta::pure::functions::collection::max_X_$1_MANY$__X_1_",
+      "documentation" : "max returns largest value from the list by type order",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::collection::max(X[*]):X[0..1]",
+      "id" : "meta::pure::functions::collection::max_X_MANY__X_$0_1$_",
+      "documentation" : "max returns largest value from the list by type order",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::collection::max(T[1..*], Function<{T[1], T[1]->Integer[1]}>[1]):T[1]",
+      "id" : "meta::pure::functions::collection::max_T_$1_MANY$__Function_1__T_1_",
+      "documentation" : "max returns largest value from the list by type order based on the supplied comp function",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 1
+  }, {
+    "_package" : "meta::pure::functions::math",
+    "name" : "stdDev",
+    "sourceId" : "/core_functions_standard/math/aggregator/stdDev.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::math::stdDev(Number[1..*], Boolean[1]):Number[1]",
+      "id" : "meta::pure::functions::math::stdDev_Number_$1_MANY$__Boolean_1__Number_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 0
+  } ]
+}

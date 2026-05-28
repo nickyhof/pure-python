@@ -88,6 +88,17 @@ Grouped by status, with pointers to the relevant code.
   - [ ] **Richer `eval` results.** Only expressions reducing to a `ConstantResult`
     are returned today; TDS/relation/streaming results need a serializer.
 
+- **PCT compatibility report.** `pure_python/report/pct.py`
+  (`python -m pure_python.report.pct`) renders a Markdown matrix of Pure
+  functions with a single **pure-python** column (tests passing per function),
+  mirroring Legend's `GeneratePCT`. It reads Legend's serialized PCT data
+  (pinned snapshot under `vendor/legend-pure/pct/`), so it runs offline. The
+  column reflects Legend's compiled-execution adapter (the path `eval` uses).
+  - [ ] **Differentiated pure-python column.** Today the column equals Legend's
+    compiled adapter. A column that round-trips each test's model/function
+    through pure-python's m3 before executing (measuring representation
+    fidelity) needs the expression layer below.
+
 - [ ] **Legend protocol model (`PureModelContextData`).** The deferred fork:
   the legend-engine JSON protocol (Mapping, Connection, Runtime, Service,
   relational stores, ...). Unlocks "all Legend types" and JSON interop /

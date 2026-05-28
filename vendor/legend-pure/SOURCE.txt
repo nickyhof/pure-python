@@ -37,5 +37,23 @@ The only edit to any vendored grammar is one added line in M3CoreParser.g4 --
 `options { tokenVocab=M3CoreLexer; }` -- so the split lexer/parser pair can be
 generated standalone.
 
+The pct/ subdirectory holds Legend's serialized PCT (Pure Compatibility Test)
+data -- a pinned snapshot used by pure_python.report.pct to render the PCT
+report (no JVM needed). These are the `pct-reports/*.json` resources extracted
+verbatim from the published Legend jars (the same versions the legend-bridge
+builds against: legend-pure 5.86.0, legend-engine 4.129.8):
+
+  FUNCTIONS_<group>.json                  <- the function definitions (report rows)
+  ADAPTER_<group>_compiled_Native.json    <- compiled-execution test results
+
+  group = essential, grammar               from legend-pure-m3-core /
+                                           legend-pure-runtime-java-engine-compiled
+  group = standard, relation,              from legend-engine-pure-functions-<group>-pure /
+          unclassified, variant            legend-engine-pure-runtime-java-extension-compiled-functions-<group>
+
+The pure-python PCT column reflects the compiled-execution adapter -- the same
+engine path LegendBridge.evaluate delegates to. To refresh, re-extract the
+`pct-reports/*.json` resources from those jars at the desired versions.
+
 To refresh: re-clone legend-pure at the desired commit, copy the files above,
 then run `python -m pure_python.codegen.generate`.

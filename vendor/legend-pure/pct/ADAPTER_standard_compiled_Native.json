@@ -1,0 +1,963 @@
+{
+  "reportScope" : {
+    "_package" : "meta::pure::functions",
+    "filePath" : "/core_functions_standard/",
+    "module" : "standard"
+  },
+  "adapterKey" : {
+    "adapter" : {
+      "_type" : "Adapter",
+      "name" : "Native",
+      "group" : "",
+      "function" : "meta::pure::test::pct::testAdapterForInMemoryExecution_Function_1__X_o_"
+    },
+    "platform" : "compiled"
+  },
+  "functionTests" : [ {
+    "sourceId" : "/core_functions_standard/math/aggregator/percentile.pure",
+    "tests" : [ {
+      "testName" : "testPercentile",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testPercentile_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testPercentile_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/sum.pure",
+    "tests" : [ {
+      "testName" : "testSum_Floats",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSum_Floats_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testSum_Floats_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testSum_Integers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSum_Integers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testSum_Integers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testSum_Numbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSum_Numbers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testSum_Numbers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/max.pure",
+    "tests" : [ {
+      "testName" : "testMax_FloatsArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_Floats",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_Floats_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMax_Floats_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testMax_IntegersArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_Integers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_Integers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMax_Integers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testMax_NumbersArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_Numbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_Numbers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMax_Numbers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/min.pure",
+    "tests" : [ {
+      "testName" : "testMin_FloatsArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_Floats",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_Floats_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMin_Floats_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testMin_IntegersArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_Integers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_Integers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMin_Integers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testMin_NumbersArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_Numbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_Numbers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMin_Numbers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/trigonometry/tanh.pure",
+    "tests" : [ {
+      "testName" : "testTanH_EvalFuncSig",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTanH_Eval",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTanH_Floats",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTanH_Identities",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTanH_Integers",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/collection/greatest.pure",
+    "tests" : [ {
+      "testName" : "testGreatest_Boolean",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_DateTime",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_Date",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_Empty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_Float",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_Integer",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_Number",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_Single",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_StrictDate",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testGreatest_String",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/date/aggregator/max.pure",
+    "tests" : [ {
+      "testName" : "testExtendMaxDate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMax_DateArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_DateTimeArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_DateTime",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_Date",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_StrictDateArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMax_StrictDate",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/variance.pure",
+    "tests" : [ {
+      "testName" : "testVariance_Population",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testVariance_Sample",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/tbd/hashCode.pure",
+    "tests" : [ {
+      "testName" : "testHashCode",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testHashCodeAggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/tbd/generateGuid.pure",
+    "tests" : [ {
+      "testName" : "testGenerateGuidWithRelation",
+      "success" : true,
+      "qualifiers" : [ "relation" ]
+    }, {
+      "testName" : "testGenerateGuid",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/collection/in.pure",
+    "tests" : [ {
+      "testName" : "testInForDecimal",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testInIsEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testInNonPrimitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testInPrimitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testIn_relation_extend",
+      "success" : true,
+      "qualifiers" : [ "relation" ]
+    }, {
+      "testName" : "testIn_relation_filter",
+      "success" : true,
+      "qualifiers" : [ "relation" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/tbd/bitShiftLeft.pure",
+    "tests" : [ {
+      "testName" : "testBitShiftLeft_MoreThan62Bits",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitShiftLeft_UpTo62Bits",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/date/extract/dayOfWeek.pure",
+    "tests" : [ {
+      "testName" : "testDayOfWeek",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testDayOfWeek_Relation",
+      "success" : true,
+      "qualifiers" : [ "relation" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/collection/or.pure",
+    "tests" : [ {
+      "testName" : "testOr",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/collection/min.pure",
+    "tests" : [ {
+      "testName" : "testMin",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/collection/and.pure",
+    "tests" : [ {
+      "testName" : "testAnd",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/average.pure",
+    "tests" : [ {
+      "testName" : "testAverage_Floats",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAverage_Floats_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testAverage_Floats_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testAverage_Integers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAverage_Integers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testAverage_Integers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testAverage_Numbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAverage_Numbers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testAverage_Numbers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testAverage_Round_Integers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/stdDevSample.pure",
+    "tests" : [ {
+      "testName" : "testFloatStdDev",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testIntStdDev",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMixedStdDev",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testNegativeNumberStdDev",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSimpleGroupByStandardDeviationSample",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testSimpleWindowStandardDeviationSample",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/date/aggregator/min.pure",
+    "tests" : [ {
+      "testName" : "testExtendMinDate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMin_DateArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_DateTimeArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_DateTime",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_Date",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_StrictDateArray",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMin_StrictDate",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/minBy.pure",
+    "tests" : [ {
+      "testName" : "testMinBy",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSimpleGroupByMinBy",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/boolean/operation/xor.pure",
+    "tests" : [ {
+      "testName" : "testXor_BinaryExpressions",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testXor_BinaryTruthTable",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/covarSample.pure",
+    "tests" : [ {
+      "testName" : "testCovarSample",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSimpleWindowCovarSample",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/trigonometry/sinh.pure",
+    "tests" : [ {
+      "testName" : "testSinH_EvalFuncSig",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSinH_Eval",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSinH_Floats",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSinH_Identities",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSinH_Integers",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/collection/least.pure",
+    "tests" : [ {
+      "testName" : "testLeast_Boolean",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_DateTime",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_Date",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_Empty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_Float",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_Integer",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_Number",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_Single",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_StrictDate",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeast_String",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/tbd/bitXor.pure",
+    "tests" : [ {
+      "testName" : "testBitXor_LargeNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitXor_NegativeNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitXor_SmallNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/wavg.pure",
+    "tests" : [ {
+      "testName" : "testSimpleGroupByMultipleWavg",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testSimpleGroupByWavg",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/covarPopulation.pure",
+    "tests" : [ {
+      "testName" : "testCovarPopulation",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSimpleWindowCovarPopulation",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/numeric/pi.pure",
+    "tests" : [ {
+      "testName" : "testPi",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/corr.pure",
+    "tests" : [ {
+      "testName" : "testCorr",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSimpleWindowCorr",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/zScore.pure",
+    "tests" : [ {
+      "testName" : "testZScore_FloatValues",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testZScore",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testZScore_SingleValuePartition",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/boolean/inequality/between.pure",
+    "tests" : [ {
+      "testName" : "testBetween_DateTime",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBetween_NumberFloat",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBetween_NumberInteger",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBetween_NumberLong",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBetween_StrictDate",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBetween_String",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/date/operation/timeBucket.pure",
+    "tests" : [ {
+      "testName" : "testTimeBucketDays",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketHours",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketMinutes",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketMonths",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketSeconds",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketWeeks",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketYears",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketDays",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketHours",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketMinutes",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketMonths",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketSeconds",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketWeeks",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testTimeBucketYears",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/tbd/bitAnd.pure",
+    "tests" : [ {
+      "testName" : "testBitAnd_LargeNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitAnd_NegativeNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitAnd_SmallNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/variancePopulation.pure",
+    "tests" : [ {
+      "testName" : "testSimpleGroupByVariancePopulation",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testSimpleWindowVariancePopulation",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testVariancePopulation",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/tbd/bitShiftRight.pure",
+    "tests" : [ {
+      "testName" : "testBitShiftRight_MoreThan62Bits",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitShiftRight_UpTo62Bits",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/numeric/toDegrees.pure",
+    "tests" : [ {
+      "testName" : "testToDegrees",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/tbd/bitOr.pure",
+    "tests" : [ {
+      "testName" : "testBitOr_LargeNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitOr_NegativeNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitOr_SmallNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/maxBy.pure",
+    "tests" : [ {
+      "testName" : "testMaxBy",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSimpleGroupByMaxBy",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/mode.pure",
+    "tests" : [ {
+      "testName" : "testMode_Float",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMode_Floats_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMode_Floats_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testMode_Integer",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMode_Integer_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMode_Integer_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testMode_Number",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMode_Number_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMode_Number_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/trigonometry/cosh.pure",
+    "tests" : [ {
+      "testName" : "testCosH_EvalFuncSig",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testCosH_Eval",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testCosH_Floats",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testCosH_Identities",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testCosH_Integers",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/stdDevPopulation.pure",
+    "tests" : [ {
+      "testName" : "testPopulationStandardDeviation",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSimpleGroupByStandardDeviationPopulation",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testSimpleWindowStandardDeviationPopulation",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/numeric/toRadians.pure",
+    "tests" : [ {
+      "testName" : "testToRadians",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/median.pure",
+    "tests" : [ {
+      "testName" : "testMedian_Floats",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMedian_Floats_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMedian_Floats_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testMedian_Integers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMedian_Integers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMedian_Integers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testMedian_Numbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMedian_Numbers_Relation_Aggregate",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testMedian_Numbers_Relation_Window",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/collection/max.pure",
+    "tests" : [ {
+      "testName" : "testMax",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/tbd/bitNot.pure",
+    "tests" : [ {
+      "testName" : "testBitNot_LargeNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitNot_NegativeNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testBitNot_SmallNumbers",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_standard/math/aggregator/varianceSample.pure",
+    "tests" : [ {
+      "testName" : "testSimpleGroupByVarianceSample",
+      "success" : true,
+      "qualifiers" : [ "aggregation", "relation" ]
+    }, {
+      "testName" : "testSimpleWindowVarianceSample",
+      "success" : true,
+      "qualifiers" : [ "relation", "olap" ]
+    }, {
+      "testName" : "testVarianceSample",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  } ]
+}

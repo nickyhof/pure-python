@@ -1,0 +1,390 @@
+{
+  "reportScope" : {
+    "_package" : "meta::pure::functions::variant",
+    "filePath" : "/core_functions_variant/functions/",
+    "module" : "variant"
+  },
+  "adapterKey" : {
+    "adapter" : {
+      "_type" : "Adapter",
+      "name" : "Native",
+      "group" : "",
+      "function" : "meta::pure::test::pct::testAdapterForInMemoryExecution_Function_1__X_o_"
+    },
+    "platform" : "compiled"
+  },
+  "functionTests" : [ {
+    "sourceId" : "/core_functions_variant/functions/convert/toMany.pure",
+    "tests" : [ {
+      "testName" : "testToClassWithInheritance",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClass",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToManyFromNonArray",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToManyInteger",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToManyVariant",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_variant/functions/convert/toVariant.pure",
+    "tests" : [ {
+      "testName" : "testEmpty",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testFloat",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testFloats",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testInteger",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testIntegers",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testListOfList",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testListOfMap",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testListOfPrimitives",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testListOfVariants",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testMapOfMap",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testMapOfVariantValues",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testMapWithMultipleKeys",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testMapWithPrimitiveValues",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testStrings",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_variant/functions/tests/composition.pure",
+    "tests" : [ {
+      "testName" : "testFilter_FromVariantAsPrimitive",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testFilter_FromVariant",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testFold_FromVariantAsPrimitive",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testFold_FromVariant",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testMap_FromVariantAsPrimitive",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testMap_FromVariant",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessNestedProperty_manyToMany",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessNestedProperty_manyToOne",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessNestedProperty_oneToMany",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessNestedProperty_oneToOne",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessNestedQualifiedProperty_manyToMany",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessNestedQualifiedProperty_manyToOne",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessNestedQualifiedProperty_oneToMany",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessNestedQualifiedProperty_oneToOne",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessProperty",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassAndAccessQualifiedProperty",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassWithInheritanceAndAccessProperty",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassWithInheritanceAndInstanceOf",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassWithInheritanceAndInstanceOf_withTypeLookup",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassWithInheritanceUsingCustomTypePropertyAndClassToType",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassWithInheritanceUsingCustomTypeProperty",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_variant/functions/navigation/get.pure",
+    "tests" : [ {
+      "testName" : "testGetFromArray",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testGetFromObjectWhenKeyDoesNotExists",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testGetFromObjectWhenKeyExists",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testGetFromZeroMultiplicityObject",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testNestedGet_arrayToMap",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testNestedGet_mapToArray",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_variant/functions/convert/fromJson.pure",
+    "tests" : [ {
+      "testName" : "testJsonArrayOfFloat",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonArrayOfInteger",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonArrayOfNull",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonArrayOfObject",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonArrayOfString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonFloat",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonInteger",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonNull",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonObject",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testJsonString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_variant/functions/convert/toJson.pure",
+    "tests" : [ {
+      "testName" : "testObjectToJson",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_variant/functions/convert/to.pure",
+    "tests" : [ {
+      "testName" : "testToAny",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToBooleanFalse",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToBooleanFromBadString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToBooleanFromString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToBooleanTrue",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClassWithInheritance",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToClass",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToDateTimeFromWrongString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToDateTime",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToEnum",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToFloatFromInteger",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToFloatFromString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToFloat",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToIntegerFromFloat",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToIntegerFromStringFloat",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToIntegerFromString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToInteger",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToListFromNonArrayVariant",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToListOfIntegers",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToListOfVariants",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToMapFromNonObjectVariant",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToMapWithIntegerValue",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToMapWithNonStringKeys",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToMapWithVariantValues",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToNull",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToStrictDateFromWrongString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToStrictDate",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToStringFromBoolean",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToStringFromNumber",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    }, {
+      "testName" : "testToString",
+      "success" : true,
+      "qualifiers" : [ "variant" ]
+    } ]
+  } ]
+}

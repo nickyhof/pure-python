@@ -1,0 +1,462 @@
+{
+  "reportScope" : {
+    "_package" : "meta::pure::functions",
+    "filePath" : "/core_functions_unclassified/",
+    "module" : "unclassified"
+  },
+  "adapterKey" : {
+    "adapter" : {
+      "_type" : "Adapter",
+      "name" : "Native",
+      "group" : "",
+      "function" : "meta::pure::test::pct::testAdapterForInMemoryExecution_Function_1__X_o_"
+    },
+    "platform" : "compiled"
+  },
+  "functionTests" : [ {
+    "sourceId" : "/core_functions_unclassified/string/padding/lpad.pure",
+    "tests" : [ {
+      "testName" : "testLpadDefaultCharacter",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLpadEmptyChar",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLpadEmptyString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLpadStringLongerThanLength",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLpad",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpLike.pure",
+    "tests" : [ {
+      "testName" : "testRegexpLike_CaseInsensitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpLike_CaseInsensitive_Multiline",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpLike_CaseInsensitive_Multiline_NonNewlineSensitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpLike_CaseInsensitive_NonNewlineSensitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpLike_CaseSensitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpLike",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpLike_Multiline",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpLike_Multiline_NonNewlineSensitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpLike_NonNewlineSensitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/similarity/jaroWinklerSimilarity.pure",
+    "tests" : [ {
+      "testName" : "testJaroWinklerSimilarityEqual",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testJaroWinklerSimilarityNotEqual",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpExtract.pure",
+    "tests" : [ {
+      "testName" : "testRegexpExtractAll",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpExtract",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/codec/decodeBase64.pure",
+    "tests" : [ {
+      "testName" : "testDecodeBase64NoPadding",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testDecodeBase64RoundTrip",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testDecodeBase64",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/padding/repeatString.pure",
+    "tests" : [ {
+      "testName" : "testRepeatStringEmptyString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRepeatStringNoString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRepeatString",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/transformation/toLowerFirstCharacter.pure",
+    "tests" : [ {
+      "testName" : "TestToLowerFirstCharacterAlreadyLower",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "TestToLowerFirstCharacterEmptyString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "TestToLowerFirstCharacterNumber",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "TestToLowerFirstCharacter",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/regex/matches.pure",
+    "tests" : [ {
+      "testName" : "testMatchesNoMatch",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testMatches",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/split/splitPart.pure",
+    "tests" : [ {
+      "testName" : "testSplitPartEmptyString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSplitPartEmptyToken",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSplitPartTypicalToken",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSplitPartWithNoSplit",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSplitPart",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpCount.pure",
+    "tests" : [ {
+      "testName" : "testRegexpCount_CaseInsensitive",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpCount",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/hash/hash.pure",
+    "tests" : [ {
+      "testName" : "testMD5Hash",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSHA1Hash",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSHA256Hash",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpReplace.pure",
+    "tests" : [ {
+      "testName" : "testregexpReplaceAll",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testregexpReplace",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/slice/right.pure",
+    "tests" : [ {
+      "testName" : "testRightEmptyString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRightTooShortString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRight",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpIndexOf.pure",
+    "tests" : [ {
+      "testName" : "testRegexpIndexOf",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRegexpIndexOf_GroupNumber",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/ascii/char.pure",
+    "tests" : [ {
+      "testName" : "testCharDigits",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testCharLower",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testCharUpper",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testEmptyChar",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testNewline",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testSpace",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/codec/encodeBase64.pure",
+    "tests" : [ {
+      "testName" : "testEncodeBase64RoundTrip",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testEncodeBase64",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/transformation/toUpperFirstCharacter.pure",
+    "tests" : [ {
+      "testName" : "TestToUpperFirstCharacterAlreadyLower",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "TestToUpperFirstCharacterEmptyString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "TestToUpperFirstCharacterNumber",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "TestToUpperFirstCharacter",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/padding/rpad.pure",
+    "tests" : [ {
+      "testName" : "testRpadDefaultCharacter",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRpadEmptyChar",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRpadEmptyString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRpadMultiChar",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRpadStringLongerThanLength",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testRpad",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/flow/coalesce.pure",
+    "tests" : [ {
+      "testName" : "coalesce2_AllEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce2_DefaultNotEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce2_FirstNotEmpty_AllOthersEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce2_FirstNotEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce2_SecondNotEmpty_AllOthersEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce2_SecondNotEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce3_AllEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce3_DefaultNotEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce3_FirstNotEmpty_AllOthersEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce3_FirstNotEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce3_SecondNotEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce3_ThirdNotEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce_AllEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce_FirstEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce_NotEmpty_DefaultEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "coalesce_NotEmpty",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/ascii/ascii.pure",
+    "tests" : [ {
+      "testName" : "testAsciiDigit",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAsciiEmptyChar",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAsciiLower",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAsciiMultiCharString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAsciiNewline",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAsciiUpper",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testAsciiWhitespace",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/slice/left.pure",
+    "tests" : [ {
+      "testName" : "testLeftEmptyString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeftTooShortString",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLeft",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/string/similarity/levenshteinDistance.pure",
+    "tests" : [ {
+      "testName" : "testLevenshteinDistanceEqual",
+      "success" : true,
+      "qualifiers" : [ ]
+    }, {
+      "testName" : "testLevenshteinDistanceNotEqual",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  }, {
+    "sourceId" : "/core_functions_unclassified/runtime/currentUserId.pure",
+    "tests" : [ {
+      "testName" : "testCurrentUserId",
+      "success" : true,
+      "qualifiers" : [ ]
+    } ]
+  } ]
+}

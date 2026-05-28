@@ -1,0 +1,355 @@
+{
+  "reportScope" : {
+    "_package" : "meta::pure::functions",
+    "filePath" : "/core_functions_unclassified/",
+    "module" : "unclassified"
+  },
+  "functionDefinitions" : [ {
+    "_package" : "meta::pure::functions::string",
+    "name" : "lpad",
+    "sourceId" : "/core_functions_unclassified/string/padding/lpad.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::lpad(String[1], Integer[1], String[1]):String[1]",
+      "id" : "meta::pure::functions::string::lpad_String_1__Integer_1__String_1__String_1_",
+      "documentation" : "Pads the beginning of a string with the specified character until it reaches the desired length.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::lpad(String[1], Integer[1]):String[1]",
+      "id" : "meta::pure::functions::string::lpad_String_1__Integer_1__String_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 5
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "regexpLike",
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpLike.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::regexpLike(String[1], String[1], RegexpParameter[1..*]):Boolean[1]",
+      "id" : "meta::pure::functions::string::regexpLike_String_1__String_1__RegexpParameter_$1_MANY$__Boolean_1_",
+      "documentation" : "Returns true or false depending on whether its pattern matches the given string. Unlike the function, meta::pure::functions::string::matches, it does not require the entire string to match. It succeeds if the string merely contains the pattern, unless the special tokens ^ and $ are used to anchor the regular expression to the start and end of the string. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpLike(String[1], String[1]):Boolean[1]",
+      "id" : "meta::pure::functions::string::regexpLike_String_1__String_1__Boolean_1_",
+      "documentation" : "Returns true or false depending on whether its pattern matches the given string. Unlike the function, meta::pure::functions::string::matches, it does not require the entire string to match. It succeeds if the string merely contains the pattern, unless the special tokens ^ and $ are used to anchor the regular expression to the start and end of the string. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 9
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "jaroWinklerSimilarity",
+    "sourceId" : "/core_functions_unclassified/string/similarity/jaroWinklerSimilarity.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::jaroWinklerSimilarity(String[1], String[1]):Float[1]",
+      "id" : "meta::pure::functions::string::jaroWinklerSimilarity_String_1__String_1__Float_1_",
+      "documentation" : "Calculates the Jaro-Winkler similarity between two strings, returning a value between 0 and 1.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "regexpExtract",
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpExtract.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::regexpExtract(String[1], String[1], Boolean[1], Integer[1], RegexpParameter[1..*]):String[*]",
+      "id" : "meta::pure::functions::string::regexpExtract_String_1__String_1__Boolean_1__Integer_1__RegexpParameter_$1_MANY$__String_MANY_",
+      "documentation" : "Returns the substring that matches a regular expression within a string. If extractAll is true, then it returns an array that contains all substrings that match a regular expression within a string. Group number specifies which group to extract. Groups are specified by using parentheses in the regular expression. The group number defaults to 0. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpExtract(String[1], String[1], Boolean[1]):String[*]",
+      "id" : "meta::pure::functions::string::regexpExtract_String_1__String_1__Boolean_1__String_MANY_",
+      "documentation" : "Returns the substring that matches a regular expression within a string. If extractAll is true, then it returns an array that contains all substrings that match a regular expression within a string. Group number specifies which group to extract. Groups are specified by using parentheses in the regular expression. The group number defaults to 0. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpExtract(String[1], String[1], Boolean[1], Integer[1]):String[*]",
+      "id" : "meta::pure::functions::string::regexpExtract_String_1__String_1__Boolean_1__Integer_1__String_MANY_",
+      "documentation" : "Returns the substring that matches a regular expression within a string. If extractAll is true, then it returns an array that contains all substrings that match a regular expression within a string. Group number specifies which group to extract. Groups are specified by using parentheses in the regular expression. The group number defaults to 0. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpExtract(String[1], String[1], Boolean[1], RegexpParameter[1..*]):String[*]",
+      "id" : "meta::pure::functions::string::regexpExtract_String_1__String_1__Boolean_1__RegexpParameter_$1_MANY$__String_MANY_",
+      "documentation" : "Returns the substring that matches a regular expression within a string. If extractAll is true, then it returns an array that contains all substrings that match a regular expression within a string. Group number specifies which group to extract. Groups are specified by using parentheses in the regular expression. The group number defaults to 0. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "decodeBase64",
+    "sourceId" : "/core_functions_unclassified/string/codec/decodeBase64.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::decodeBase64(String[1]):String[1]",
+      "id" : "meta::pure::functions::string::decodeBase64_String_1__String_1_",
+      "documentation" : "Decodes a Base64-encoded string and returns the original string.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "toLowerFirstCharacter",
+    "sourceId" : "/core_functions_unclassified/string/transformation/toLowerFirstCharacter.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::toLowerFirstCharacter(String[1]):String[1]",
+      "id" : "meta::pure::functions::string::toLowerFirstCharacter_String_1__String_1_",
+      "documentation" : "Lower cases the first charater of the provided string",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 4
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "repeatString",
+    "sourceId" : "/core_functions_unclassified/string/padding/repeatString.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::repeatString(String[0..1], Integer[1]):String[0..1]",
+      "id" : "meta::pure::functions::string::repeatString_String_$0_1$__Integer_1__String_$0_1$_",
+      "documentation" : "Repeats the given string a specified number of times and returns the resulting concatenated string.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "matches",
+    "sourceId" : "/core_functions_unclassified/string/regex/matches.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::matches(String[1], String[1]):Boolean[1]",
+      "id" : "meta::pure::functions::string::matches_String_1__String_1__Boolean_1_",
+      "documentation" : "Returns true or false depending on whether its pattern matches the given string. It only succeeds if its pattern matches the entire string. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "splitPart",
+    "sourceId" : "/core_functions_unclassified/string/split/splitPart.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::splitPart(String[0..1], String[1], Integer[1]):String[0..1]",
+      "id" : "meta::pure::functions::string::splitPart_String_$0_1$__String_1__Integer_1__String_$0_1$_",
+      "documentation" : "Split the string and select the part.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 5
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "regexpCount",
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpCount.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::regexpCount(String[1], String[1], RegexpParameter[1..*]):Integer[1]",
+      "id" : "meta::pure::functions::string::regexpCount_String_1__String_1__RegexpParameter_$1_MANY$__Integer_1_",
+      "documentation" : "Returns the number of times that a pattern occurs in a string. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpCount(String[1], String[1]):Integer[1]",
+      "id" : "meta::pure::functions::string::regexpCount_String_1__String_1__Integer_1_",
+      "documentation" : "Returns the number of times that a pattern occurs in a string. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::hash",
+    "name" : "hash",
+    "sourceId" : "/core_functions_unclassified/hash/hash.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::hash::hash(String[1], HashType[1]):String[1]",
+      "id" : "meta::pure::functions::hash::hash_String_1__HashType_1__String_1_",
+      "documentation" : "Computes the hash of the given text using the specified hash algorithm (MD5, SHA1, or SHA256) and returns the resulting hash as a string.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "regexpReplace",
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpReplace.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::regexpReplace(String[1], String[1], String[1], Boolean[1], RegexpParameter[1..*]):String[1]",
+      "id" : "meta::pure::functions::string::regexpReplace_String_1__String_1__String_1__Boolean_1__RegexpParameter_$1_MANY$__String_1_",
+      "documentation" : "Returns the subject with the specified pattern — or all occurrences of the pattern, if replaceAll is true — either removed or replaced by a replacement string. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpReplace(String[1], String[1], String[1], Boolean[1]):String[1]",
+      "id" : "meta::pure::functions::string::regexpReplace_String_1__String_1__String_1__Boolean_1__String_1_",
+      "documentation" : "Returns the subject with the specified pattern — or all occurrences of the pattern, if replaceAll is true — either removed or replaced by a replacement string. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "right",
+    "sourceId" : "/core_functions_unclassified/string/slice/right.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::right(String[1], Integer[1]):String[1]",
+      "id" : "meta::pure::functions::string::right_String_1__Integer_1__String_1_",
+      "documentation" : "Return last n characters in the string. The given length n must be larger than zero.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "regexpIndexOf",
+    "sourceId" : "/core_functions_unclassified/string/regex/regexpIndexOf.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::regexpIndexOf(String[1], String[1], Integer[1], RegexpParameter[1..*]):Integer[1]",
+      "id" : "meta::pure::functions::string::regexpIndexOf_String_1__String_1__Integer_1__RegexpParameter_$1_MANY$__Integer_1_",
+      "documentation" : "Returns the position of the specified occurrence of the regular expression pattern in the string subject. Group number specifies which group to extract. Groups are specified by using parentheses in the regular expression. The group number defaults to 0. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpIndexOf(String[1], String[1]):Integer[1]",
+      "id" : "meta::pure::functions::string::regexpIndexOf_String_1__String_1__Integer_1_",
+      "documentation" : "Returns the position of the specified occurrence of the regular expression pattern in the string subject. Group number specifies which group to extract. Groups are specified by using parentheses in the regular expression. The group number defaults to 0. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpIndexOf(String[1], String[1], Integer[1]):Integer[1]",
+      "id" : "meta::pure::functions::string::regexpIndexOf_String_1__String_1__Integer_1__Integer_1_",
+      "documentation" : "Returns the position of the specified occurrence of the regular expression pattern in the string subject. Group number specifies which group to extract. Groups are specified by using parentheses in the regular expression. The group number defaults to 0. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::regexpIndexOf(String[1], String[1], RegexpParameter[1..*]):Integer[1]",
+      "id" : "meta::pure::functions::string::regexpIndexOf_String_1__String_1__RegexpParameter_$1_MANY$__Integer_1_",
+      "documentation" : "Returns the position of the specified occurrence of the regular expression pattern in the string subject. Group number specifies which group to extract. Groups are specified by using parentheses in the regular expression. The group number defaults to 0. By default, it does case-sensitive matching and single-line mode, and POSIX wildcard character . does not match \\n newline characters. The platform supports the full POSIX ERE (Extended Regular Expression) syntax.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "char",
+    "sourceId" : "/core_functions_unclassified/string/ascii/char.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::char(Integer[1]):String[1]",
+      "id" : "meta::pure::functions::string::char_Integer_1__String_1_",
+      "documentation" : "Returns the character corresponding to the specified ASCII integer value.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 6
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "encodeBase64",
+    "sourceId" : "/core_functions_unclassified/string/codec/encodeBase64.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::encodeBase64(String[1]):String[1]",
+      "id" : "meta::pure::functions::string::encodeBase64_String_1__String_1_",
+      "documentation" : "Encodes a string into its Base64 representation.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "toUpperFirstCharacter",
+    "sourceId" : "/core_functions_unclassified/string/transformation/toUpperFirstCharacter.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::toUpperFirstCharacter(String[1]):String[1]",
+      "id" : "meta::pure::functions::string::toUpperFirstCharacter_String_1__String_1_",
+      "documentation" : "Upper cases the first character of the provided string",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 4
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "rpad",
+    "sourceId" : "/core_functions_unclassified/string/padding/rpad.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::rpad(String[1], Integer[1], String[1]):String[1]",
+      "id" : "meta::pure::functions::string::rpad_String_1__Integer_1__String_1__String_1_",
+      "documentation" : "Pads the end of a string with the specified character until it reaches the desired length.",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::string::rpad(String[1], Integer[1]):String[1]",
+      "id" : "meta::pure::functions::string::rpad_String_1__Integer_1__String_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 6
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "ascii",
+    "sourceId" : "/core_functions_unclassified/string/ascii/ascii.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::ascii(String[1]):Integer[1]",
+      "id" : "meta::pure::functions::string::ascii_String_1__Integer_1_",
+      "documentation" : "Returns the ASCII integer value of the first character in the given string.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 7
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "levenshteinDistance",
+    "sourceId" : "/core_functions_unclassified/string/similarity/levenshteinDistance.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::levenshteinDistance(String[1], String[1]):Integer[1]",
+      "id" : "meta::pure::functions::string::levenshteinDistance_String_1__String_1__Integer_1_",
+      "documentation" : "Calculates the Levenshtein distance between two strings, returning the number of single character edits required to transform one string into the other.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 2
+  }, {
+    "_package" : "meta::pure::functions::string",
+    "name" : "left",
+    "sourceId" : "/core_functions_unclassified/string/slice/left.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::string::left(String[1], Integer[1]):String[1]",
+      "id" : "meta::pure::functions::string::left_String_1__Integer_1__String_1_",
+      "documentation" : "Return first n characters in the string. The given length n must be larger than zero.",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 3
+  }, {
+    "_package" : "meta::pure::functions::flow",
+    "name" : "coalesce",
+    "sourceId" : "/core_functions_unclassified/flow/coalesce.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::flow::coalesce(T[0..1], T[1]):T[1]",
+      "id" : "meta::pure::functions::flow::coalesce_T_$0_1$__T_1__T_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::flow::coalesce(T[0..1], T[0..1], T[1]):T[1]",
+      "id" : "meta::pure::functions::flow::coalesce_T_$0_1$__T_$0_1$__T_1__T_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::flow::coalesce(T[0..1], T[0..1], T[0..1], T[1]):T[1]",
+      "id" : "meta::pure::functions::flow::coalesce_T_$0_1$__T_$0_1$__T_$0_1$__T_1__T_1_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::flow::coalesce(T[0..1], T[0..1]):T[0..1]",
+      "id" : "meta::pure::functions::flow::coalesce_T_$0_1$__T_$0_1$__T_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::flow::coalesce(T[0..1], T[0..1], T[0..1]):T[0..1]",
+      "id" : "meta::pure::functions::flow::coalesce_T_$0_1$__T_$0_1$__T_$0_1$__T_$0_1$_",
+      "platformOnly" : false
+    }, {
+      "simple" : "meta::pure::functions::flow::coalesce(T[0..1], T[0..1], T[0..1], T[0..1]):T[0..1]",
+      "id" : "meta::pure::functions::flow::coalesce_T_$0_1$__T_$0_1$__T_$0_1$__T_$0_1$__T_$0_1$_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 16
+  }, {
+    "_package" : "meta::pure::functions::runtime",
+    "name" : "currentUserId",
+    "sourceId" : "/core_functions_unclassified/runtime/currentUserId.pure",
+    "signatures" : [ {
+      "simple" : "meta::pure::functions::runtime::currentUserId():String[1]",
+      "id" : "meta::pure::functions::runtime::currentUserId__String_1_",
+      "platformOnly" : false
+    } ],
+    "testCount" : 0,
+    "pctTestCount" : 1
+  } ]
+}

@@ -13,6 +13,7 @@ pip install -e ".[dev]"        # Python >= 3.10; installs pytest
 python -m pytest -q            # run all tests
 python -m pytest tests/test_compile.py::test_rich_round_trip_preserves_generics_annotations_and_qualified_properties -q   # single test
 python -m pure_python.codegen.generate   # regenerate pure_python/m3/metamodel.py from vendored .pure sources
+python -m pure_python.report.pct         # render the PCT compatibility report -> docs/PCT_Report.md (offline)
 mvn -f legend-bridge package             # (optional, needs JDK 21 + Maven) build the Legend bridge jar
 ```
 
@@ -48,6 +49,8 @@ Three core layers / packages, plus an optional fourth (the Legend bridge).
 - `annotations.py`: the `Stereotype` and `Tag` markers used inside `typing.Annotated` to attach Pure stereotypes / tagged values to fields.
 
 **4. `pure_python/legend/` + `legend-bridge/` — bridge to the real Legend engine (optional).** `legend-bridge/` is a tiny Java CLI built (shaded jar) on the published `org.finos.legend.engine` grammar + compiler + plan-execution artifacts; `pure_python/legend/bridge.py` (`LegendBridge`) shells out to it one request at a time (command in argv, payload on stdin, result on stdout). `parse` runs pure-python's emitted Pure through Legend's *real* `PureGrammarParser` and returns `PureModelContextData` JSON; `compose` renders that JSON back via `PureGrammarComposer`; `eval` compiles a model + lambda (`Compiler` → `PlanGenerator` → `PlanExecutor`) and returns the executed value. This makes Legend itself the oracle for what pure-python emits/represents, and seeds the Tier 2 protocol-model work. Notes: the plan client version is `vX_X_X` (concrete versions like `v1_33_0` are not registered in the bundled core platform); `eval` currently returns only `ConstantResult` values; and the harness silences stdout during compilation so engine logging can't corrupt the JSON result. The package degrades gracefully: `LegendBridge.available()` is `False` when the jar/JVM is absent, so tests skip.
+
+**5. `pure_python/report/` — compatibility reports.** `pct.py` (`python -m pure_python.report.pct`) renders a **PCT (Pure Compatibility Test)** report: a Markdown matrix of Pure functions with a single **pure-python** column (tests passing per function). It reads Legend's serialized PCT data — a pinned snapshot vendored under `vendor/legend-pure/pct/` (`FUNCTIONS_<group>.json` rows + `ADAPTER_<group>_compiled_Native.json` results) — so it runs fully offline (no JVM). The pure-python column reflects Legend's **compiled-execution** adapter, i.e. the same engine path `LegendBridge.eval` delegates to. Output goes to `docs/PCT_Report.md`.
 
 ## Conventions worth knowing
 
