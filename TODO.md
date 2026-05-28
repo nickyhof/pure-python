@@ -1,49 +1,65 @@
 # TODO
 
-Follow-on work for the Python representation of the Pure (FINOS Legend) M3
-metamodel. Grouped by area, with pointers to the relevant code.
+Work for the Python representation of the Pure (FINOS Legend) M3 metamodel.
+Grouped by status, with pointers to the relevant code.
 
-## Codegen / metamodel coverage
+## Done
 
-- [ ] **Parse the `Association` grammar.** `codegen/grammar.py` currently parses
-  `Association` for shape but discards the result (`_GrammarParser.parse`).
-  Map it to `m3.Association` (two properties, the inline `[2]` upper bound) and
-  merge it like classes.
-- [ ] **Parse qualified / derived properties in the readable grammar.**
-  `_parse_property` skips anything with a `(` (see the early `return None`).
-  Capture them as `m3.QualifiedProperty` (name, return type, multiplicity),
-  mirroring what the compile layer already does for Python `@property`.
-- [ ] **Preserve type arguments in the generated metamodel.**
-  `grammar._type_ref` drops `<...>` and `emit` uses base names only, so
-  `function : Function<Z>[1]` becomes `function: Function`. Carry type
-  arguments on `MetaProperty` and emit subscripted annotations
+- **Generate the M3 core type system from the bootstrap `m3.pure`.**
+  `codegen/lexer.py` + `parser.py` parse the instance syntax; `schema.py`
+  lowers it to a neutral `MetaModel`; `emit.py` + `generate.py` render
+  `pure_python/m3/metamodel.py`. A drift test enforces that the committed file
+  equals the generator output.
+- **Parse the readable Pure grammar.** `codegen/grammar.py` parses
+  `relation.pure`, `variant.pure`, `milestoning.pure` and merges them in
+  (now 101 classes). Generics are emitted as `typing.TypeVar` /
+  `typing.Generic[...]`.
+- **Bidirectional compile layer.** `compile/python_to_m3.py` (dataclasses ->
+  `m3.Class`) and `compile/m3_to_python.py` (`m3` -> importable dataclass
+  module), including generics, `typing.Annotated` stereotypes/tags, and
+  `@property` -> `QualifiedProperty`.
+- **Pure source emitter.** `compile/m3_to_pure.py` renders `m3` as Pure
+  grammar, with a reverse round-trip test through `codegen/grammar.py`.
+
+## Tier 1 -- finish the round-trip design
+
+- [x] **Map Python class inheritance to generalizations.** Direct dataclass
+  bases become `Class.generalizations`; only a class's own fields are emitted.
+  `m3_to_python` emits the base list and topologically sorts so bases precede
+  subclasses; `m3_to_pure` emits `extends`. Round-trips via import.
+- [ ] **Preserve type arguments end-to-end in the generated metamodel.**
+  `grammar._type_ref` drops `<...>` and the schema's `_raw_type` keeps only the
+  base name, so `function : Function<Z>[1]` becomes `function: Function`. Carry
+  type arguments through `MetaProperty` and emit subscripted annotations
   (`Function[Z]`), as the compile layer already does via `GenericType.typeArguments`.
-
-## Compile layer (Python <-> M3)
-
-- [ ] **Map Python class inheritance to generalizations.** `python_to_m3.to_class`
-  reads `dataclasses.fields`, which flattens inherited fields, and sets no
-  bases. Detect base dataclasses, set `Class.generalizations`, and only emit a
-  class's own fields. `m3_to_python` should then emit the base list.
-- [ ] **Class-level stereotypes & tagged values.** Only property-level markers
-  (via `typing.Annotated`) are supported today. Add a class decorator (or
-  convention) so `Class.stereotypes` / `Class.taggedValues` round-trip too.
-- [ ] **Support `Annotated` markers nested inside unions.** `_split_annotated`
-  only handles a top-level `Annotated`, so markers must wrap the whole type
-  (`Annotated[str | None, Tag(...)]`). Also unwrap `Annotated[str, Tag(...)] | None`.
+- [ ] **Parse the `Association` grammar.** `codegen/grammar.py` parses
+  `Association` for shape but discards it. Represent it (two end properties,
+  inline `[2]` bound) and merge like classes.
+- [ ] **Parse qualified / derived properties in the readable grammar.**
+  `_parse_property` skips anything with a `(`. Capture them as
+  `m3.QualifiedProperty`. This also lets `m3_to_pure` emit derived properties
+  (with a body) and enables a full same-type `m3 -> Pure -> m3` loop.
+- [x] **Support `Annotated` markers nested inside unions.** `_strip_annotations`
+  recursively pulls metadata out of unions, so both `Annotated[str | None, Tag]`
+  and `Annotated[str, Tag] | None` work.
 - [ ] **Preserve Python enum values.** Enum members round-trip by name; a Python
-  value such as `Color.RED = 1` is lost (Pure enums are name-only). Decide on a
-  tagged-value convention to carry the value.
-- [ ] **Revisit `bytes` mapping.** `bytes -> Byte` maps back to `int` (`Byte`
-  has no distinct Python type in `_PURE_TO_PY`), so a `bytes` field does not
-  round-trip exactly. Decide whether to preserve a distinct bytes mapping.
+  value such as `Color.RED = 1` is lost (Pure enums are name-only). `m3.Enum` is
+  an `AnnotatedElement`, so a tagged-value convention could carry the value.
+- [x] **Revisit `bytes` mapping.** `m3_to_python._PURE_TO_PY` now maps
+  `Byte -> bytes`, so `bytes` fields round-trip (Pure has no richer bytes type).
 
-## New capability
+## Tier 2 -- new capabilities
 
-- [x] **Emit Pure source from `m3`.** `compile/m3_to_pure.py` renders `m3`
-  instances as Pure grammar (classes with generics/type-args, stereotypes,
-  tagged values, multiplicities; enumerations; reconstructed profiles). A
-  reverse round-trip test feeds the output back through `codegen/grammar.py`
-  and compares signatures. Still TODO: emit qualified (derived) properties
-  (needs a function body) and a full same-type `m3 -> Pure -> m3` loop once
-  the grammar parser produces `m3` instances / keeps type args & annotations.
+- [ ] **Legend protocol model (`PureModelContextData`).** The deferred fork:
+  the legend-engine JSON protocol (Mapping, Connection, Runtime, Service,
+  relational stores, ...). Unlocks "all Legend types" and JSON interop /
+  validation against the real engine. Largest effort, largest payoff.
+- [ ] **JSON (de)serialization of `m3` graphs.** Today `m3` graphs only render
+  to source. A `to_json` / `from_json` makes them persistable and is a stepping
+  stone toward the protocol model above.
+- [ ] **Expression / lambda / constraint representation.** The
+  `ValueSpecification` tree is generated but nothing populates function bodies,
+  constraints, or derived-property expressions.
+- [ ] **Project hygiene.** Add a `py.typed` marker (downstream typing), a CI
+  workflow running the tests + drift check, and a console entry point for the
+  generator.

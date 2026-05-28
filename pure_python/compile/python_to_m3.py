@@ -63,6 +63,27 @@ _COLLECTION_ORIGINS = (
 )
 
 
+def _strip_annotations(hint: object) -> tuple[object, tuple]:
+    """Pull ``Annotated`` metadata out, even when nested inside a union.
+
+    ``Annotated[str, M]`` -> ``(str, (M,))``;
+    ``Annotated[str, M] | None`` -> ``(str | None, (M,))``.
+    """
+    if hasattr(hint, "__metadata__"):
+        inner, markers = _strip_annotations(hint.__origin__)
+        return inner, (*hint.__metadata__, *markers)
+    origin = typing.get_origin(hint)
+    if origin is typing.Union or origin is types.UnionType:
+        cleaned: list = []
+        markers: tuple = ()
+        for arg in typing.get_args(hint):
+            clean_arg, arg_markers = _strip_annotations(arg)
+            cleaned.append(clean_arg)
+            markers += arg_markers
+        return typing.Union[tuple(cleaned)], markers
+    return hint, ()
+
+
 class Compiler:
     """Stateful converter; caches built types so references are shared."""
 
@@ -79,16 +100,24 @@ class Compiler:
             raise TypeError(f"{py_type!r} is not a dataclass")
         cls = m3.Class(name=py_type.__name__, package=self.package)
         self.classes[py_type] = cls  # register before fields so recursion terminates
+        for base in py_type.__bases__:
+            if dataclasses.is_dataclass(base):
+                cls.generalizations.append(
+                    m3.Generalization(general=m3.GenericType(rawType=self.to_class(base)), specific=cls)
+                )
         type_params = {
             tv.__name__: m3.TypeParameter(name=tv.__name__)
             for tv in getattr(py_type, "__parameters__", ())
         }
         cls.typeParameters = list(type_params.values())
+        own_fields = set(py_type.__dict__.get("__annotations__", {}))
         hints = typing.get_type_hints(py_type, include_extras=True)
         properties: list[m3.Property] = []
         for f in dataclasses.fields(py_type):
+            if f.name not in own_fields:
+                continue  # inherited -- it belongs to the base class
             hint = hints.get(f.name, f.type)
-            base, markers = self._split_annotated(hint)
+            base, markers = _strip_annotations(hint)
             generic, lower, upper = self._resolve(base, type_params)
             stereotypes, tagged = self._stereotypes_and_tags(markers)
             properties.append(
@@ -127,12 +156,6 @@ class Compiler:
         raise TypeError(f"cannot map Python type {annotation!r} to a Pure type")
 
     # -- internals -----------------------------------------------------
-    @staticmethod
-    def _split_annotated(hint: object) -> tuple[object, tuple]:
-        if hasattr(hint, "__metadata__"):
-            return hint.__origin__, hint.__metadata__
-        return hint, ()
-
     def _profile(self, name: str) -> m3.Profile:
         return self._profiles.setdefault(name, m3.Profile(name=name))
 
@@ -197,7 +220,7 @@ class Compiler:
             return_hint = typing.get_type_hints(attr.fget, include_extras=True).get("return")
             if return_hint is None:
                 continue
-            base, _ = self._split_annotated(return_hint)
+            base, _ = _strip_annotations(return_hint)
             generic, lower, upper = self._resolve(base, type_params)
             result.append(
                 m3.QualifiedProperty(

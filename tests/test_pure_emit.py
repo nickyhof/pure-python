@@ -46,6 +46,16 @@ class Simple:
     b: int | None = None
 
 
+@dataclasses.dataclass
+class Vehicle:
+    wheels: int
+
+
+@dataclasses.dataclass
+class Car(Vehicle):
+    brand: str
+
+
 def test_multiplicity_rendering():
     assert _multiplicity(m3.PureOne) == "[1]"
     assert _multiplicity(m3.ZeroOne) == "[0..1]"
@@ -125,6 +135,15 @@ def test_reverse_round_trip_class_signatures():
     for cls in compiler.classes.values():
         assert cls.name in reparsed, cls.name
         assert _m3_sig(cls) == _meta_sig(reparsed[cls.name])
+
+
+def test_pure_emits_inheritance_with_extends():
+    source = to_pure_module(compile_class(Car, package="demo"))
+    assert "Class demo::Car extends Vehicle" in source
+    assert "Class demo::Vehicle" in source
+    assert "brand : String[1];" in source
+    car_block = source.split("Class demo::Car")[1].split("}")[0]  # Car body only
+    assert "wheels" not in car_block  # inherited field is not redeclared on the subclass
 
 
 def test_reverse_round_trip_enum_and_profiles():

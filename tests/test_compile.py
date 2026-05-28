@@ -36,6 +36,18 @@ class Tagged:
     def summary(self) -> str: ...
 
 
+@dataclasses.dataclass
+class Animal:
+    name: str
+
+
+@dataclasses.dataclass
+class Dog(Animal):
+    breed: str
+    nickname: typing.Annotated[str, Tag("doc", "about", "pet")] | None = None
+    payload: bytes = b""
+
+
 class Color(enum.Enum):
     RED = "RED"
     GREEN = "GREEN"
@@ -239,7 +251,12 @@ def _rich_graph(compiler: Compiler) -> dict:
             tags = tuple(sorted((t.tag.profile.name, t.tag.value, t.value) for t in p.taggedValues))
             props[p.name] = (_type_sig(p.genericType), lower, upper, stereo, tags)
         qps = {q.name: (_type_sig(q.genericType), q.id) for q in cls.qualifiedProperties}
-        graph[cls.name] = ([tp.name for tp in cls.typeParameters], props, qps)
+        bases = sorted(
+            g.general.rawType.name
+            for g in cls.generalizations
+            if isinstance(g.general.rawType, m3.Class)
+        )
+        graph[cls.name] = ([tp.name for tp in cls.typeParameters], bases, props, qps)
     return graph
 
 
@@ -256,4 +273,40 @@ def test_rich_round_trip_preserves_generics_annotations_and_qualified_properties
     back.to_class(module.Holder)
     back.to_class(module.Tagged)
 
+    assert _rich_graph(forward) == _rich_graph(back)
+
+
+def test_inheritance_maps_to_generalizations_with_own_fields_only():
+    cls = compile_class(Dog, package="demo")
+    assert [g.general.rawType.name for g in cls.generalizations] == ["Animal"]
+    # Only Dog's own fields -- 'name' belongs to Animal.
+    assert {p.name for p in cls.properties} == {"breed", "nickname", "payload"}
+
+
+def test_annotated_marker_inside_union_is_captured():
+    cls = compile_class(Dog)
+    nickname = next(p for p in cls.properties if p.name == "nickname")
+    assert [(t.tag.profile.name, t.tag.value, t.value) for t in nickname.taggedValues] == [
+        ("doc", "about", "pet")
+    ]
+    assert (nickname.multiplicity.lowerBound.value, nickname.multiplicity.upperBound.value) == (0, 1)
+
+
+def test_bytes_field_round_trips_via_byte():
+    cls = compile_class(Dog)
+    payload = next(p for p in cls.properties if p.name == "payload")
+    assert payload.genericType.rawType.name == "Byte"
+    module = _load_module(to_module(cls), "pure_python_bytes_rt")
+    payload_field = next(f for f in dataclasses.fields(module.Dog) if f.name == "payload")
+    assert payload_field.type == "bytes"
+    back = compile_class(module.Dog)
+    assert next(p for p in back.properties if p.name == "payload").genericType.rawType.name == "Byte"
+
+
+def test_inheritance_round_trip_via_import():
+    forward = Compiler(package="demo")
+    forward.to_class(Dog)
+    module = _load_module(to_module(forward.to_class(Dog)), "pure_python_inheritance_rt")
+    back = Compiler(package="demo")
+    back.to_class(module.Dog)
     assert _rich_graph(forward) == _rich_graph(back)

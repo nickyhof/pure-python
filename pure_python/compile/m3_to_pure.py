@@ -154,6 +154,10 @@ def _collect(roots: tuple[m3.Type, ...]) -> tuple[list[m3.Class], list[m3.Enumer
             classes.append(node)
             for prop in node.properties:
                 stack.extend(_referenced(prop.genericType))
+            for generalization in node.generalizations:
+                raw = generalization.general.rawType if generalization.general else None
+                if isinstance(raw, m3.Class):
+                    stack.append(raw)
     return classes, enums
 
 

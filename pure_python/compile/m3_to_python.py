@@ -26,7 +26,7 @@ _PURE_TO_PY: dict[str, str] = {
     "Float": "float",
     "Number": "float",
     "Decimal": "Decimal",
-    "Byte": "int",
+    "Byte": "bytes",
     "StrictDate": "datetime.date",
     "Date": "datetime.date",
     "LatestDate": "datetime.date",
@@ -143,13 +143,18 @@ def to_source(cls: m3.Class, ctx: _Ctx | None = None) -> str:
     fields = [_field_for(p, context) for p in cls.properties]
     ordered = [f for f in fields if f.required] + [f for f in fields if not f.required]
 
-    bases = ""
+    base_names = [
+        g.general.rawType.name
+        for g in cls.generalizations
+        if isinstance(g.general.rawType, m3.Class)
+    ]
     if cls.typeParameters:
         params = ", ".join(tp.name for tp in cls.typeParameters)
         for tp in cls.typeParameters:
             context.typevars.add(tp.name)
         context.imports.add("import typing")
-        bases = f"(typing.Generic[{params}])"
+        base_names.append(f"typing.Generic[{params}]")
+    bases = f"({', '.join(base_names)})" if base_names else ""
 
     lines = ["@dataclass", f"class {cls.name}{bases}:"]
     body = [f.render() for f in ordered]
@@ -212,12 +217,38 @@ def _collect(roots: tuple[m3.Type, ...]) -> tuple[list[m3.Class], list[m3.Enumer
                 stack.extend(_referenced_types(prop.genericType))
             for qp in node.qualifiedProperties:
                 stack.extend(_referenced_types(qp.genericType))
+            for generalization in node.generalizations:
+                raw = generalization.general.rawType if generalization.general else None
+                if isinstance(raw, m3.Class):
+                    stack.append(raw)
     return classes, enums
+
+
+def _topo_sorted(classes: list[m3.Class]) -> list[m3.Class]:
+    """Order classes so a base class is emitted before its subclasses."""
+    by_name = {c.name: c for c in classes}
+    ordered: list[m3.Class] = []
+    visited: set[int] = set()
+
+    def visit(cls: m3.Class) -> None:
+        if id(cls) in visited:
+            return
+        visited.add(id(cls))
+        for generalization in cls.generalizations:
+            raw = generalization.general.rawType if generalization.general else None
+            if isinstance(raw, m3.Class) and raw.name in by_name:
+                visit(by_name[raw.name])
+        ordered.append(cls)
+
+    for cls in classes:
+        visit(cls)
+    return ordered
 
 
 def to_module(*roots: m3.Type) -> str:
     """Render a self-contained module for the given classes/enumerations and their deps."""
     classes, enums = _collect(roots)
+    classes = _topo_sorted(classes)
     ctx = _Ctx()
     enum_blocks = [_enum_source(e) for e in enums]
     class_blocks = [to_source(c, ctx) for c in classes]
