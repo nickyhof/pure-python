@@ -37,6 +37,8 @@ class MetaProperty:
     upper: int | None  # None == unbounded
     is_type_parameter: bool = False
     type_arguments: list[TypeRef] = field(default_factory=list)
+    stereotypes: list[tuple[str, str]] = field(default_factory=list)  # (profile, value)
+    tagged_values: list[tuple[str, str, str]] = field(default_factory=list)  # (profile, tag, value)
 
 
 @dataclass

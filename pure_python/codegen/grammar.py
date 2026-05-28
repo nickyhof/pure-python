@@ -148,6 +148,51 @@ class _GrammarParser:
             elif tok.value == "}":
                 depth -= 1
 
+    def _parse_stereotypes(self) -> list[tuple[str, str]]:
+        """Parse ``<< profile.value, ... >>`` into (profile, value) pairs."""
+        if self._peek().kind != "LSTER":
+            return []
+        self._next()  # '<<'
+        out: list[tuple[str, str]] = []
+        while self._peek().kind not in ("RSTER", "EOF"):
+            profile = self._next().value
+            value = profile
+            if self._peek().value == ".":
+                self._next()
+                value = self._next().value
+            else:
+                profile = ""
+            out.append((profile, value))
+            if self._peek().value == ",":
+                self._next()
+        if self._peek().kind == "RSTER":
+            self._next()  # '>>'
+        return out
+
+    def _parse_tagged_values(self) -> list[tuple[str, str, str]]:
+        """Parse ``{ profile.tag = 'value', ... }`` into (profile, tag, value) triples."""
+        if self._peek().value != "{":
+            return []
+        self._next()  # '{'
+        out: list[tuple[str, str, str]] = []
+        while self._peek().value != "}" and self._peek().kind != "EOF":
+            profile = self._next().value
+            tag = profile
+            if self._peek().value == ".":
+                self._next()
+                tag = self._next().value
+            else:
+                profile = ""
+            self._expect("=")
+            tok = self._next()
+            value = tok.value[1:-1] if tok.kind == "STRING" else tok.value
+            out.append((profile, tag, value))
+            if self._peek().value == ",":
+                self._next()
+        if self._peek().value == "}":
+            self._next()  # '}'
+        return out
+
     def _qualified_name(self) -> tuple[str, str]:
         """Return (package, simple name)."""
         parts = [self._next().value]
@@ -272,8 +317,8 @@ class _GrammarParser:
 
     def _parse_property(self) -> tuple[bool, MetaProperty]:
         """Return (is_qualified, property). Qualified properties keep only their signature."""
-        self._skip_stereotypes()
-        self._skip_tagged_values()
+        stereotypes = self._parse_stereotypes()
+        tagged_values = self._parse_tagged_values()
         name = self._next().value
         qualified = self._peek().value == "("
         if qualified:
@@ -285,7 +330,15 @@ class _GrammarParser:
         lower, upper = self._multiplicity()
         if self._peek().value == ";":
             self._next()
-        return qualified, MetaProperty(name, ref.name, lower, upper, type_arguments=ref.arguments)
+        return qualified, MetaProperty(
+            name,
+            ref.name,
+            lower,
+            upper,
+            type_arguments=ref.arguments,
+            stereotypes=stereotypes,
+            tagged_values=tagged_values,
+        )
 
     def _parse_enum(self) -> MetaEnum:
         self._next()  # 'Enum'

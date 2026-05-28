@@ -16,10 +16,11 @@ Two kinds of guarantee are asserted, so nothing is silently ignored:
    full (nested) type, multiplicity and aggregation, plus enumeration values --
    is identical at all three M3 stages (A == B == C).
 
-2. **The two features the Pure grammar parser cannot preserve are tracked, not
-   hidden.** Stereotypes and tagged values are present in graph A and faithfully
-   written to the Pure source, but `from_pure` drops them, so graphs B and C
-   contain none. (Qualified/derived properties *do* now survive by signature.)
+2. **Stereotypes and tagged values survive the Pure boundary.** They are present
+   in graph A, written to the Pure source (with reconstructed `Profile` blocks),
+   captured by `from_pure` into graph B, re-emitted as `typing.Annotated` markers
+   and recovered in graph C. (Qualified/derived properties also survive by
+   signature.)
 """
 
 from __future__ import annotations
@@ -129,14 +130,13 @@ def _canonical(types) -> dict:
     return out
 
 
-def _assert_no_stereotypes_or_tags(types) -> None:
-    """Stereotypes and tagged values do not survive the Pure grammar boundary."""
-    for t in types:
-        if isinstance(t, m3.Class):
-            for p in t.properties:
-                assert p.stereotypes == [] and p.taggedValues == []
-        elif isinstance(t, m3.Enumeration):
-            assert t.stereotypes == [] and t.taggedValues == []
+def _annotations_of(types, class_name: str, prop_name: str):
+    """Return (stereotypes, tagged values) of a property as comparable tuples."""
+    cls = next(t for t in types if isinstance(t, m3.Class) and t.name == class_name)
+    prop = next(p for p in cls.properties if p.name == prop_name)
+    stereotypes = [(s.profile.name, s.value) for s in prop.stereotypes]
+    tagged = [(t.tag.profile.name, t.tag.value, t.value) for t in prop.taggedValues]
+    return stereotypes, tagged
 
 
 def test_python_m3_pure_m3_python_round_trip():
@@ -179,22 +179,18 @@ def test_python_m3_pure_m3_python_round_trip():
     assert "label() {} : String[1];" in pure_source  # emitted with an empty body placeholder
     assert canonical_c["Account"][5]["label"] == (("raw", "String", ()), 1, 1)
 
-    # (2b) Stereotypes and tagged values are the features the grammar cannot
-    #      preserve -- tracked through every stage rather than hidden.
-    account_a = forward.classes[Account]
-    id_prop = next(p for p in account_a.properties if p.name == "id")
-    nickname_prop = next(p for p in account_a.properties if p.name == "nickname")
-    assert [(s.profile.name, s.value) for s in id_prop.stereotypes] == [("id", "primaryKey")]
-    assert [(t.tag.profile.name, t.tag.value, t.value) for t in nickname_prop.taggedValues] == [
-        ("doc", "about", "display name")
-    ]
+    # (2b) Stereotypes and tagged values survive the Pure boundary: present in A,
+    #      written to the Pure source (with Profile blocks), and recovered in B and C.
+    stereotypes, tagged = ([("id", "primaryKey")], [("doc", "about", "display name")])
+    assert _annotations_of(graph_a, "Account", "id") == (stereotypes, [])
+    assert _annotations_of(graph_a, "Account", "nickname") == ([], tagged)
     assert "<<id.primaryKey>> id : String[1];" in pure_source
     assert "{doc.about = 'display name'} nickname : String[0..1];" in pure_source
     assert "Profile id" in pure_source and "stereotypes: [primaryKey];" in pure_source
     assert "Profile doc" in pure_source and "tags: [about];" in pure_source
-    # ...and so stereotypes/tagged values are absent from graphs B and C.
-    _assert_no_stereotypes_or_tags(graph_b)
-    _assert_no_stereotypes_or_tags(graph_c)
+    for graph in (graph_b, graph_c):
+        assert _annotations_of(graph, "Account", "id") == (stereotypes, [])
+        assert _annotations_of(graph, "Account", "nickname") == ([], tagged)
 
     # The regenerated module is usable.
     account = module.SavingsAccount(

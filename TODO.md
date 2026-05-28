@@ -24,9 +24,10 @@ Grouped by status, with pointers to the relevant code.
   source into live `m3` instances, closing the loop. `tests/test_full_round_trip.py`
   drives one model through `Python -> M3 -> Pure -> M3 -> Python` and asserts
   the graph is identical at every M3 stage. (`m3_to_python` now emits
-  `kw_only=True` dataclasses so inheritance survives the trip.) Only stereotypes
-  and tagged values are dropped at the Pure boundary; everything else --
-  including generalizations, type arguments and qualified properties -- survives.
+  `kw_only=True` dataclasses so inheritance survives the trip.) Generalizations,
+  type arguments, qualified properties, and property-level stereotypes / tagged
+  values all survive; the only Pure-boundary drops left are enum-member values
+  (Pure enums are name-only) and class-level annotations.
 
 ## Tier 1 -- finish the round-trip design
 
@@ -46,16 +47,21 @@ Grouped by status, with pointers to the relevant code.
 - [x] **Parse qualified / derived properties in the readable grammar.**
   `grammar.py` captures them by signature (parameters and lambda body skipped);
   `m3_to_pure` emits `name() {} : Type[mult];` and `pure_to_m3` lifts them into
-  `m3.QualifiedProperty`, so they now survive the round trip (stereotypes and
-  tagged values remain the only features dropped at the Pure boundary).
+  `m3.QualifiedProperty`, so they now survive the round trip.
+- [x] **Preserve property-level stereotypes and tagged values across the Pure
+  boundary.** `grammar.py` now parses `<<profile.value>>` and
+  `{profile.tag = 'v'}` annotations (instead of skipping them) and `pure_to_m3`
+  rebuilds shared `m3.Profile` / `Stereotype` / `Tag` / `TaggedValue` instances,
+  so they survive `Python -> M3 -> Pure -> M3 -> Python` (asserted in
+  `test_full_round_trip.py`).
 - [x] **Support `Annotated` markers nested inside unions.** `_strip_annotations`
   recursively pulls metadata out of unions, so both `Annotated[str | None, Tag]`
   and `Annotated[str, Tag] | None` work.
 - [x] **Preserve Python enum values.** When a member's value differs from its
   name, `python_to_m3` stores it as a tagged value (`pure_python.enumValue`) on
   the `m3.Enum`, and `m3_to_python` emits it back, so `Color.RED = 1` round-trips
-  through the Python <-> M3 loop. (Pure enums are name-only, so the value is
-  dropped at the Pure boundary like other tags.)
+  through the Python <-> M3 loop. (Pure enums are name-only, so this enum-member
+  value is dropped at the Pure boundary, unlike property-level tags.)
 - [x] **Revisit `bytes` mapping.** `m3_to_python._PURE_TO_PY` now maps
   `Byte -> bytes`, so `bytes` fields round-trip (Pure has no richer bytes type).
 
