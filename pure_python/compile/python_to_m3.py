@@ -9,7 +9,12 @@ from the field's type hint:
 * a nested dataclass -> a Pure ``Class`` (built once, shared, so self- and
   mutual references resolve to the same instance)
 * an ``enum.Enum`` -> a Pure ``Enumeration``
-* ``X``  -> multiplicity [1..1]; ``X | None`` -> [0..1]; ``list[X]`` -> [0..*]
+* a ``TypeVar`` -> a ``GenericType`` carrying a ``TypeParameter``; the owning
+  class records its ``typeParameters`` from ``typing.Generic[...]``
+* ``X`` -> [1..1]; ``X | None`` -> [0..1]; ``list[X]`` -> [0..*]
+
+``typing.Annotated[T, Stereotype(...), Tag(...)]`` attaches Pure stereotypes and
+tagged values, and ``@property`` accessors become qualified (derived) properties.
 """
 
 from __future__ import annotations
@@ -24,9 +29,9 @@ import typing
 
 from pure_python import m3
 
-# Exact-type -> Pure primitive singleton. ``bool`` precedes ``int`` and
-# ``datetime`` precedes ``date`` only matters for issubclass checks; lookups
-# here are by exact type so order is irrelevant, but both are listed.
+from .annotations import Stereotype as StereotypeMarker
+from .annotations import Tag as TagMarker
+
 _PRIMITIVE: dict[type, m3.PrimitiveType] = {
     str: m3.String,
     bool: m3.Boolean,
@@ -65,6 +70,7 @@ class Compiler:
         self.package = package
         self.classes: dict[type, m3.Class] = {}
         self.enums: dict[type, m3.Enumeration] = {}
+        self._profiles: dict[str, m3.Profile] = {}
 
     def to_class(self, py_type: type) -> m3.Class:
         if py_type in self.classes:
@@ -73,20 +79,31 @@ class Compiler:
             raise TypeError(f"{py_type!r} is not a dataclass")
         cls = m3.Class(name=py_type.__name__, package=self.package)
         self.classes[py_type] = cls  # register before fields so recursion terminates
-        hints = typing.get_type_hints(py_type)
+        type_params = {
+            tv.__name__: m3.TypeParameter(name=tv.__name__)
+            for tv in getattr(py_type, "__parameters__", ())
+        }
+        cls.typeParameters = list(type_params.values())
+        hints = typing.get_type_hints(py_type, include_extras=True)
         properties: list[m3.Property] = []
         for f in dataclasses.fields(py_type):
-            raw, lower, upper = self._resolve(hints.get(f.name, f.type))
+            hint = hints.get(f.name, f.type)
+            base, markers = self._split_annotated(hint)
+            generic, lower, upper = self._resolve(base, type_params)
+            stereotypes, tagged = self._stereotypes_and_tags(markers)
             properties.append(
                 m3.Property(
                     name=f.name,
-                    genericType=m3.GenericType(rawType=raw),
+                    genericType=generic,
                     multiplicity=_MULTIPLICITY[(lower, upper)],
                     owner=cls,
                     aggregation=m3.AggregationKind.None_,
+                    stereotypes=stereotypes,
+                    taggedValues=tagged,
                 )
             )
         cls.properties = properties
+        cls.qualifiedProperties = self._qualified_properties(py_type, cls, type_params)
         return cls
 
     def to_enumeration(self, py_enum: type) -> m3.Enumeration:
@@ -109,7 +126,51 @@ class Compiler:
             return m3.Any()
         raise TypeError(f"cannot map Python type {annotation!r} to a Pure type")
 
-    def _resolve(self, annotation: object) -> tuple[m3.Type, int, int | None]:
+    # -- internals -----------------------------------------------------
+    @staticmethod
+    def _split_annotated(hint: object) -> tuple[object, tuple]:
+        if hasattr(hint, "__metadata__"):
+            return hint.__origin__, hint.__metadata__
+        return hint, ()
+
+    def _profile(self, name: str) -> m3.Profile:
+        return self._profiles.setdefault(name, m3.Profile(name=name))
+
+    def _stereotypes_and_tags(
+        self, markers: tuple
+    ) -> tuple[list[m3.Stereotype], list[m3.TaggedValue]]:
+        stereotypes: list[m3.Stereotype] = []
+        tagged: list[m3.TaggedValue] = []
+        for marker in markers:
+            if isinstance(marker, StereotypeMarker):
+                stereotypes.append(
+                    m3.Stereotype(profile=self._profile(marker.profile), value=marker.value)
+                )
+            elif isinstance(marker, TagMarker):
+                tag = m3.Tag(profile=self._profile(marker.profile), value=marker.name)
+                tagged.append(m3.TaggedValue(tag=tag, value=marker.value))
+        return stereotypes, tagged
+
+    def _generic_type(
+        self, annotation: object, type_params: dict[str, m3.TypeParameter]
+    ) -> m3.GenericType:
+        if isinstance(annotation, typing.TypeVar):
+            param = type_params.get(annotation.__name__) or m3.TypeParameter(
+                name=annotation.__name__
+            )
+            return m3.GenericType(typeParameter=param)
+        origin = typing.get_origin(annotation)
+        if origin is not None and dataclasses.is_dataclass(origin):
+            args = typing.get_args(annotation)
+            return m3.GenericType(
+                rawType=self.to_class(origin),
+                typeArguments=[self._generic_type(a, type_params) for a in args],
+            )
+        return m3.GenericType(rawType=self.to_type(annotation))
+
+    def _resolve(
+        self, annotation: object, type_params: dict[str, m3.TypeParameter]
+    ) -> tuple[m3.GenericType, int, int | None]:
         optional = False
         origin = typing.get_origin(annotation)
         if origin is typing.Union or origin is types.UnionType:
@@ -123,8 +184,31 @@ class Compiler:
         if origin in _COLLECTION_ORIGINS:
             args = typing.get_args(annotation)
             inner = args[0] if args else typing.Any
-            return self.to_type(inner), 0, None
-        return self.to_type(annotation), (0 if optional else 1), 1
+            return self._generic_type(inner, type_params), 0, None
+        return self._generic_type(annotation, type_params), (0 if optional else 1), 1
+
+    def _qualified_properties(
+        self, py_type: type, owner: m3.Class, type_params: dict[str, m3.TypeParameter]
+    ) -> list[m3.QualifiedProperty]:
+        result: list[m3.QualifiedProperty] = []
+        for name, attr in vars(py_type).items():
+            if not isinstance(attr, property) or attr.fget is None:
+                continue
+            return_hint = typing.get_type_hints(attr.fget, include_extras=True).get("return")
+            if return_hint is None:
+                continue
+            base, _ = self._split_annotated(return_hint)
+            generic, lower, upper = self._resolve(base, type_params)
+            result.append(
+                m3.QualifiedProperty(
+                    name=name,
+                    id=f"{name}()",
+                    genericType=generic,
+                    multiplicity=_MULTIPLICITY[(lower, upper)],
+                    owner=owner,
+                )
+            )
+        return result
 
 
 def compile_class(py_type: type, package: str | None = None) -> m3.Class:

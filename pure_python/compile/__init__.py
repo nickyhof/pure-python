@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from .annotations import Stereotype, Tag
 from .m3_to_python import to_module, to_source
 from .python_to_m3 import Compiler, compile_class, compile_enumeration
 
@@ -15,4 +16,6 @@ __all__ = [
     "compile_enumeration",
     "to_module",
     "to_source",
+    "Stereotype",
+    "Tag",
 ]

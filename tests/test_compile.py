@@ -9,7 +9,31 @@ import importlib.util
 import pytest
 
 from pure_python import m3
-from pure_python.compile import Compiler, compile_class, to_module
+from pure_python.compile import Compiler, Stereotype, Tag, compile_class, to_module
+
+import typing
+
+RT = typing.TypeVar("RT")
+
+
+@dataclasses.dataclass
+class Box(typing.Generic[RT]):
+    value: RT
+    items: list[RT] = dataclasses.field(default_factory=list)
+
+
+@dataclasses.dataclass
+class Holder:
+    box: Box[int]
+
+
+@dataclasses.dataclass
+class Tagged:
+    name: typing.Annotated[str, Stereotype("pii", "sensitive")]
+    note: typing.Annotated[str | None, Tag("doc", "about", "a note")] = None
+
+    @property
+    def summary(self) -> str: ...
 
 
 class Color(enum.Enum):
@@ -150,3 +174,86 @@ def test_emitted_module_is_importable_and_correct():
     assert issubclass(module.Color, enum.Enum)
     p = module.Person(firstName="Ada", lastName="Lovelace")
     assert p.age is None and p.nicknames == []
+
+
+def test_generic_type_parameters_and_typevar_fields():
+    cls = compile_class(Box)
+    assert [tp.name for tp in cls.typeParameters] == ["RT"]
+    value = next(p for p in cls.properties if p.name == "value")
+    assert value.genericType.typeParameter is not None
+    assert value.genericType.typeParameter.name == "RT"
+    items = next(p for p in cls.properties if p.name == "items")
+    assert items.genericType.typeParameter.name == "RT"
+    assert (items.multiplicity.lowerBound.value, items.multiplicity.upperBound) == (0, None)
+
+
+def test_subscripted_generic_captures_type_arguments():
+    cls = compile_class(Holder)
+    box = next(p for p in cls.properties if p.name == "box")
+    assert isinstance(box.genericType.rawType, m3.Class)
+    assert box.genericType.rawType.name == "Box"
+    (arg,) = box.genericType.typeArguments
+    assert arg.rawType is m3.Integer
+
+
+def test_stereotypes_and_tagged_values():
+    cls = compile_class(Tagged)
+    name = next(p for p in cls.properties if p.name == "name")
+    assert [(s.profile.name, s.value) for s in name.stereotypes] == [("pii", "sensitive")]
+    note = next(p for p in cls.properties if p.name == "note")
+    assert [(t.tag.profile.name, t.tag.value, t.value) for t in note.taggedValues] == [
+        ("doc", "about", "a note")
+    ]
+    # Tagging an optional field still infers [0..1].
+    assert (note.multiplicity.lowerBound.value, note.multiplicity.upperBound.value) == (0, 1)
+
+
+def test_qualified_property_from_python_property():
+    cls = compile_class(Tagged)
+    assert [q.name for q in cls.qualifiedProperties] == ["summary"]
+    summary = cls.qualifiedProperties[0]
+    assert summary.id == "summary()"
+    assert isinstance(summary.genericType.rawType, m3.PrimitiveType)
+    assert summary.genericType.rawType.name == "String"
+
+
+def _type_sig(generic) -> str:
+    if generic is None:
+        return "Any"
+    if generic.typeParameter is not None:
+        return f"param:{generic.typeParameter.name}"
+    raw = generic.rawType
+    name = getattr(raw, "name", None) or type(raw).__name__
+    if generic.typeArguments:
+        return f"{name}[{','.join(_type_sig(a) for a in generic.typeArguments)}]"
+    return name
+
+
+def _rich_graph(compiler: Compiler) -> dict:
+    graph = {}
+    for cls in compiler.classes.values():
+        props = {}
+        for p in cls.properties:
+            lower, upper = _bounds(p)
+            stereo = tuple(sorted((s.profile.name, s.value) for s in p.stereotypes))
+            tags = tuple(sorted((t.tag.profile.name, t.tag.value, t.value) for t in p.taggedValues))
+            props[p.name] = (_type_sig(p.genericType), lower, upper, stereo, tags)
+        qps = {q.name: (_type_sig(q.genericType), q.id) for q in cls.qualifiedProperties}
+        graph[cls.name] = ([tp.name for tp in cls.typeParameters], props, qps)
+    return graph
+
+
+def test_rich_round_trip_preserves_generics_annotations_and_qualified_properties():
+    forward = Compiler(package="demo")
+    forward.to_class(Box)
+    forward.to_class(Holder)
+    forward.to_class(Tagged)
+    source = to_module(forward.to_class(Box), forward.to_class(Holder), forward.to_class(Tagged))
+
+    module = _load_module(source, "pure_python_rich_round_trip")
+    back = Compiler(package="demo")
+    back.to_class(module.Box)
+    back.to_class(module.Holder)
+    back.to_class(module.Tagged)
+
+    assert _rich_graph(forward) == _rich_graph(back)
