@@ -13,9 +13,12 @@ pip install -e ".[dev]"        # Python >= 3.10; installs pytest
 python -m pytest -q            # run all tests
 python -m pytest tests/test_compile.py::test_rich_round_trip_preserves_generics_annotations_and_qualified_properties -q   # single test
 python -m pure_python.codegen.generate   # regenerate pure_python/m3/metamodel.py from vendored .pure sources
+mvn -f legend-bridge package             # (optional, needs JDK 21 + Maven) build the Legend bridge jar
 ```
 
-There is no separate lint step configured.
+There is no separate lint step configured. The Legend bridge is optional: its
+tests (`tests/test_legend_bridge.py`) skip unless the jar exists (or
+`PURE_PYTHON_LEGEND_BRIDGE_JAR` points at one).
 
 ## Critical: the metamodel is generated, not hand-written
 
@@ -25,7 +28,7 @@ There is no separate lint step configured.
 
 ## Architecture
 
-Three layers, three packages.
+Three core layers / packages, plus an optional fourth (the Legend bridge).
 
 **1. `pure_python/codegen/` — source → generated metamodel.** Two upstream formats feed one neutral model:
 
@@ -43,6 +46,8 @@ Three layers, three packages.
 - `m3_to_python.py` (`to_module`, `to_source`): `m3` → a self-contained importable module of ordinary (positional) dataclasses.
 - `m3_to_pure.py` (`to_pure`, `to_pure_module`): `m3` → actual Pure grammar source (the inverse of `codegen/grammar.py`).
 - `annotations.py`: the `Stereotype` and `Tag` markers used inside `typing.Annotated` to attach Pure stereotypes / tagged values to fields.
+
+**4. `pure_python/legend/` + `legend-bridge/` — bridge to the real Legend engine (optional).** `legend-bridge/` is a tiny Java CLI built (shaded jar) on the published `org.finos.legend.engine:legend-engine-language-pure-grammar` artifact; `pure_python/legend/bridge.py` (`LegendBridge`) shells out to it one request at a time. `parse` runs pure-python's emitted Pure through Legend's *real* `PureGrammarParser` and returns `PureModelContextData` JSON; `compose` renders that JSON back to Pure via `PureGrammarComposer`. This makes Legend itself the oracle for what pure-python emits, and seeds the Tier 2 protocol-model work. Executing Pure (`eval`) is the planned next step (see `TODO.md`). The package degrades gracefully: `LegendBridge.available()` is `False` when the jar/JVM is absent.
 
 ## Conventions worth knowing
 

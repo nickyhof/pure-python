@@ -6,3 +6,7 @@ build/
 dist/
 .venv/
 venv/
+
+# Legend bridge (built on demand with `mvn -f legend-bridge package`)
+legend-bridge/target/
+legend-bridge/dependency-reduced-pom.xml

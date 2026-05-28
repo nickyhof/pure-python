@@ -61,6 +61,17 @@ Grouped by status, with pointers to the relevant code.
 
 ## Tier 2 -- new capabilities
 
+- **Legend bridge (execution oracle).** `legend-bridge/` is a small JVM harness
+  built on the published `legend-engine` grammar artifacts; `pure_python/legend/`
+  shells out to it. `parse` validates pure-python's emitted Pure against Legend's
+  *real* grammar and returns `PureModelContextData` JSON; `compose` renders it
+  back. Tests in `tests/test_legend_bridge.py` (skipped unless the jar is built
+  with `mvn -f legend-bridge package`).
+  - [ ] **`eval`: execute Pure via Legend.** Add the compiler + plan
+    generation/execution stack to the harness so a Pure expression compiles and
+    runs, returning the result -- delegating execution to Legend rather than
+    reimplementing it. This is the headline of the execution-oracle direction.
+
 - [ ] **Legend protocol model (`PureModelContextData`).** The deferred fork:
   the legend-engine JSON protocol (Mapping, Connection, Runtime, Service,
   relational stores, ...). Unlocks "all Legend types" and JSON interop /
