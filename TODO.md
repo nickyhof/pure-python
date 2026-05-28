@@ -88,17 +88,6 @@ Grouped by status, with pointers to the relevant code.
   - [ ] **Richer `eval` results.** Only expressions reducing to a `ConstantResult`
     are returned today; TDS/relation/streaming results need a serializer.
 
-- **PCT compatibility report.** `pure_python/report/pct.py`
-  (`python -m pure_python.report.pct`) renders a Markdown matrix of Pure
-  functions (rows from `vendor/legend-pure/pct/FUNCTIONS_*.json`) with a single
-  **pure-python** column computed by `_pure_python_passes`. It is `0/total` for
-  everything today -- the honest baseline -- because pure-python has no
-  expression/evaluation layer and so cannot run a PCT test; the compiled-adapter
-  JSON is used only to enumerate each function's tests. Offline (no JVM).
-  - [ ] **Earn passes via reverse PCT** (see the reverse-PCT item below): the
-    column fills in once pure-python can generate + execute Python that
-    round-trips to Pure.
-
 - [ ] **Legend protocol model (`PureModelContextData`).** The deferred fork:
   the legend-engine JSON protocol (Mapping, Connection, Runtime, Service,
   relational stores, ...). Unlocks "all Legend types" and JSON interop /
@@ -117,7 +106,9 @@ Grouped by status, with pointers to the relevant code.
   Consuming it needs an executable Python query layer that round-trips
   Python -> Pure (PyLegend-shaped -- prefer leaning on PyLegend over reinventing
   it) plus the `LegendBridge` as the Pure oracle; it builds on the expression
-  layer above. This is how the PCT report's pure-python column earns passes.
+  layer above. (pure-python's own Python -> Pure round-trip is already covered by
+  `tests/test_full_round_trip.py` + the bridge's grammar/compile check; this item
+  is about validating against Legend's reverse-PCT corpus specifically.)
 - [ ] **Project hygiene.** Add a `py.typed` marker (downstream typing), a CI
   workflow running the tests + drift check, and a console entry point for the
   generator.
