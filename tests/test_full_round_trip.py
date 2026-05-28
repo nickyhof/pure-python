@@ -176,7 +176,7 @@ def test_python_m3_pure_m3_python_round_trip():
     # (2a) Qualified/derived properties now survive by signature: the canonical
     #      above already requires Account.label to match across A, B and C.
     assert [q.name for q in forward.classes[Account].qualifiedProperties] == ["label"]
-    assert "label() {} : String[1];" in pure_source  # emitted with an empty body placeholder
+    assert "label() { [] } : String[1];" in pure_source  # placeholder body (expr layer not modelled)
     assert canonical_c["Account"][5]["label"] == (("raw", "String", ()), 1, 1)
 
     # (2b) Stereotypes and tagged values survive the Pure boundary: present in A,

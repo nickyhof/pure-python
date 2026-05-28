@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "A Python representation of the Pure (FINOS Legend) M3 metamodel, generated from legend-pure."
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
+# The readable-grammar parser (codegen.grammar) is generated from legend-pure's
+# own ANTLR grammar and runs on the ANTLR Python runtime.
+dependencies = ["antlr4-python3-runtime==4.13.2"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["pure_python"]

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pathlib
 
+import pytest
+
 from pure_python.codegen.grammar import parse_grammar
 
 VENDOR = pathlib.Path(__file__).resolve().parents[1] / "vendor" / "legend-pure"
@@ -91,3 +93,11 @@ def test_association_parsing():
     assert assoc.name == "Employment" and assoc.package == "my"
     ends = {p.name: (p.type_name, p.lower, p.upper) for p in assoc.properties}
     assert ends == {"employer": ("Firm", 1, 1), "employees": ("Person", 0, None)}
+
+
+def test_real_grammar_rejects_empty_qualified_body():
+    # legend-pure's grammar requires a body expression; the lenient hand-written
+    # parser used to tolerate `foo() {}`, so m3_to_pure now emits `foo() { [] }`.
+    with pytest.raises(SyntaxError):
+        parse_grammar("Class my::A { foo() {} : String[1]; }")
+    parse_grammar("Class my::A { foo() { [] } : String[1]; }")  # accepted
