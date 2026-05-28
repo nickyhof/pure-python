@@ -13,12 +13,15 @@ def test_load_report_joins_functions_and_results():
     report = pct.load_report()
     assert len(report.rows) > 200  # the vendored corpus has hundreds of functions
     passed, total = report.totals()
-    assert 0 < passed <= total
+    # pure-python has no expression/evaluation layer yet, so it passes nothing;
+    # `total` still reflects the real number of PCT tests in the corpus.
+    assert passed == 0
+    assert total > 0
     # Every group with data is one of the known PCT groups.
     assert set(report.by_group()) <= set(pct._GROUPS)
-    # A function that has compiled-adapter results carries a passed/total cell.
+    # Functions with PCT tests carry a 0/total cell.
     tested = [r for r in report.rows if r.total > 0]
-    assert tested and all(r.passed <= r.total for r in tested)
+    assert tested and all(r.passed == 0 for r in tested)
 
 
 def test_render_markdown_has_pure_python_column_and_summary():

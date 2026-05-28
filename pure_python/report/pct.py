@@ -1,33 +1,48 @@
 """Generate a PCT (Pure Compatibility Test) compatibility report.
 
-This is the inverse-side companion to Legend's own ``GeneratePCT``: it reads the
-PCT data Legend ships as JSON (vendored under ``vendor/legend-pure/pct/``) and
-renders a Markdown matrix of Pure functions with a single **pure-python** column
-showing how many of each function's tests pass.
+Companion to Legend's own ``GeneratePCT``: it renders a Markdown matrix of the
+Pure function library with a single **pure-python** column showing how many of
+each function's PCT tests pure-python can pass.
 
-Two kinds of vendored file feed it (one pair per *group* -- essential, grammar,
+It reads the PCT data Legend ships as JSON, vendored under
+``vendor/legend-pure/pct/`` (one pair per *group* -- essential, grammar,
 standard, relation, unclassified, variant):
 
-* ``FUNCTIONS_<group>.json`` -- the function definitions (the report's rows).
-* ``ADAPTER_<group>_compiled_Native.json`` -- the per-function test results for
-  Legend's **compiled** execution adapter.
+* ``FUNCTIONS_<group>.json``               -- the function definitions (the rows).
+* ``ADAPTER_<group>_compiled_Native.json`` -- Legend's compiled-execution results,
+  used here only to *enumerate* each function's PCT tests (the denominator). The
+  pass/fail those files record is Legend's own, kept as the target baseline; it
+  is **not** pure-python's result.
 
-The pure-python column reflects that compiled-execution adapter -- the same
-engine path :meth:`pure_python.legend.bridge.LegendBridge.evaluate` delegates to
--- so it shows pure-python's execution-oracle coverage of the function library.
-The data is a pinned snapshot (see ``vendor/legend-pure/SOURCE.txt``); no JVM is
-needed to render the report.
+The pure-python column reflects what **pure-python itself** can do. Today that is
+nothing: pure-python is a structural metamodel + grammar round-trip with no
+expression/evaluation layer yet (see ``TODO.md`` Tier 2), so it cannot execute --
+or even represent -- a PCT test function. Every test is therefore a fail. This is
+the honest baseline; the column will light up as pure-python gains the ability to
+represent and run Pure. No JVM is needed to render the report (offline, pinned
+snapshot -- see ``vendor/legend-pure/SOURCE.txt``).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 _PCT_DIR = Path(__file__).resolve().parents[2] / "vendor" / "legend-pure" / "pct"
 _GROUPS = ("essential", "grammar", "standard", "relation", "unclassified", "variant")
+
+
+def _pure_python_passes(test: dict, function_source_id: str) -> bool:
+    """Whether pure-python can pass this PCT test.
+
+    Currently always ``False``: pure-python has no expression/evaluation layer,
+    so it cannot run any PCT test. This is the single extension point -- once
+    pure-python can represent and execute (or faithfully round-trip) a test,
+    return ``True`` for the ones it handles and the report column will reflect it.
+    """
+    return False
 
 
 @dataclass
@@ -35,10 +50,9 @@ class FunctionRow:
     group: str
     name: str
     source_id: str
-    declared_tests: int  # testCount from the function definition (0 if unknown)
+    declared_tests: int  # pctTestCount from the function definition (0 if unknown)
     passed: int = 0
     total: int = 0
-    failures: list[tuple[str, str | None]] = field(default_factory=list)  # (testName, errorMessage)
 
     @property
     def cell(self) -> str:
@@ -67,7 +81,7 @@ def _name_from_source(source_id: str) -> str:
 
 
 def load_report(pct_dir: Path = _PCT_DIR) -> Report:
-    """Join the vendored function definitions and compiled-adapter results."""
+    """Rows come from FUNCTIONS_*; the PCT test count per row from ADAPTER_*."""
     rows: dict[str, FunctionRow] = {}
 
     for group in _GROUPS:
@@ -92,15 +106,13 @@ def load_report(pct_dir: Path = _PCT_DIR) -> Report:
         for function_test in data.get("functionTests", []):
             source_id = function_test["sourceId"]
             row = rows.get(source_id)
-            if row is None:  # results for a source with no declared function (e.g. composition tests)
+            if row is None:  # tests for a source with no declared function (composition tests)
                 row = FunctionRow(group=group, name=_name_from_source(source_id), source_id=source_id, declared_tests=0)
                 rows[source_id] = row
             for test in function_test.get("tests", []):
                 row.total += 1
-                if test.get("success"):
+                if _pure_python_passes(test, source_id):
                     row.passed += 1
-                else:
-                    row.failures.append((test.get("testName", "?"), test.get("errorMessage")))
 
     ordered = sorted(rows.values(), key=lambda r: (_GROUPS.index(r.group) if r.group in _GROUPS else 99, r.source_id))
     return Report(ordered)
@@ -108,16 +120,20 @@ def load_report(pct_dir: Path = _PCT_DIR) -> Report:
 
 def render_markdown(report: Report) -> str:
     grand_passed, grand_total = report.totals()
+    pct = f" ({100 * grand_passed // grand_total}%)" if grand_total else ""
     lines: list[str] = [
         "# PCT compatibility report",
         "",
-        "Pure Compatibility Test results for the **pure-python** target (Legend "
-        "compiled execution -- the engine path `LegendBridge.evaluate` delegates "
-        "to). Generated by `python -m pure_python.report.pct` from the pinned PCT "
-        "data in `vendor/legend-pure/pct/`. `&empty;` = no PCT tests.",
+        "Pure Compatibility Test results for the **pure-python** target. The "
+        "pure-python column counts how many of each function's PCT tests pure-python "
+        "can pass. It currently passes **none**: pure-python is a structural "
+        "metamodel with no expression/evaluation layer yet (see `TODO.md`), so it "
+        "cannot run a PCT test. This is the honest baseline -- the column will "
+        "improve as pure-python gains the ability to represent and execute Pure. "
+        "Generated by `python -m pure_python.report.pct` from the pinned PCT data in "
+        "`vendor/legend-pure/pct/`. `&empty;` = no PCT tests.",
         "",
-        f"**Overall: {grand_passed}/{grand_total} tests passing"
-        f"{f' ({100 * grand_passed // grand_total}%)' if grand_total else ''}.**",
+        f"**Overall: {grand_passed}/{grand_total} tests passing{pct}.**",
         "",
         "| Group | Passed | Total |",
         "| --- | --- | --- |",
@@ -129,21 +145,10 @@ def render_markdown(report: Report) -> str:
         lines.append(f"| {group} | {gp} | {gt} |")
     lines.append("")
 
-    failures: list[FunctionRow] = []
     for group, group_rows in grouped.items():
         lines += [f"## {group}", "", "| Function | pure-python |", "| --- | --- |"]
         for row in group_rows:
             lines.append(f"| `{row.name}` | {row.cell} |")
-            if row.failures:
-                failures.append(row)
-        lines.append("")
-
-    if failures:
-        lines += ["## Failures", ""]
-        for row in failures:
-            for test_name, message in row.failures:
-                detail = f" — {message.splitlines()[0]}" if message else ""
-                lines.append(f"- `{row.name}` / {test_name}{detail}")
         lines.append("")
 
     return "\n".join(lines)
