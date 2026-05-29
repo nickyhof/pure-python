@@ -9,6 +9,8 @@ back to the same graph (a structural Python -> m3 -> Pure -> m3 round trip).
 
 from __future__ import annotations
 
+import pytest
+
 from pure_python import m3
 from pure_python.compile import pure_expr
 from pure_python.compile.expressions import (
@@ -40,6 +42,13 @@ def test_tds_builds_relation_instance_value_from_csv():
 def test_tds_accepts_a_full_token_unchanged():
     token = "#TDS{id,grp\n1,1}#"
     assert tds(token).values == [token]
+
+
+def test_tds_rejects_hash_in_content():
+    # The `#TDS{...}#` token is `#`-delimited, so interior `#` cannot round-trip
+    # (the non-greedy DSL_TEXT lexer would truncate it). Reject at build time.
+    with pytest.raises(ValueError, match="#"):
+        tds("id,note\n1,item #1")
 
 
 def test_col_builds_name_only_colspec():

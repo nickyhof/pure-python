@@ -220,6 +220,10 @@ def _lower_lambda(lambda_function) -> m3.LambdaFunction:
     names = [p.identifier().getText() for p in lambda_function.lambdaParam()]
     body_text = lambda_function.lambdaPipe().codeBlock().getText()
     statements = parse_statements(body_text)
+    if len(statements) != 1:
+        # `lam` builds single-statement bodies; fail loud rather than silently
+        # dropping the trailing statements of a multi-statement lambda body.
+        raise ValueError(f"multi-statement lambda body is not supported: {body_text!r}")
     # `lam` calls `build(*params)`; the body is independent of the fresh vars it
     # passes (it was parsed from text), so return the single parsed statement.
     return lam(names, lambda *_: statements[0])

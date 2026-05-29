@@ -282,6 +282,15 @@ def tds(text: str) -> m3.InstanceValue:
     an ``InstanceValue`` discriminated by :data:`_TDS_GENERIC_TYPE` so the
     emitter renders it verbatim. The CSV is never parsed.
     """
+    inner = text[len("#TDS{") : -len("}#")] if text.startswith("#TDS{") else text
+    if "#" in inner:
+        # The Pure `DSL_TEXT` token is `'#' .*? '#'` (non-greedy), so an interior
+        # `#` ends the token early and truncates it on re-parse. This grammar
+        # cannot round-trip such content, so reject it rather than corrupt it.
+        raise ValueError(
+            "a #TDS{...} literal cannot contain '#' in its content "
+            "(the Pure DSL_TEXT token is '#'-delimited and would truncate)"
+        )
     token = text if text.startswith("#TDS{") else f"#TDS{{{text}}}#"
     return m3.InstanceValue(
         values=[token],
