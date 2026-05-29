@@ -23,13 +23,24 @@ operators emit as parenthesized *infix* and other functions as arrow form (see
 derived-property body via the :class:`pure_python.compile.annotations.Body`
 marker, then emitted as real Pure and re-parsed by
 :mod:`pure_python.compile.pure_expr`.
+
+A small **relation / TDS layer** builds on the same primitives: :func:`lam`
+builds an n-ary ``{p, w, r | body}`` ``LambdaFunction``, :func:`tds` a verbatim
+``#TDS{...}#`` relation literal, and :func:`col` / :func:`cols` simple ``~col`` /
+``~[a, b]`` column specs (all raw nodes, like the other builders). Wrapping the
+source in :class:`Expr` gives the fluent ``->filter`` / ``->select`` arrow
+application, expressing relation queries::
+
+    Expr(tds("id,grp\\n1,1\\n2,0")).filter(lam(["r"], lambda r: r.grp > 0))
+    # call("filter", <tds>, <lambda>)  -> #TDS{id,grp\\n1,1\\n2,0}#->filter({r | ($r.grp > 0)})
+    call("select", tds("id,grp"), cols("id", "grp"))  # -> ...->select(~[id, grp])
 """
 
 from __future__ import annotations
 
 import datetime
 import decimal
-from typing import Any
+from typing import Any, Callable
 
 from pure_python import m3
 
@@ -41,6 +52,13 @@ from .python_to_m3 import _PRIMITIVE
 # emitters/comparers can ignore them.
 _FUNC_SENTINEL = m3.Function()
 _IMPORT_GROUP_SENTINEL = m3.ImportGroup()
+
+# A shared marker ``GenericType`` whose ``rawType`` is a ``RelationType``. It
+# discriminates a ``#TDS{...}#`` relation literal from an ordinary string
+# ``InstanceValue`` so the emitter renders the text verbatim (unquoted) instead
+# of as a quoted string. ``pure_expr`` reuses the same marker on the way back so
+# the two sides agree under ``canon``.
+_TDS_GENERIC_TYPE = m3.GenericType(rawType=m3.RelationType())
 
 
 def _primitive_for(value: object) -> m3.PrimitiveType:
@@ -69,11 +87,18 @@ def var(name: str) -> m3.VariableExpression:
     )
 
 
+# Relation-layer argument nodes that are *not* ``ValueSpecification`` subclasses
+# (``LambdaFunction`` is a ``FunctionDefinition``; ``ColSpec`` / ``ColSpecArray``
+# derive from ``Any``) but are still valid function arguments -- a verb such as
+# ``filter`` / ``select`` takes them as a ``parametersValues`` entry.
+_PASSTHROUGH_NODES = (m3.LambdaFunction, m3.ColSpec, m3.ColSpecArray)
+
+
 def coerce(value: object) -> m3.ValueSpecification:
     """Turn an ``Expr`` into its node, an ``m3`` node through, scalars into ``lit``."""
     if isinstance(value, Expr):
         return value.node
-    if isinstance(value, m3.ValueSpecification):
+    if isinstance(value, (m3.ValueSpecification, *_PASSTHROUGH_NODES)):
         return value
     return lit(value)
 
@@ -232,6 +257,49 @@ def c(value: object) -> Expr:
     return Expr(lit(value))
 
 
+# --- relation / TDS layer ---------------------------------------------------
+
+def lam(param_names: list[str], build: Callable[..., object]) -> m3.LambdaFunction:
+    """Build an n-ary ``LambdaFunction`` ``{p, w, r | <body>}``.
+
+    A ``VariableExpression`` is created per name and passed (wrapped as an
+    ``Expr``) to ``build``; the returned ``Expr``/node becomes the single body
+    statement. Param names are explicit (no ``inspect.signature`` magic).
+    """
+    params = [Expr(var(name)) for name in param_names]
+    body = coerce(build(*params))
+    # The parameter NAMES round-trip via ``openVariables``: a pragmatic
+    # foundation carrier (a native ``FunctionType`` would also require a
+    # returnType / returnMultiplicity we do not model at this level).
+    return m3.LambdaFunction(openVariables=list(param_names), expressionSequence=[body])
+
+
+def tds(text: str) -> m3.InstanceValue:
+    """A ``#TDS{...}#`` relation literal carrying its verbatim text.
+
+    Accepts either the inner CSV (``"id,grp\\n1,1\\n2,0"``) or a full
+    ``#TDS{...}#`` token; both are normalized to the wrapped token and stored on
+    an ``InstanceValue`` discriminated by :data:`_TDS_GENERIC_TYPE` so the
+    emitter renders it verbatim. The CSV is never parsed.
+    """
+    token = text if text.startswith("#TDS{") else f"#TDS{{{text}}}#"
+    return m3.InstanceValue(
+        values=[token],
+        genericType=_TDS_GENERIC_TYPE,
+        multiplicity=m3.PureOne,
+    )
+
+
+def col(name: str) -> m3.ColSpec:
+    """A single column spec ``~name`` (a name-only ``m3.ColSpec``)."""
+    return m3.ColSpec(name=name)
+
+
+def cols(*names: str) -> m3.ColSpecArray:
+    """A column-spec array ``~[a, b]`` (a name-only ``m3.ColSpecArray``)."""
+    return m3.ColSpecArray(names=list(names))
+
+
 __all__ = [
     "Expr",
     "c",
@@ -242,4 +310,8 @@ __all__ = [
     "prop",
     "coerce",
     "not_",
+    "lam",
+    "tds",
+    "col",
+    "cols",
 ]

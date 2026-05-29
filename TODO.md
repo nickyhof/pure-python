@@ -116,14 +116,46 @@ Grouped by status, with pointers to the relevant code.
   and other functions in arrow form; and `compile/pure_expr.py` re-parses the
   captured body (including infix and negative literals) so the graph survives
   `Python -> m3 -> Pure -> m3` (asserted in `tests/test_expressions.py` and the
-  full round-trip test, and executed via the Legend bridge). Out of slice 1:
-  collection/list literals, multi-arg
-  lambdas, `if`/`case`/`let`, milestoning sugar,
+  full round-trip test, and executed via the Legend bridge). Out of slice 1
+  (multi-arg lambdas landed in the relation/TDS foundation, slice 2, below):
+  collection/list literals, `if`/`case`/`let`, milestoning sugar,
   `Constraint` / `ConcreteFunctionDefinition` bodies, and m3->Python(.py) emission
   of bodies (signature-only there).
+- [x] **Relation / TDS query foundation (slice 2).** Builds on slice 1, all in
+  `compile/`. New builders in `compile/expressions.py`: `lam(names, build)` for
+  n-ary `{p, w, r | body}` lambdas (an `m3.LambdaFunction`; the parameter names
+  round-trip via `openVariables` as a pragmatic carrier -- a native
+  `FunctionType` would also need a returnType / returnMultiplicity we do not
+  model at the expression level), `tds(text)` for a verbatim `#TDS{...}#`
+  relation literal (an `InstanceValue` discriminated from a string by a shared
+  `RelationType`-rawType marker so the emitter renders it unquoted; the CSV is
+  never parsed), and `col(name)` / `cols(*names)` for simple `~col` / `~[a, b]`
+  column specs (the name-only `m3.ColSpec` / `m3.ColSpecArray`). The `filter`
+  and `select` verbs are the existing `call(...)` / fluent `_Accessor` arrow
+  application -- `coerce` now passes lambda / column-spec nodes through. The
+  `Body` capture path is generalized to 0- or 1-parameter functions (arity read
+  from the signature; no second mechanism). `m3_to_pure._expression` emits all
+  the new forms; `compile/pure_expr._lower_atomic` re-parses them via the real
+  `M3CoreParser` (`dsl()` / `columnBuilders()` / `anyLambda()`), so a relation
+  query survives `Python -> m3 -> Pure -> m3` (jar-free, `tests/test_relation.py`;
+  the lambda + `filter` + `size` machinery is also executed through the Legend
+  bridge). NOTE: the bundled engine build has no `TDS` embedded parser, so the
+  `#TDS{}#` literal itself cannot be executed by this jar (pinned in
+  `tests/test_legend_bridge.py`). Deferred follow-ons:
+    - **`FuncColSpec` (`~c:{r|...}`) + `extend`** -- function-bearing column
+      specs and the derived-column verb.
+    - **`AggColSpec` (`~c:{map}:{agg}`) + `groupBy`** -- aggregation specs and
+      grouped aggregation.
+    - **`join` / `asOfJoin`** -- relation joins.
+    - **window / OLAP functions** -- `over`, ranking / running aggregates.
+    - **a `Frame` fluent class** -- a higher-level relation-query builder over
+      the free verbs.
+    - **a batched `evalMany` bridge command** -- compile the model once and
+      evaluate many expressions in one JVM (a Java-side change, explicitly *not*
+      bundled with this slice).
 - [ ] **Lambda / constraint representation.** `Constraint` and
-  `ConcreteFunctionDefinition` bodies, and multi-parameter lambdas, remain
-  unmodelled.
+  `ConcreteFunctionDefinition` bodies remain unmodelled. (Multi-parameter
+  lambdas are now built by `lam` -- see the relation/TDS foundation above.)
 - [ ] **Project hygiene.** Add a `py.typed` marker (downstream typing), a CI
   workflow running the tests + drift check, and a console entry point for the
   generator.

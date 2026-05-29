@@ -7,7 +7,21 @@
 from __future__ import annotations
 
 from .annotations import Body, Stereotype, Tag
-from .expressions import Expr, c, call, coerce, func, lit, not_, prop, var
+from .expressions import (
+    Expr,
+    c,
+    call,
+    coerce,
+    col,
+    cols,
+    func,
+    lam,
+    lit,
+    not_,
+    prop,
+    tds,
+    var,
+)
 from .m3_to_pure import to_pure, to_pure_module
 from .m3_to_python import to_module, to_source
 from .pure_expr import parse_expression
@@ -37,4 +51,8 @@ __all__ = [
     "prop",
     "coerce",
     "not_",
+    "lam",
+    "tds",
+    "col",
+    "cols",
 ]

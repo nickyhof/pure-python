@@ -24,14 +24,28 @@ from pure_python.compile.m3_to_pure import _expression, _literal
 # m3 graphs carry owner back-refs / sentinels; project to nested tuples so we
 # can compare body graphs without recursing into func / importGroup / owner.
 
-def canon(vs: m3.ValueSpecification):
+def canon(vs):
     if isinstance(vs, m3.VariableExpression):
         return ("var", vs.name)
     if isinstance(vs, m3.SimpleFunctionExpression):
         if vs.propertyName is not None:
             return ("prop", vs.propertyName.values[0], canon(vs.parametersValues[0]))
         return ("call", vs.functionName, tuple(canon(p) for p in vs.parametersValues))
+    # relation-layer nodes (lambda / column specs) -- not ValueSpecifications
+    if isinstance(vs, m3.LambdaFunction):
+        return (
+            "lambda",
+            tuple(vs.openVariables),
+            tuple(canon(b) for b in vs.expressionSequence),
+        )
+    if isinstance(vs, m3.ColSpec):
+        return ("colspec", vs.name)
+    if isinstance(vs, m3.ColSpecArray):
+        return ("colspecarray", tuple(vs.names))
     if isinstance(vs, m3.InstanceValue):
+        # A `#TDS{...}#` literal is discriminated by a RelationType rawType marker.
+        if isinstance(vs.genericType.rawType, m3.RelationType):
+            return ("tds", tuple(vs.values))
         raw = vs.genericType.rawType
         return ("lit", getattr(raw, "name", None), tuple(vs.values))
     raise TypeError(f"unexpected node {vs!r}")

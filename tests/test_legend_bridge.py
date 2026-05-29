@@ -12,9 +12,10 @@ from dataclasses import dataclass
 
 import pytest
 
+from pure_python import m3
 from pure_python.compile import compile_class, from_pure, to_pure_module
 from pure_python.compile.annotations import Body
-from pure_python.compile.expressions import c
+from pure_python.compile.expressions import c, call, lam, tds
 from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
@@ -142,3 +143,36 @@ def test_legend_executes_over_a_generated_model():
         model=model,
     )
     assert value == 1
+
+
+def test_legend_executes_dsl_filter_lambda_and_size():
+    # The relation `filter` verb is `filter(source, <lambda>)`, terminated with
+    # `size()` so it reduces to an Integer constant (`evaluate` only returns
+    # constants). The `#TDS{...}#` *literal* is not parseable by this engine
+    # build (see the next test), so exercise the reusable core -- a DSL-built
+    # n-ary lambda + `filter` + `size` -- over a literal collection instead, the
+    # exact lambda/verb machinery the TDS query shares.
+    source = m3.InstanceValue(
+        values=[1, 2, 0],
+        genericType=m3.GenericType(rawType=m3.Integer),
+        multiplicity=m3.ZeroMany,
+    )
+    query = call("size", call("filter", source, lam(["r"], lambda r: r > 0)))
+    emitted = _expression(query)
+    assert emitted == "[1, 2, 0]->filter({r | ($r > 0)})->size()"
+    assert bridge.evaluate("|" + emitted) == 2  # two rows pass `$r > 0`
+
+
+def test_legend_engine_lacks_a_tds_embedded_parser():
+    # Empirically (verified against this jar), the bundled Legend engine grammar
+    # has no `TDS` embedded-DSL parser -- both `parse` and `eval` reject the
+    # `#TDS{...}#` literal with "Can't find an embedded Pure parser for the type
+    # 'TDS'". So the full relation query cannot be executed by this engine build;
+    # the structural Python -> m3 -> Pure -> m3 round trip (jar-free, in
+    # tests/test_relation.py) is the relation literal's coverage, and the test
+    # above proves the lambda/verb machinery executes. This test pins the
+    # engine limitation so a future jar that adds the parser surfaces here.
+    emitted = _expression(call("filter", tds("id,grp\n1,1\n2,0"), lam(["r"], lambda r: r.grp > 0)))
+    assert emitted == "#TDS{id,grp\n1,1\n2,0}#->filter({r | ($r.grp > 0)})"
+    with pytest.raises(Exception, match="TDS"):
+        bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")

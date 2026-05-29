@@ -250,14 +250,21 @@ class Compiler:
     def _body_expressions(self, markers: tuple) -> list[m3.ValueSpecification]:
         """Build the ``expressionSequence`` from a ``Body`` marker, if any.
 
-        The getter is never executed; we evaluate the marker's ``$this``-taking
-        DSL function instead. Signature-only properties keep an empty sequence.
+        The getter is never executed; we evaluate the marker's DSL function
+        instead. The function takes either one parameter (the conventional
+        ``$this``) or none -- arity is read from its signature so both spellings
+        work without a second capture path. Signature-only properties keep an
+        empty sequence.
         """
+        import inspect
+
         for marker in markers:
             if isinstance(marker, BodyMarker):
-                from .expressions import Expr, var  # local: expressions imports us
+                from .expressions import Expr, coerce, var  # local: expressions imports us
 
-                return [marker.fn(Expr(var("this"))).node]
+                takes_this = len(inspect.signature(marker.fn).parameters) >= 1
+                args = (Expr(var("this")),) if takes_this else ()
+                return [coerce(marker.fn(*args))]
         return []
 
 
