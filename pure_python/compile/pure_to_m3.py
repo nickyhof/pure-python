@@ -16,6 +16,8 @@ from pure_python import m3
 from pure_python.codegen.grammar import parse_grammar
 from pure_python.codegen.schema import TypeRef
 
+from . import pure_expr
+
 _MULTIPLICITY: dict[tuple[int, int | None], m3.PackageableMultiplicity] = {
     (1, 1): m3.PureOne,
     (0, 1): m3.ZeroOne,
@@ -61,6 +63,13 @@ def _profile(name: str, profiles: dict[str, m3.Profile]) -> m3.Profile:
     return profiles.setdefault(name, m3.Profile(name=name))
 
 
+def _body_expressions(body: str | None) -> list[m3.ValueSpecification]:
+    """Lower a captured qualified-property body, treating ``[]`` as no body."""
+    if body is None or body == "[]":
+        return []
+    return [pure_expr.parse_expression(body)]
+
+
 def from_pure(source: str) -> dict[str, m3.Type]:
     """Parse Pure source and return a ``name -> m3 instance`` registry."""
     result = parse_grammar(source)
@@ -96,6 +105,7 @@ def from_pure(source: str) -> dict[str, m3.Type]:
                 genericType=_generic(q.type_name, q.is_type_parameter, q.type_arguments, registry),
                 multiplicity=_multiplicity(q.lower, q.upper),
                 owner=cls,
+                expressionSequence=_body_expressions(q.body),
             )
             for q in meta.qualified_properties
         ]
