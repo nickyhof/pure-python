@@ -19,6 +19,7 @@ from .expressions import (
     coerce,
     col,
     cols,
+    db_table,
     desc,
     enum_ref,
     fcol,
@@ -35,6 +36,7 @@ from .expressions import (
     unbounded,
     var,
 )
+from .frame import Frame
 from .m3_to_pure import to_pure, to_pure_module
 from .m3_to_python import to_module, to_source
 from .pure_expr import parse_expression
@@ -66,6 +68,7 @@ __all__ = [
     "not_",
     "lam",
     "tds",
+    "db_table",
     "enum_ref",
     "JoinKind",
     "col",
@@ -81,4 +84,6 @@ __all__ = [
     "rows",
     "range_",
     "unbounded",
+    # relation query builder facade
+    "Frame",
 ]

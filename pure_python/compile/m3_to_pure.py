@@ -162,6 +162,15 @@ def _is_tds(vs: m3.InstanceValue) -> bool:
     return generic is not None and isinstance(generic.rawType, m3.RelationType)
 
 
+def _is_db_table(vs: m3.InstanceValue) -> bool:
+    """A ``#>{db::Store.table}#`` database-table source is an ``InstanceValue``
+    whose ``genericType.rawType`` is a ``Relation`` (the discriminating marker set
+    by :func:`pure_python.compile.expressions.db_table`); its single value is the
+    verbatim ``#>{...}#`` token, emitted unquoted like a ``#TDS{}#`` literal."""
+    generic = vs.genericType
+    return generic is not None and isinstance(generic.rawType, m3.Relation)
+
+
 def _is_enum_ref(vs: m3.InstanceValue) -> bool:
     """An enum-value reference (``JoinKind.INNER``) is an ``InstanceValue`` whose
     ``genericType.rawType`` is an ``Enumeration`` (the discriminating marker set
@@ -247,6 +256,8 @@ def _expression(vs) -> str:
         return "~[" + ", ".join(_agg_col_spec(s) for s in vs.aggSpecs) + "]"
     if isinstance(vs, m3.InstanceValue):
         if _is_tds(vs):  # a `#TDS{...}#` literal: emit its text verbatim
+            return vs.values[0]
+        if _is_db_table(vs):  # a `#>{db::Store.table}#` source: emit verbatim
             return vs.values[0]
         if _is_enum_ref(vs):  # an enum-value ref `JoinKind.INNER`: emit verbatim
             return vs.values[0]

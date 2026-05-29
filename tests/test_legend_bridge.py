@@ -510,6 +510,135 @@ def test_legend_compiles_range_frame_windowed_extend():
         bridge.evaluate("|" + emitted)
 
 
+def test_legend_compiles_non_trivial_frame_chain():
+    # The `Frame` query builder is pure sugar over the relation verbs, so a
+    # non-trivial `Frame` chain emits exactly the Pure the free builders do and the
+    # real engine PARSES + COMPILES it. `filter -> groupBy -> sort -> limit` over a
+    # `#TDS{...}#` literal: every verb resolves to a
+    # `meta::pure::functions::relation::<verb>` function; compilation succeeds and
+    # only plan generation hits the upstream execution boundary ("... is not
+    # supported yet"), the same boundary as the free-builder cases above. (An
+    # `extend(~c:{r | $r.amt * 2})` step BEFORE the `groupBy` was probed and is a
+    # genuine engine *compile* constraint -- the engine infers the derived column as
+    # `[0..1]` and rejects "Collection element must have a multiplicity [1]" -- so
+    # it is left out of this compilable chain; the `Frame.extend` sugar itself is
+    # exercised jar-free in `tests/test_frame.py`.)
+    from pure_python.compile import Frame, desc
+
+    src = "id,cust,amt\n1,a,10\n2,a,20\n3,b,5"
+    query = (
+        Frame.from_tds(src)
+        .filter(lambda r: r.amt > 5)
+        .group_by("cust", ("total", lambda r: r.amt, lambda c: c.sum()))
+        .sort(desc("total"))
+        .limit(10)
+    )
+    emitted = query.to_pure()
+    assert emitted == (
+        f"#TDS{{{src}}}#"
+        "->filter({r | ($r.amt > 5)})"
+        "->groupBy(~[cust], ~total:{r | $r.amt}:{c | $c->sum()})"
+        "->sort(~total->descending())"
+        "->limit(10)"
+    )
+    # PARSE: the wrapping function appears in the parsed model.
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    # COMPILE: every verb resolves; only plan generation hits the upstream boundary.
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_frame_join_chain():
+    # A `Frame` join chain (`filter -> inner_join`) PARSES + COMPILES. The right
+    # relation is another `Frame` (unwrapped to its node), the `JoinKind.INNER` is
+    # the enum-value reference, and the condition is the two-row proxy lambda. The
+    # engine resolves `join_Relation_1__Relation_1__JoinKind_1__Function_1__Relation_1_`;
+    # compilation succeeds and only plan generation hits the upstream boundary.
+    from pure_python.compile import Frame
+
+    left = Frame.from_tds("id,name\n1,a\n2,b")
+    right = Frame.from_tds("rid,val\n1,10\n2,20")
+    query = left.filter(lambda r: r.id > 0).inner_join(right, lambda l, r: l.id == r.rid)
+    emitted = query.to_pure()
+    assert emitted == (
+        "#TDS{id,name\n1,a\n2,b}#->filter({r | ($r.id > 0)})"
+        "->join(#TDS{rid,val\n1,10\n2,20}#, JoinKind.INNER, {l, r | ($l.id == $r.rid)})"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_frame_windowed_extend():
+    # A `Frame.window_extend` (an OLAP column over an `over(...)` window) PARSES +
+    # COMPILES, resolving `extend_Relation_1___Window_1__FuncColSpec_1__Relation_1_`;
+    # compilation succeeds and only plan generation hits the upstream boundary.
+    from pure_python.compile import Frame
+
+    query = Frame.from_tds("p,o,i\n0,1,10\n0,2,20\n100,1,10").window_extend(
+        over(col("p"), array(asc(col("o")), asc(col("i"))), rows(unbounded(), 0)),
+        ("c", lambda p, w, r: r.i),
+    )
+    emitted = query.to_pure()
+    assert emitted == (
+        "#TDS{p,o,i\n0,1,10\n0,2,20\n100,1,10}#"
+        "->extend(over(~p, [~o->ascending(), ~i->ascending()], rows(unbounded(), 0)), "
+        "~c:{p, w, r | $r.i})"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_parses_frame_from_db_source():
+    # `Frame.from_db` emits a `#>{db::Store.table}#` database-table source, which
+    # PARSES via the real engine: the source is a `classInstance` of `type ">"`
+    # whose value is the `[database, table]` path, and the relation verb resolves
+    # over it. The wrapping function appears in the parsed model. (COMPILING needs
+    # the named store defined -- see the next test.)
+    from pure_python.compile import Frame
+
+    query = Frame.from_db("my::Store", "myTable").limit(5)
+    emitted = query.to_pure()
+    assert emitted == "#>{my::Store.myTable}#->limit(5)"
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    # The parsed source is a `classInstance` of `type ">"` carrying the dotted path.
+    fn = next(e for e in model["elements"] if e.get("_type") == "function")
+    source = fn["body"][0]["parameters"][0]
+    assert source["_type"] == "classInstance" and source["type"] == ">"
+    assert source["value"]["path"] == ["my::Store", "myTable"]
+
+
+def test_legend_from_db_compile_needs_a_defined_database():
+    # `from_db` only PARSES without a database; COMPILING it fails because the named
+    # store is not defined -- a DISTINCT, earlier error than the relation plan-gen
+    # boundary ("The store '...' can't be found.", not "not supported yet"). This
+    # sugar layer deliberately does not fabricate a database/store definition; a
+    # real `from_db` execution needs a modelled relational store + connection +
+    # runtime. Pinned so a future store-aware path surfaces here.
+    from pure_python.compile import Frame
+
+    emitted = Frame.from_db("my::Store", "myTable").limit(5).to_pure()
+    with pytest.raises(Exception, match="store 'my::Store' can't be found"):
+        bridge.evaluate("|" + emitted)
+
+
 def test_legend_java_backend_lacks_relation_size_execution():
     # TDS now parses AND compiles, but this engine build's Java execution codegen
     # does not yet implement the relation reducers, so a TDS query cannot be
