@@ -1136,3 +1136,116 @@ def test_round_trip_windowed_extend_agg_colspec_query():
         agg("sum_i", lam(["p", "w", "r"], lambda p, w, r: r.i), lam(["y"], lambda y: y.sum())),
     )
     _assert_round_trips(node)
+
+
+# --- named OLAP functions ---------------------------------------------------
+# pylegend writes the relation window functions as methods on the partial-frame
+# proxy `p`: `lambda p, w, r: p.row_number(r)`, `p.rank(w, r)`, `p.dense_rank(w,
+# r)`, `p.lag(r)`, `p.lead(r)`. The Legend engine resolves (each compiling to the
+# `extend_..._Window_..._{FuncColSpec,AggColSpec}_...` plan-gen boundary; verified
+# via the Legend bridge):
+#   rowNumber($p, $r)            -- p, r          (NOT p, w, r)
+#   rank($p, $w, $r)             -- p, w, r
+#   denseRank($p, $w, $r)        -- p, w, r
+#   lag($p, $r[, offset])        -- p, r (+ optional Integer offset)
+#   lead($p, $r[, offset])       -- p, r (+ optional Integer offset)
+#   percentRank / cumulativeDistribution($p, $w, $r), ntile($p, $r, n)  -- also compile
+# The names `rank` / `lag` / `lead` / `rowNumber` already match Pure; only the
+# multi-word `row_number` / `dense_rank` need the snake->camel alias map (`$p->
+# row_number($r)` / `$p->dense_rank($w, $r)` are REJECTED -- "Function does not
+# exist"). The alias is applied ONLY in the `_Accessor` call path, so property
+# access (`r.order_id`) and non-OLAP methods (`$c->sum()`) are untouched. The
+# emitted calls are ordinary arrow graphs, so they round-trip through `pure_expr`
+# with no new lowering.
+
+def test_olap_snake_alias_emits_camel_case_function():
+    # `p.row_number(r)` (pylegend snake) emits the Pure `rowNumber` the engine
+    # resolves, NOT the rejected `row_number`.
+    node = lam(["p", "w", "r"], lambda p, w, r: p.row_number(r))
+    assert _expression(node) == "{p, w, r | $p->rowNumber($r)}"
+    node2 = lam(["p", "w", "r"], lambda p, w, r: p.dense_rank(w, r))
+    assert _expression(node2) == "{p, w, r | $p->denseRank($w, $r)}"
+
+
+def test_olap_snake_alias_equals_camel_direct_under_canon():
+    # The snake spelling builds the SAME graph as writing the camelCase directly.
+    snake = lam(["p", "w", "r"], lambda p, w, r: p.row_number(r))
+    camel = lam(["p", "w", "r"], lambda p, w, r: p.rowNumber(r))
+    assert canon(snake) == canon(camel)
+    snake_dr = lam(["p", "w", "r"], lambda p, w, r: p.dense_rank(w, r))
+    camel_dr = lam(["p", "w", "r"], lambda p, w, r: p.denseRank(w, r))
+    assert canon(snake_dr) == canon(camel_dr)
+
+
+def test_olap_single_word_names_pass_through_unchanged():
+    # `rank` / `lag` / `lead` / `rowNumber`(direct) already match Pure -- no alias.
+    assert _expression(lam(["p", "w", "r"], lambda p, w, r: p.rank(w, r))) == (
+        "{p, w, r | $p->rank($w, $r)}"
+    )
+    assert _expression(lam(["p", "w", "r"], lambda p, w, r: p.lag(r))) == (
+        "{p, w, r | $p->lag($r)}"
+    )
+    assert _expression(lam(["p", "w", "r"], lambda p, w, r: p.lead(r))) == (
+        "{p, w, r | $p->lead($r)}"
+    )
+    assert _expression(lam(["p", "w", "r"], lambda p, w, r: p.rowNumber(r))) == (
+        "{p, w, r | $p->rowNumber($r)}"
+    )
+
+
+def test_olap_alias_does_not_touch_property_access():
+    # `r.row_number` as a PROPERTY (not a call) stays the column `row_number` --
+    # the alias map keys off the call path only, never `__getattr__` property use.
+    node = lam(["r"], lambda r: r.row_number)
+    assert canon(node) == ("lambda", ("r",), (("prop", "row_number", ("var", "r")),))
+
+
+def test_olap_alias_does_not_touch_non_olap_method_calls():
+    # A non-OLAP method call (`$c->sum()`, `$x->ascending()`) is unaffected.
+    assert _expression(lam(["c"], lambda c: c.sum())) == "{c | $c->sum()}"
+    assert _expression(lam(["x"], lambda x: x.ascending())) == "{x | $x->ascending()}"
+
+
+def test_round_trip_olap_row_number_windowed_extend():
+    node = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20"),
+        over(col("p"), asc(col("o")), rows(unbounded(), 0)),
+        fcol("rn", lam(["p", "w", "r"], lambda p, w, r: p.row_number(r))),
+    )
+    _assert_round_trips(node)
+
+
+def test_round_trip_olap_rank_windowed_extend():
+    node = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20"),
+        over(col("p"), asc(col("o")), rows(unbounded(), 0)),
+        fcol("rk", lam(["p", "w", "r"], lambda p, w, r: p.rank(w, r))),
+    )
+    _assert_round_trips(node)
+
+
+def test_round_trip_olap_dense_rank_windowed_extend():
+    node = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20"),
+        over(col("p"), asc(col("o")), rows(unbounded(), 0)),
+        fcol("dr", lam(["p", "w", "r"], lambda p, w, r: p.dense_rank(w, r))),
+    )
+    _assert_round_trips(node)
+
+
+def test_round_trip_olap_lag_lead_windowed_extend():
+    for fn_name, build in [
+        ("lg", lambda p, w, r: p.lag(r)),
+        ("ld", lambda p, w, r: p.lead(r)),
+        ("lg1", lambda p, w, r: p.lag(r, 1)),
+    ]:
+        node = call(
+            "extend",
+            tds("p,o,i\n0,1,10\n0,2,20"),
+            over(col("p"), asc(col("o")), rows(unbounded(), 0)),
+            fcol(fn_name, lam(["p", "w", "r"], build)),
+        )
+        _assert_round_trips(node)
