@@ -70,12 +70,17 @@ class _PendingReference:
     ``instanceReference`` (``JoinKind``) followed by a ``propertyExpression``
     (``.INNER``). Only the combined form is meaningful here (it is the inverse of
     :func:`pure_python.compile.expressions.enum_ref`), so :func:`_lower_atomic`
-    lowers the bare reference to this carrier and
+    lowers the bare reference *with no ``allOrFunction``* to this carrier and
     :func:`_lower_property_or_function` folds the ``.VALUE`` suffix on, building
-    the ``enum_ref`` node. A pending reference left dangling, followed by a call
-    ``(...)``, or carrying an ``allOrFunction`` (the ``over(...)`` window-function
-    receiver) is rejected loudly rather than silently mis-lowered -- that
-    bare-function-call receiver form is a separate, not-yet-supported slice.
+    the ``enum_ref`` node. A pending reference left dangling or followed by an
+    arrow call ``->fn(...)`` is rejected loudly rather than silently
+    mis-lowered.
+
+    The sibling *bare-function-call* form -- an ``instanceReference`` that *does*
+    carry an ``allOrFunction`` (``over(...)`` / ``rows(...)`` / ``_range(...)`` /
+    ``unbounded()``, the window / OLAP prefix calls) -- is lowered directly by
+    :func:`_lower_instance_reference` to a prefix ``call(name, *args)`` node and
+    never becomes a pending reference.
     """
 
     __slots__ = ("path",)
@@ -242,21 +247,47 @@ def _lower_atomic(nae) -> m3.ValueSpecification:
 
 
 def _lower_instance_reference(instance_reference):
-    """Lower a bare ``instanceReference`` (``JoinKind``) to a pending reference.
+    """Lower an ``instanceReference`` -- a pending enum ref, or a prefix call.
 
-    Only the qualified-name form with no trailing ``allOrFunction`` (``over(...)``
-    / ``.all()`` / a call) is supported -- the enum-value-reference receiver. The
-    ``allOrFunction`` form (the bare-function-call receiver that window functions
-    such as ``over(...)`` need) is a separate slice, so reject it loudly rather
-    than silently mis-lower. A ``PATH_SEPARATOR``-only or ``unitName`` reference
-    is likewise unsupported here.
+    Two shapes are handled, keyed on the trailing ``allOrFunction``:
+
+    * **No ``allOrFunction``** -- a bare qualified name (``JoinKind``). It is the
+      receiver half of an enum-value reference, lowered to a :class:`_PendingReference`
+      that :func:`_lower_property_or_function` folds the ``.VALUE`` suffix onto
+      (the inverse of :func:`pure_python.compile.expressions.enum_ref`). A bare
+      reference that is never completed is rejected by :func:`_lower_expression`.
+    * **A ``functionExpressionParameters`` ``allOrFunction``** -- a *prefix
+      function call* (``over(~grp, ...)`` / ``rows(-1, 0)`` / ``_range(-1, 0)`` /
+      ``unbounded()``, the window / OLAP constructors). The qualified name is the
+      function's *simple* name and the params are lowered as ordinary args, so it
+      becomes a plain ``call(name, *args)`` -- identical to what
+      :func:`pure_python.compile.expressions.call` builds and the inverse of the
+      prefix emit in :mod:`pure_python.compile.m3_to_pure`. Zero args
+      (``unbounded()``) yields ``call(name)``.
+
+    The other ``allOrFunction`` alternatives (``.all()`` / ``.allVersions()`` /
+    milestoning) carry no ``functionExpressionParameters`` and are not produced by
+    any builder here, so they are rejected. A ``PATH_SEPARATOR``-only or
+    ``unitName`` reference is likewise unsupported.
     """
-    if instance_reference.allOrFunction() is not None:
-        raise ValueError(
-            "unsupported instance reference with a call/all suffix "
-            f"(bare-function-call receiver is not supported): {instance_reference.getText()!r}"
-        )
     qualified_name = instance_reference.qualifiedName()
+    all_or_function = instance_reference.allOrFunction()
+    if all_or_function is not None:
+        params = all_or_function.functionExpressionParameters()
+        if params is None or qualified_name is None:
+            # `.all()` / `.allVersions()` / milestoning suffixes -- no params and
+            # not a builder-produced shape.
+            raise ValueError(
+                f"unsupported instance reference: {instance_reference.getText()!r}"
+            )
+        # A prefix function call `name(arg, ...)`: the qualified name's trailing
+        # `identifier` is the function's simple name (a leading `packagePath` such
+        # as `meta::pure::functions::relation` is dropped, matching the arrow-call
+        # lowering, which also keys on the simple name). Lower each arg as an
+        # ordinary combinedExpression.
+        simple_name = qualified_name.identifier().getText()
+        args = [_lower_combined(c) for c in params.combinedExpression()]
+        return call(simple_name, *args)
     if qualified_name is None:
         raise ValueError(
             f"unsupported instance reference: {instance_reference.getText()!r}"
@@ -410,8 +441,10 @@ def _lower_property_or_function(receiver, pof) -> m3.ValueSpecification:
             return enum_ref(receiver.path, name)
         return prop(receiver, name)
     if isinstance(receiver, _PendingReference):
-        # A pending reference followed by an arrow `->fn(...)` is the
-        # bare-function-call receiver form (window `over(...)`), a separate slice.
+        # A bare reference (the enum-value-reference receiver, e.g. `JoinKind`)
+        # followed by an arrow `->fn(...)` is meaningless -- only `.VALUE` completes
+        # it. (A *prefix* function call like `over(~grp)` is lowered directly in
+        # `_lower_instance_reference` and never reaches here as a pending reference.)
         raise ValueError(
             f"unsupported function call on an instance reference: {receiver.path}->..."
         )

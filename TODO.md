@@ -250,9 +250,10 @@ Grouped by status, with pointers to the relevant code.
   bare `instanceReference` (`JoinKind`) to a lightweight `_PendingReference`
   carrying the qualified-name text, and `_lower_property_or_function` folds a
   trailing parameterless `.VALUE` propertyExpression onto it to build the
-  `enum_ref` node; a pending reference left dangling, followed by an arrow call, or
-  carrying an `allOrFunction`/parameterized property is rejected loudly (so the
-  window `over(...)` form fails clearly rather than mis-lowering). `coerce` passes
+  `enum_ref` node; a pending reference left dangling or followed by an arrow call
+  (`JoinKind->...`) is rejected loudly, while a *prefix* function call
+  (`over(...)`) is a sibling shape lowered directly (see the window/OLAP slice
+  below). `coerce` passes
   the enum-ref + relation + lambda through, so the verbs are free fluent / `call`
   forms: `rel.join(other, JoinKind.INNER, lam(["l","r"], ...))` and
   `rel.asOfJoin(other, lam(["l","r"], ...))`. A bare `enum_ref`, a `join`, and an
@@ -266,14 +267,53 @@ Grouped by status, with pointers to the relevant code.
   `OUTER` is REJECTED with "Can't find enum value 'OUTER'" -- proving the reference
   is genuinely resolved, not ignored). Each query parses + compiles and only fails
   in plan generation (same execution boundary as above; `tests/test_legend_bridge.py`).
+  Finally adds **window / OLAP + the `Frame` constructors** -- a windowed `extend`
+  adds an OLAP column over a window spec: `rel.extend(over(~p, sort, frame),
+  ~name:{p, w, r | <body>})`. The genuinely new machinery is the
+  **bare-function-call (prefix) form**: `over(...)` / `rows(...)` / `_range(...)` /
+  `unbounded()` are prefix calls whose first argument is NOT a relation receiver,
+  so (a) `m3_to_pure` gained a tight `_PREFIX_FUNCTIONS` set
+  (`{over, rows, _range, unbounded}`, mirroring the infix-operator set) that emits
+  them `fn(a, b, c)` rather than the default arrow `a->fn(b, c)`, and (b)
+  `pure_expr._lower_instance_reference` now lowers an `instanceReference` that
+  carries a `functionExpressionParameters` `allOrFunction` to a plain
+  `call(name, *args)` (the trailing `identifier` is the simple name; zero args ->
+  `unbounded()`), keeping the Slice-D enum-ref behavior intact -- a bare
+  `instanceReference` with NO params still becomes a `_PendingReference`
+  (completed only by a `.VALUE` suffix -> `enum_ref`), and a bare ref left
+  dangling / followed by an arrow call still raises. No new m3 type: the whole
+  window is an ordinary function-call graph over the existing colspec / array /
+  lambda nodes. `over(partition, sort=None, frame=None)` builds the prefix
+  `over(...)` (only the supplied args are emitted, matching the engine's overload
+  set); `rows(from, to)` / `range_(from, to)` (the value-range, emitted as the
+  engine's `_range`, since the bare `range` is the *collection* function) build
+  the frame, and `unbounded()` is the `UnboundedFrameValue` bound sentinel
+  (negative=preceding, positive=following, 0=current row). The windowed `extend`
+  column reuses the existing `fcol` (`~name:{lambda}`) or `agg`
+  (`~name:{map}:{reduce}`) spec with the canonical 3-param window lambda.
+  **SUPPORTED** (each survives `Python -> m3 -> Pure -> m3` jar-free in
+  `tests/test_relation.py`, and PARSES + COMPILES via the real engine to the
+  plan-gen boundary in `tests/test_legend_bridge.py`): `over` with a `ColSpec` or
+  `ColSpecArray` partition, an optional single `SortInfo` (`~col->ascending()`) or
+  bracketed `SortInfo[*]` list, and an optional `rows` / `_range` frame
+  (`over(cols)`, `over(cols, sort)`, `over(cols, frame)`, `over(cols, sort,
+  frame)`); `rows` / `_range` with integer offsets or `unbounded()` bounds; and a
+  windowed `extend` with either a `FuncColSpec`
+  (`extend_Relation_1___Window_1__FuncColSpec_1__Relation_1_`) or an `AggColSpec`
+  (`extend_Relation_1___Window_1__AggColSpec_1__Relation_1_`) column. The engine
+  ALSO accepts the arrow spelling `~grp->over(...)`, but prefix is the engine's own
+  canonical OLAP form and the frame/bound constructors have no receiver to arrow
+  from, so all four emit prefix (and only prefix is reverse-parsed). **DEFERRED**:
+  the named OLAP convenience functions (`rank`, `denseRank`, `rowNumber`,
+  `lag`/`lead`, running `cumulativeDistribution`, etc. -- these layer on top of the
+  same `over` window and can be added as plain verbs/calls later) and the
+  `_RangeInterval` duration-unit frame variant (`_range(n, DurationUnit, ...)`);
+  the coherent compilable subset above (partition + sort + `rows`/`_range` frame +
+  windowed `extend`) is delivered.
   Deferred follow-ons:
-    - **window / OLAP functions** -- `over`, ranking / running aggregates. The
-      remaining lowering gap is the bare-function-call receiver `over(...)` -- an
-      `instanceReference` with an `allOrFunction`/arrow-call suffix -- which
-      `pure_expr` now rejects loudly (it is the next slice, not silently
-      mis-lowered).
     - **a `Frame` fluent class** -- a higher-level relation-query builder over
-      the free verbs.
+      the free verbs (the free `over` / `rows` / `range_` / `unbounded` builders
+      are in place).
     - **a batched `evalMany` bridge command** -- compile the model once and
       evaluate many expressions in one JVM (a Java-side change, explicitly *not*
       bundled with this slice).

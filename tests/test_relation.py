@@ -30,7 +30,11 @@ from pure_python.compile.expressions import (
     fcol,
     fcols,
     lam,
+    over,
+    range_,
+    rows,
     tds,
+    unbounded,
 )
 from pure_python.compile.m3_to_pure import _expression
 
@@ -840,7 +844,256 @@ def test_bare_instance_reference_without_value_is_rejected():
 
 
 def test_instance_reference_call_receiver_is_rejected():
-    # The bare-function-call receiver form (window `over(...)`) is a separate
-    # slice; an `instanceReference` followed by an arrow call must error clearly.
+    # A bare enum-value-reference receiver (`JoinKind`) followed by an arrow call
+    # is meaningless -- only `.VALUE` completes it -- and must error clearly. (A
+    # *prefix* function call like `over(~grp)` is a different shape, lowered
+    # directly; see the window/OLAP round-trip tests below.)
     with pytest.raises(ValueError, match="instance reference"):
         pure_expr.parse_expression("JoinKind->over(~grp)")
+
+
+# --- window / OLAP + Frame --------------------------------------------------
+# A windowed `extend` adds an OLAP column over a window spec. The engine resolves
+# (via `meta::pure::functions::relation`, all confirmed via the Legend bridge --
+# each compiles to the `extend_Relation_1___Window_1__{FuncColSpec,AggColSpec}_1`
+# plan-gen boundary):
+#   over(cols: ColSpec|ColSpecArray, sortInfo: SortInfo[*]?, frame: Rows|_Range?): _Window
+#   rows(from, to): Rows           -- physical row offsets (int / `unbounded()`)
+#   _range(from, to): _Range       -- value offsets (built by `range_`, since the
+#                                     bare `range` is the collection function)
+#   unbounded(): UnboundedFrameValue   -- the UNBOUNDED PRECEDING/FOLLOWING bound
+# `over` / `rows` / `_range` / `unbounded` are PREFIX calls (`over(~grp, ...)`,
+# not the arrow form); the engine also accepts `~grp->over(...)`, but prefix is
+# the canonical OLAP form and the frame/bound constructors have no receiver to
+# arrow from, so all four emit prefix. No new m3 type: the whole window is an
+# ordinary function-call graph over the existing colspec / array / lambda nodes.
+
+# --- builders ---------------------------------------------------------------
+
+def test_unbounded_builds_zero_arg_call():
+    node = unbounded()
+    assert isinstance(node, m3.SimpleFunctionExpression)
+    assert node.functionName == "unbounded"
+    assert node.parametersValues == []
+    assert canon(node) == ("call", "unbounded", ())
+
+
+def test_rows_builds_frame_call_with_int_bounds():
+    node = rows(-1, 0)
+    assert isinstance(node, m3.SimpleFunctionExpression)
+    assert node.functionName == "rows"
+    assert canon(node) == (
+        "call", "rows", (("lit", "Integer", (-1,)), ("lit", "Integer", (0,))),
+    )
+
+
+def test_rows_accepts_unbounded_bounds():
+    node = rows(unbounded(), 0)
+    assert canon(node) == (
+        "call", "rows", (("call", "unbounded", ()), ("lit", "Integer", (0,))),
+    )
+
+
+def test_range_builds_underscore_range_call():
+    node = range_(-1, 0)
+    # Emits the engine's `_range` (the bare `range` is the collection function).
+    assert node.functionName == "_range"
+    assert canon(node) == (
+        "call", "_range", (("lit", "Integer", (-1,)), ("lit", "Integer", (0,))),
+    )
+
+
+def test_over_partition_only():
+    node = over(col("grp"))
+    assert node.functionName == "over"
+    assert canon(node) == ("call", "over", (("colspec", "grp"),))
+
+
+def test_over_partition_and_sort():
+    node = over(col("grp"), asc(col("val")))
+    assert canon(node) == (
+        "call", "over",
+        (("colspec", "grp"), ("call", "ascending", (("colspec", "val"),))),
+    )
+
+
+def test_over_partition_sort_and_frame():
+    node = over(col("grp"), asc(col("val")), rows(-1, 0))
+    assert canon(node) == (
+        "call", "over",
+        (
+            ("colspec", "grp"),
+            ("call", "ascending", (("colspec", "val"),)),
+            ("call", "rows", (("lit", "Integer", (-1,)), ("lit", "Integer", (0,)))),
+        ),
+    )
+
+
+def test_over_partition_and_frame_no_sort():
+    # `over(~grp, rows(...))` -- the frame as the second positional arg (no sort).
+    node = over(col("grp"), frame=rows(-1, 0))
+    assert canon(node) == (
+        "call", "over",
+        (
+            ("colspec", "grp"),
+            ("call", "rows", (("lit", "Integer", (-1,)), ("lit", "Integer", (0,)))),
+        ),
+    )
+
+
+def test_over_colspec_array_partition_and_sort_array():
+    node = over(cols("grp", "id"), array(asc(col("o")), desc(col("i"))), rows(unbounded(), 0))
+    assert canon(node) == (
+        "call", "over",
+        (
+            ("colspecarray", ("grp", "id")),
+            (
+                "collection",
+                (
+                    ("call", "ascending", (("colspec", "o"),)),
+                    ("call", "descending", (("colspec", "i"),)),
+                ),
+            ),
+            ("call", "rows", (("call", "unbounded", ()), ("lit", "Integer", (0,)))),
+        ),
+    )
+
+
+def test_coerce_passes_window_nodes_through():
+    o = over(col("grp"))
+    assert coerce(o) is o
+    f = rows(-1, 0)
+    assert coerce(f) is f
+
+
+# --- DSL equals the builders ------------------------------------------------
+
+def _windowed_extend_args():
+    return (
+        over(col("p"), asc(col("o")), rows(-1, 0)),
+        fcol("c", lam(["p", "w", "r"], lambda p, w, r: r.i)),
+    )
+
+
+def test_fluent_windowed_extend_equals_free_builder():
+    win, spec = _windowed_extend_args()
+    fluent = Expr(tds("p,o,i\n0,1,10")).extend(win, spec)
+    win2, spec2 = _windowed_extend_args()
+    builder = call("extend", tds("p,o,i\n0,1,10"), win2, spec2)
+    assert canon(fluent.node) == canon(builder)
+
+
+# --- emit -------------------------------------------------------------------
+
+def test_emit_unbounded():
+    assert _expression(unbounded()) == "unbounded()"
+
+
+def test_emit_rows_frame():
+    assert _expression(rows(-1, 0)) == "rows(-1, 0)"
+    assert _expression(rows(unbounded(), 0)) == "rows(unbounded(), 0)"
+
+
+def test_emit_range_frame():
+    assert _expression(range_(-1, 0)) == "_range(-1, 0)"
+
+
+def test_emit_over_partition_only():
+    assert _expression(over(col("grp"))) == "over(~grp)"
+
+
+def test_emit_over_with_sort_and_frame():
+    node = over(col("grp"), asc(col("val")), rows(-1, 0))
+    assert _expression(node) == "over(~grp, ~val->ascending(), rows(-1, 0))"
+
+
+def test_emit_over_with_sort_array_and_frame():
+    node = over(cols("grp", "id"), array(asc(col("o")), desc(col("i"))), rows(unbounded(), 0))
+    assert _expression(node) == (
+        "over(~[grp, id], [~o->ascending(), ~i->descending()], rows(unbounded(), 0))"
+    )
+
+
+def test_emit_windowed_extend_func_colspec_query():
+    node = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20"),
+        over(col("p"), array(asc(col("o")), asc(col("i"))), rows(unbounded(), 0)),
+        fcol("c", lam(["p", "w", "r"], lambda p, w, r: r.i)),
+    )
+    assert _expression(node) == (
+        "#TDS{p,o,i\n0,1,10\n0,2,20}#"
+        "->extend(over(~p, [~o->ascending(), ~i->ascending()], rows(unbounded(), 0)), "
+        "~c:{p, w, r | $r.i})"
+    )
+
+
+def test_emit_windowed_extend_agg_colspec_query():
+    node = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20"),
+        over(col("p"), asc(col("o")), rows(-1, 0)),
+        agg("sum_i", lam(["p", "w", "r"], lambda p, w, r: r.i), lam(["y"], lambda y: y.sum())),
+    )
+    assert _expression(node) == (
+        "#TDS{p,o,i\n0,1,10\n0,2,20}#"
+        "->extend(over(~p, ~o->ascending(), rows(-1, 0)), "
+        "~sum_i:{p, w, r | $r.i}:{y | $y->sum()})"
+    )
+
+
+# --- reverse parse (round trip) ---------------------------------------------
+
+def test_round_trip_unbounded():
+    _assert_round_trips(unbounded())
+
+
+def test_round_trip_rows_frame():
+    _assert_round_trips(rows(-1, 0))
+    _assert_round_trips(rows(unbounded(), 0))
+    _assert_round_trips(rows(0, unbounded()))
+
+
+def test_round_trip_range_frame():
+    _assert_round_trips(range_(-1, 0))
+
+
+def test_round_trip_over_partition_only():
+    _assert_round_trips(over(col("grp")))
+
+
+def test_round_trip_over_with_sort():
+    _assert_round_trips(over(col("grp"), asc(col("val"))))
+
+
+def test_round_trip_over_with_sort_and_frame():
+    _assert_round_trips(over(col("grp"), asc(col("val")), rows(-1, 0)))
+
+
+def test_round_trip_over_with_frame_no_sort():
+    _assert_round_trips(over(col("grp"), frame=rows(-1, 0)))
+
+
+def test_round_trip_over_with_colspec_array_and_sort_array():
+    node = over(cols("grp", "id"), array(asc(col("o")), desc(col("i"))), rows(unbounded(), 0))
+    _assert_round_trips(node)
+
+
+def test_round_trip_windowed_extend_func_colspec_query():
+    node = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20"),
+        over(col("p"), array(asc(col("o")), asc(col("i"))), rows(unbounded(), 0)),
+        fcol("c", lam(["p", "w", "r"], lambda p, w, r: r.i)),
+    )
+    _assert_round_trips(node)
+
+
+def test_round_trip_windowed_extend_agg_colspec_query():
+    node = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20"),
+        over(col("p"), asc(col("o")), rows(-1, 0)),
+        agg("sum_i", lam(["p", "w", "r"], lambda p, w, r: r.i), lam(["y"], lambda y: y.sum())),
+    )
+    _assert_round_trips(node)

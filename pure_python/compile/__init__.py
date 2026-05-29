@@ -27,8 +27,12 @@ from .expressions import (
     lam,
     lit,
     not_,
+    over,
     prop,
+    range_,
+    rows,
     tds,
+    unbounded,
     var,
 )
 from .m3_to_pure import to_pure, to_pure_module
@@ -73,4 +77,8 @@ __all__ = [
     "array",
     "asc",
     "desc",
+    "over",
+    "rows",
+    "range_",
+    "unbounded",
 ]

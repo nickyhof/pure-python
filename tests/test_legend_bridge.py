@@ -29,7 +29,11 @@ from pure_python.compile.expressions import (
     enum_ref,
     fcol,
     lam,
+    over,
+    range_,
+    rows,
     tds,
+    unbounded,
 )
 from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
@@ -411,6 +415,97 @@ def test_legend_parses_and_compiles_dsl_as_of_join_query():
         for e in model["elements"]
     )
     # COMPILE: `asOfJoin` resolves to a relation function; only plan generation fails.
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_parses_and_compiles_dsl_windowed_extend_func_colspec():
+    # A windowed `extend` -- an OLAP column over a window spec -- PARSES and
+    # COMPILES via the real engine. `over(~p, sortList, frame)` builds the
+    # `_Window`: the partition is `~p`, the order is the list
+    # `[~o->ascending(), ~i->ascending()]` (an `array` of `SortInfo`s), and the
+    # frame is `rows(unbounded(), 0)` (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT
+    # ROW -- `unbounded()` resolves to `UnboundedFrameValue`, 0 is the current
+    # row). The extend column is a `FuncColSpec` with the canonical 3-param window
+    # lambda `{p, w, r | ...}`. The engine resolves
+    # `extend_Relation_1___Window_1__FuncColSpec_1__Relation_1_`; compilation
+    # succeeds and only plan generation hits the upstream execution boundary
+    # ("... is not supported yet"), the same as the filter / groupBy / sort cases.
+    # `over` / `rows` / `unbounded` are emitted PREFIX (`over(~p, ...)`, the
+    # engine's own canonical OLAP form), not the arrow form.
+    query = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20\n100,1,10"),
+        over(col("p"), array(asc(col("o")), asc(col("i"))), rows(unbounded(), 0)),
+        fcol("c", lam(["p", "w", "r"], lambda p, w, r: r.i)),
+    )
+    emitted = _expression(query)
+    assert emitted == (
+        "#TDS{p,o,i\n0,1,10\n0,2,20\n100,1,10}#"
+        "->extend(over(~p, [~o->ascending(), ~i->ascending()], rows(unbounded(), 0)), "
+        "~c:{p, w, r | $r.i})"
+    )
+    # PARSE: the wrapping function appears in the parsed model.
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    # COMPILE: `over` + the frame + the windowed `extend` resolve to relation
+    # functions; only plan generation hits the upstream execution boundary.
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_parses_and_compiles_dsl_windowed_extend_agg_colspec():
+    # The aggregating windowed `extend`: the column is an `AggColSpec`
+    # (`~name:{map}:{reduce}`) instead of a `FuncColSpec`, so the engine resolves
+    # the sibling `extend_Relation_1___Window_1__AggColSpec_1__Relation_1_`
+    # overload. `over(~p, ~o->ascending(), rows(-1, 0))` uses a single `SortInfo`
+    # (no list) and a `rows(-1, 0)` frame (previous row through current row). Same
+    # plan-gen execution boundary; execution is NOT asserted.
+    query = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20\n100,1,10"),
+        over(col("p"), asc(col("o")), rows(-1, 0)),
+        agg("sum_i", lam(["p", "w", "r"], lambda p, w, r: r.i), lam(["y"], lambda y: y.sum())),
+    )
+    emitted = _expression(query)
+    assert emitted == (
+        "#TDS{p,o,i\n0,1,10\n0,2,20\n100,1,10}#"
+        "->extend(over(~p, ~o->ascending(), rows(-1, 0)), "
+        "~sum_i:{p, w, r | $r.i}:{y | $y->sum()})"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_range_frame_windowed_extend():
+    # The value-range frame `_range(...)` (built by `range_`) compiles too: the
+    # engine resolves the `over(cols, sortInfo, _range)` overload (the bare `range`
+    # is the collection function, so the frame constructor is `_range`). Same
+    # plan-gen boundary; execution is NOT asserted.
+    query = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20"),
+        over(col("p"), asc(col("o")), range_(-1, 0)),
+        fcol("c", lam(["p", "w", "r"], lambda p, w, r: r.i)),
+    )
+    emitted = _expression(query)
+    assert emitted == (
+        "#TDS{p,o,i\n0,1,10\n0,2,20}#"
+        "->extend(over(~p, ~o->ascending(), _range(-1, 0)), ~c:{p, w, r | $r.i})"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
     with pytest.raises(Exception, match="not supported yet"):
         bridge.evaluate("|" + emitted)
 

@@ -478,6 +478,100 @@ def desc(colspec: object) -> m3.SimpleFunctionExpression:
     return call("descending", coerce(colspec))
 
 
+# --- window / OLAP layer ----------------------------------------------------
+# A windowed `extend` adds an OLAP column: `$t->extend(over(~grp, sort, frame),
+# ~name:{p, w, r | <body>})`. The window spec `over(...)` and the frame
+# constructors `rows(...)` / `range_(...)` (which emits the engine's `_range`)
+# and the `unbounded()` frame-bound sentinel are all PREFIX function calls -- the
+# engine writes `over(~grp, ...)` / `rows(-1, 0)`, not the arrow form -- so they
+# are plain `call(...)` nodes whose function names are in
+# :data:`pure_python.compile.m3_to_pure._PREFIX_FUNCTIONS` (emitted prefix-style;
+# reverse-lowered by :mod:`pure_python.compile.pure_expr`). The windowed `extend`
+# column itself reuses the existing :func:`fcol` (`~name:{lambda}`) or :func:`agg`
+# (`~name:{map}:{reduce}`) spec, just with a multi-param window lambda. No new m3
+# type is introduced: the whole window is an ordinary function-call graph over the
+# existing colspec / array / lambda nodes.
+#
+# Engine-resolved signatures (from `meta::pure::functions::relation`, verified via
+# the Legend bridge -- each compiles to the
+# `extend_Relation_1___Window_1__{FuncColSpec,AggColSpec}_1__Relation_1_` plan-gen
+# boundary):
+#   over(cols: ColSpec|ColSpecArray[1])
+#   over(cols, frame: Rows)                       -- ColSpec/ColSpecArray + frame
+#   over(cols, sortInfo: SortInfo[*])             -- partition + sort
+#   over(cols, sortInfo, frame: Rows|_Range)      -- partition + sort + frame
+#   rows(offsetFrom: Integer|UnboundedFrameValue[1], offsetTo: Integer|UnboundedFrameValue[1]): Rows[1]
+#   _range(offsetFrom: Number|UnboundedFrameValue[1], offsetTo: Number|UnboundedFrameValue[1]): _Range[1]
+#   unbounded(): UnboundedFrameValue[1]           -- negative=preceding, positive=following, 0=current row
+
+
+def unbounded() -> m3.SimpleFunctionExpression:
+    """The unbounded frame-bound sentinel ``unbounded()`` (``UnboundedFrameValue``).
+
+    Used as a :func:`rows` / :func:`range_` bound to express ``UNBOUNDED PRECEDING``
+    / ``UNBOUNDED FOLLOWING`` (e.g. ``rows(unbounded(), 0)`` = from the partition
+    start through the current row). A zero-arg prefix call; the engine resolves the
+    bare ``unbounded`` (no qualified path needed)."""
+    return call("unbounded")
+
+
+def rows(offset_from: object, offset_to: object) -> m3.SimpleFunctionExpression:
+    """A physical row frame ``rows(from, to)`` (the engine's ``Rows``).
+
+    Bounds are integer offsets or :func:`unbounded` sentinels: negative = N
+    preceding, positive = N following, ``0`` = current row (e.g.
+    ``rows(-1, 0)`` = the previous row through the current row,
+    ``rows(unbounded(), 0)`` = the partition start through the current row). A
+    prefix call passed as the ``over`` frame argument; each bound is
+    :func:`coerce`d (an ``unbounded()`` node through, an int wrapped as a literal).
+    """
+    return call("rows", coerce(offset_from), coerce(offset_to))
+
+
+def range_(offset_from: object, offset_to: object) -> m3.SimpleFunctionExpression:
+    """A logical/value range frame, emitted as the engine's ``_range(from, to)``.
+
+    The value-range counterpart of :func:`rows`: bounds are numeric offsets or
+    :func:`unbounded` sentinels relative to the current row's order value. Named
+    ``range_`` (not ``range``) because the bare ``range`` resolves to the
+    *collection* range function in the engine -- the frame constructor is
+    ``_range`` (which is what this emits, via the prefix set). Each bound is
+    :func:`coerce`d.
+    """
+    return call("_range", coerce(offset_from), coerce(offset_to))
+
+
+def over(
+    partition: object,
+    sort: object = None,
+    frame: object = None,
+) -> m3.SimpleFunctionExpression:
+    """A window specification ``over(~grp, sort, frame)`` (the engine's ``_Window``).
+
+    Builds the prefix ``over(...)`` call the engine resolves for a windowed
+    :func:`fcol` / :func:`agg` column under ``extend``:
+
+    * ``partition`` -- the partition column(s): a :func:`col` ``~grp`` or a
+      :func:`cols` ``~[a, b]`` (passed through :func:`coerce`).
+    * ``sort`` (optional) -- the order: one :func:`asc` / :func:`desc` ``SortInfo``
+      (``~col->ascending()``), an :func:`array` of them (``[~a->ascending(),
+      ~b->descending()]``), or ``None`` for no ordering.
+    * ``frame`` (optional) -- a :func:`rows` / :func:`range_` frame, or ``None``.
+
+    Only the supplied positional arguments are emitted, matching the engine's
+    overload set (``over(~grp)`` / ``over(~grp, sort)`` / ``over(~grp, frame)`` /
+    ``over(~grp, sort, frame)``). Passing a ``frame`` without a ``sort`` is
+    supported (``over(~grp, rows(-1, 0))``) and resolves the
+    ``over(cols, rows)`` overload. The result is a plain ``call("over", ...)`` node.
+    """
+    args: list[object] = [coerce(partition)]
+    if sort is not None:
+        args.append(coerce(sort))
+    if frame is not None:
+        args.append(coerce(frame))
+    return call("over", *args)
+
+
 __all__ = [
     "Expr",
     "c",
@@ -501,4 +595,8 @@ __all__ = [
     "array",
     "asc",
     "desc",
+    "over",
+    "rows",
+    "range_",
+    "unbounded",
 ]
