@@ -185,8 +185,30 @@ Grouped by status, with pointers to the relevant code.
   engine (`tests/test_legend_bridge.py`; the engine resolves
   `groupBy_Relation_1__ColSpecArray_1__AggColSpec_1__Relation_1_` and only fails
   in plan generation -- `relation::groupBy ... is not supported yet` -- the same
-  execution boundary as above). Deferred follow-ons:
+  execution boundary as above). Also adds the **simple relation verbs**
+  `limit(n)` / `drop(n)` / `slice(start, stop)` / `distinct()` /
+  `concatenate($other)` / `rename(~old, ~new)` -- these need NO new lowering or m3
+  types: they are plain `SimpleFunctionExpression` arrow calls over already-handled
+  atomics (int literals, `#TDS{}#` relations, name-only `~col` colspecs), so they
+  ride the existing `call(...)` / fluent `_Accessor` path (the two-arg `slice` /
+  `rename` exercise the `*args` passthrough) and `pure_expr` re-parses them, so each
+  verb (and a `drop->slice->distinct->limit` chain) survives `Python -> m3 -> Pure
+  -> m3` (jar-free, `tests/test_relation.py`). The real engine confirms each
+  resolves to a `meta::pure::functions::relation::<verb>` function
+  (`limit_Relation_1__Integer_1__Relation_1_`,
+  `drop_Relation_1__Integer_1__Relation_1_`,
+  `slice_Relation_1__Integer_1__Integer_1__Relation_1_`,
+  `distinct_Relation_1__Relation_1_`,
+  `concatenate_Relation_1__Relation_1__Relation_1_`,
+  `rename_Relation_1__ColSpec_1__ColSpec_1__Relation_1_`) -- a representative chain
+  parses + compiles and only fails in plan generation (same execution boundary as
+  above; `tests/test_legend_bridge.py`). The candidate `take(n)` was probed and
+  **REJECTED**: the engine has no relation overload for it, so it matched the
+  *collection* `take` and failed with `Unhandled value type:
+  meta::pure::metamodel::relation::TDS` -- it is not a relation verb and is excluded.
+  Deferred follow-ons:
     - **`join` / `asOfJoin`** -- relation joins.
+    - **`sort` / `pivot`** -- ordering and the pivot reshape (next verb slice).
     - **window / OLAP functions** -- `over`, ranking / running aggregates.
     - **a `Frame` fluent class** -- a higher-level relation-query builder over
       the free verbs.
