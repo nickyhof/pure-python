@@ -156,9 +156,19 @@ Grouped by status, with pointers to the relevant code.
   needs `meta::pure::extension::runtime::getExtensions` from the engine-internal
   `core_external_extensions` repo, which is not a published Maven artifact. So
   real relation execution needs a newer legend-engine (with inline-TDS SQL
-  generation) or a full engine/server deployment. Deferred follow-ons:
-    - **`FuncColSpec` (`~c:{r|...}`) + `extend`** -- function-bearing column
-      specs and the derived-column verb.
+  generation) or a full engine/server deployment. Extends the foundation:
+  **`FuncColSpec` (`~c:{r|...}`) + `extend`** -- `fcol(name, lam(...))` builds a
+  function-bearing `m3.FuncColSpec` and `fcols(*specs)` a `FuncColSpecArray`
+  (the `~[a:{...}, b:{...}]` bracket form); `coerce` passes both through, so the
+  derived-column verb is just `call("extend", rel, fcol(...))` / fluent
+  `rel.extend(fcol(...))`. `m3_to_pure._expression` emits `~name:{r | <body>}`
+  (lambda reused from the `LambdaFunction` emit) and `~[a:{...}, b:{...}]`, and
+  `pure_expr._lower_column_builders` re-parses them (rejecting the still-deferred
+  `AggColSpec` `extraFunction` form and mixed simple+func brackets), so a single
+  func spec / a func-spec array / an `extend` query survive
+  `Python -> m3 -> Pure -> m3` (jar-free, `tests/test_relation.py`); an `extend`
+  query also parses + compiles via the real engine (`tests/test_legend_bridge.py`,
+  execution still blocked upstream as above). Deferred follow-ons:
     - **`AggColSpec` (`~c:{map}:{agg}`) + `groupBy`** -- aggregation specs and
       grouped aggregation.
     - **`join` / `asOfJoin`** -- relation joins.

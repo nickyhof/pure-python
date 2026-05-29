@@ -20,6 +20,8 @@ from pure_python.compile.expressions import (
     coerce,
     col,
     cols,
+    fcol,
+    fcols,
     lam,
     tds,
 )
@@ -63,6 +65,39 @@ def test_cols_builds_name_only_colspec_array():
     assert node.names == ["id", "grp"]
 
 
+def test_fcol_builds_func_colspec_from_lambda():
+    function = lam(["r"], lambda r: r.id * 2)
+    node = fcol("doubled", function)
+    assert isinstance(node, m3.FuncColSpec)
+    assert node.name == "doubled"
+    assert node.function is function
+
+
+def test_fcol_rejects_non_function():
+    with pytest.raises(TypeError, match="Function"):
+        fcol("x", "not a function")
+
+
+def test_fcols_builds_func_colspec_array():
+    a = fcol("a", lam(["r"], lambda r: r.x + 1))
+    b = fcol("b", lam(["r"], lambda r: r.y * 2))
+    node = fcols(a, b)
+    assert isinstance(node, m3.FuncColSpecArray)
+    assert node.funcSpecs == [a, b]
+
+
+def test_fcols_rejects_non_func_colspec():
+    with pytest.raises(TypeError, match="FuncColSpec"):
+        fcols(col("a"))
+
+
+def test_coerce_passes_func_colspecs_through():
+    fc = fcol("doubled", lam(["r"], lambda r: r.id * 2))
+    assert coerce(fc) is fc
+    fca = fcols(fc)
+    assert coerce(fca) is fca
+
+
 def test_lam_builds_lambda_with_param_names_and_body():
     from pure_python.compile.expressions import prop, var
 
@@ -101,6 +136,22 @@ def test_fluent_filter_equals_free_builder():
 def test_fluent_select_equals_free_builder():
     fluent = Expr(tds("id,grp\n1,1")).select(cols("id", "grp"))
     builder = call("select", tds("id,grp\n1,1"), cols("id", "grp"))
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_extend_equals_free_builder():
+    fluent = Expr(tds("id\n1\n2")).extend(fcol("doubled", lam(["r"], lambda r: r.id * 2)))
+    builder = call("extend", tds("id\n1\n2"), fcol("doubled", lam(["r"], lambda r: r.id * 2)))
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_extend_with_func_colspec_array_equals_free_builder():
+    specs = lambda: fcols(
+        fcol("a", lam(["r"], lambda r: r.x + 1)),
+        fcol("b", lam(["r"], lambda r: r.y * 2)),
+    )
+    fluent = Expr(tds("x,y\n1,2")).extend(specs())
+    builder = call("extend", tds("x,y\n1,2"), specs())
     assert canon(fluent.node) == canon(builder)
 
 
@@ -147,6 +198,24 @@ def test_emit_select_query():
     assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->select(~[id, grp])"
 
 
+def test_emit_single_func_colspec():
+    node = fcol("doubled", lam(["r"], lambda r: r.id * 2))
+    assert _expression(node) == "~doubled:{r | ($r.id * 2)}"
+
+
+def test_emit_func_colspec_array():
+    node = fcols(
+        fcol("a", lam(["r"], lambda r: r.x + 1)),
+        fcol("b", lam(["r"], lambda r: r.y * 2)),
+    )
+    assert _expression(node) == "~[a:{r | ($r.x + 1)}, b:{r | ($r.y * 2)}]"
+
+
+def test_emit_extend_query():
+    node = call("extend", tds("id\n1\n2"), fcol("doubled", lam(["r"], lambda r: r.id * 2)))
+    assert _expression(node) == "#TDS{id\n1\n2}#->extend(~doubled:{r | ($r.id * 2)})"
+
+
 # --- reverse parse (round trip) ---------------------------------------------
 
 def _assert_round_trips(node) -> None:
@@ -190,4 +259,21 @@ def test_round_trip_select_query():
 
 def test_round_trip_select_single_column():
     node = call("select", tds("id,grp\n1,1"), col("id"))
+    _assert_round_trips(node)
+
+
+def test_round_trip_single_func_colspec():
+    _assert_round_trips(fcol("doubled", lam(["r"], lambda r: r.id * 2)))
+
+
+def test_round_trip_func_colspec_array():
+    node = fcols(
+        fcol("a", lam(["r"], lambda r: r.x + 1)),
+        fcol("b", lam(["r"], lambda r: r.y * 2)),
+    )
+    _assert_round_trips(node)
+
+
+def test_round_trip_extend_query():
+    node = call("extend", tds("id\n1\n2"), fcol("doubled", lam(["r"], lambda r: r.id * 2)))
     _assert_round_trips(node)
