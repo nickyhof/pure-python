@@ -30,6 +30,7 @@ import typing
 from pure_python import m3
 
 from .annotations import ENUM_VALUE_PROFILE, ENUM_VALUE_TAG
+from .annotations import Body as BodyMarker
 from .annotations import Stereotype as StereotypeMarker
 from .annotations import Tag as TagMarker
 
@@ -232,7 +233,7 @@ class Compiler:
             return_hint = typing.get_type_hints(attr.fget, include_extras=True).get("return")
             if return_hint is None:
                 continue
-            base, _ = _strip_annotations(return_hint)
+            base, markers = _strip_annotations(return_hint)
             generic, lower, upper = self._resolve(base, type_params)
             result.append(
                 m3.QualifiedProperty(
@@ -241,9 +242,23 @@ class Compiler:
                     genericType=generic,
                     multiplicity=_MULTIPLICITY[(lower, upper)],
                     owner=owner,
+                    expressionSequence=self._body_expressions(markers),
                 )
             )
         return result
+
+    def _body_expressions(self, markers: tuple) -> list[m3.ValueSpecification]:
+        """Build the ``expressionSequence`` from a ``Body`` marker, if any.
+
+        The getter is never executed; we evaluate the marker's ``$this``-taking
+        DSL function instead. Signature-only properties keep an empty sequence.
+        """
+        for marker in markers:
+            if isinstance(marker, BodyMarker):
+                from .expressions import Expr, var  # local: expressions imports us
+
+                return [marker.fn(Expr(var("this"))).node]
+        return []
 
 
 def compile_class(py_type: type, package: str | None = None) -> m3.Class:

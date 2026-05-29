@@ -13,6 +13,10 @@ is how the emitter writes them out.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from .expressions import Expr
 
 # Convention for carrying a Python enum member's value (when it differs from the
 # member name) across the name-only Pure enumeration model, as a tagged value.
@@ -35,3 +39,21 @@ class Tag:
     profile: str
     name: str
     value: str
+
+
+@dataclass(frozen=True)
+class Body:
+    """A derived-property body, authored as a ``$this``-taking DSL function.
+
+    Annotate the ``@property`` return type to attach an expression body::
+
+        @property
+        def full_name(self) -> Annotated[str, Body(lambda this: this.first + this.last)]:
+            ...
+
+    ``python_to_m3`` calls ``fn(Expr(var('this')))`` and stores the resulting
+    node as the qualified property's ``expressionSequence``. The getter body is
+    never executed.
+    """
+
+    fn: "Callable[[Expr], Expr]"

@@ -8,15 +8,20 @@ classes / enumerations it references) and render readable Pure::
         <<pii.sensitive>> firstName : String[1];
         age : Integer[0..1];
         addresses : demo::Address[*];
+        fullName() { $this.firstName->plus($this.lastName) } : String[1];
     }
 
 Type parameters, type arguments, stereotypes and tagged values are all
-rendered. Qualified (derived) properties are emitted by signature with an empty
-body placeholder (the metamodel instances do not carry an expression body).
-Associations are emitted too.
+rendered. Qualified (derived) properties carry their ``expressionSequence``
+body, emitted in uniform arrow form (``$this.firstName->plus(...)``) by
+:func:`_expression`; a signature-only qualified property (no body) still emits
+the ``[]`` placeholder. Associations are emitted too.
 """
 
 from __future__ import annotations
+
+import datetime
+import decimal
 
 from pure_python import m3
 
@@ -63,12 +68,53 @@ def _stereotypes(element: object) -> str:
     return f"<<{rendered}>> "
 
 
+def _literal(value: object) -> str:
+    """Render a Python value as a Pure literal token (the shared escaper)."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, str):
+        return "'" + value.replace("'", "\\'") + "'"
+    if isinstance(value, float):
+        text = repr(value)
+        return text if any(c in text for c in ".eEnN") else f"{text}.0"
+    if isinstance(value, decimal.Decimal):
+        return f"{value}D"
+    if isinstance(value, datetime.datetime):
+        return "%" + value.strftime("%Y-%m-%dT%H:%M:%S")
+    if isinstance(value, datetime.date):
+        return "%" + value.strftime("%Y-%m-%d")
+    return str(value)
+
+
 def _tagged_values(element: object) -> str:
     tagged = getattr(element, "taggedValues", []) or []
     if not tagged:
         return ""
-    rendered = ", ".join(f"{t.tag.profile.name}.{t.tag.value} = '{t.value}'" for t in tagged)
+    rendered = ", ".join(
+        f"{t.tag.profile.name}.{t.tag.value} = {_literal(t.value)}" for t in tagged
+    )
     return f"{{{rendered}}} "
+
+
+def _expression(vs: m3.ValueSpecification) -> str:
+    """Render a ``ValueSpecification`` body in uniform Pure arrow form."""
+    if isinstance(vs, m3.VariableExpression):
+        return f"${vs.name}"
+    if isinstance(vs, m3.SimpleFunctionExpression):
+        if vs.propertyName is not None:
+            receiver = _expression(vs.parametersValues[0])
+            return f"{receiver}.{vs.propertyName.values[0]}"
+        receiver = _expression(vs.parametersValues[0])
+        args = ", ".join(_expression(p) for p in vs.parametersValues[1:])
+        return f"{receiver}->{vs.functionName}({args})"
+    if isinstance(vs, m3.InstanceValue):
+        return _literal(vs.values[0]) if vs.values else "[]"
+    raise TypeError(f"cannot emit value specification {vs!r}")
+
+
+def _function_body(fd: m3.FunctionDefinition) -> str:
+    """Join an ``expressionSequence`` with ``;`` (a single expression -> itself)."""
+    return "; ".join(_expression(vs) for vs in fd.expressionSequence)
 
 
 def _qualified_name(element: object) -> str:
@@ -82,9 +128,11 @@ def _property(prop: m3.Property) -> str:
 
 
 def _qualified_property(qp: m3.QualifiedProperty) -> str:
-    # `[]` is a syntactically valid placeholder body: the expression layer is
-    # not modelled, but real Pure grammars reject an empty `{}` body.
-    return f"    {qp.name}() {{ [] }} : {_type(qp.genericType)}{_multiplicity(qp.multiplicity)};"
+    # `[]` is a syntactically valid placeholder body for a signature-only
+    # qualified property (real Pure grammars reject an empty `{}` body); a
+    # modelled `expressionSequence` is emitted in arrow form instead.
+    body = _function_body(qp) if qp.expressionSequence else "[]"
+    return f"    {qp.name}() {{ {body} }} : {_type(qp.genericType)}{_multiplicity(qp.multiplicity)};"
 
 
 def _generalization_names(cls: m3.Class) -> list[str]:
