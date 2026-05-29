@@ -139,9 +139,14 @@ Grouped by status, with pointers to the relevant code.
   `M3CoreParser` (`dsl()` / `columnBuilders()` / `anyLambda()`), so a relation
   query survives `Python -> m3 -> Pure -> m3` (jar-free, `tests/test_relation.py`;
   the lambda + `filter` + `size` machinery is also executed through the Legend
-  bridge). NOTE: the bundled engine build has no `TDS` embedded parser, so the
-  `#TDS{}#` literal itself cannot be executed by this jar (pinned in
-  `tests/test_legend_bridge.py`). Deferred follow-ons:
+  bridge). The `legend-bridge` jar now bundles the
+  `legend-engine-xt-tds-{grammar,compiler}` extensions, so the real engine
+  **parses and compiles** `#TDS{...}#` queries; the remaining gap is upstream --
+  the engine's Java execution codegen does not yet implement the relation
+  reducers (`relation::size ... is not supported yet`), so a TDS query cannot be
+  executed down to a constant on this build (both the parse/compile success and
+  the execution boundary are pinned in `tests/test_legend_bridge.py`). Deferred
+  follow-ons:
     - **`FuncColSpec` (`~c:{r|...}`) + `extend`** -- function-bearing column
       specs and the derived-column verb.
     - **`AggColSpec` (`~c:{map}:{agg}`) + `groupBy`** -- aggregation specs and
