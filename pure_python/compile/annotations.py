@@ -43,7 +43,7 @@ class Tag:
 
 @dataclass(frozen=True)
 class Body:
-    """A derived-property body, authored as a ``$this``-taking DSL function.
+    """A derived-property body, authored as a DSL function.
 
     Annotate the ``@property`` return type to attach an expression body::
 
@@ -51,9 +51,11 @@ class Body:
         def full_name(self) -> Annotated[str, Body(lambda this: this.first + this.last)]:
             ...
 
-    ``python_to_m3`` calls ``fn(Expr(var('this')))`` and stores the resulting
-    node as the qualified property's ``expressionSequence``. The getter body is
-    never executed.
+    ``python_to_m3`` reads the function's arity: a one-parameter function is
+    called with ``Expr(var('this'))`` (the conventional ``$this``), a
+    zero-parameter function with no arguments. The resulting node (an ``Expr`` or
+    a raw ``m3`` node) becomes the qualified property's ``expressionSequence``.
+    The getter body is never executed.
     """
 
-    fn: "Callable[[Expr], Expr]"
+    fn: "Callable[..., Expr | object]"

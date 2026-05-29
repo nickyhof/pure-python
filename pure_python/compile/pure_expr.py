@@ -30,7 +30,7 @@ from pure_python import m3
 from pure_python.codegen._pure_antlr.M3CoreLexer import M3CoreLexer
 from pure_python.codegen._pure_antlr.M3CoreParser import M3CoreParser
 
-from .expressions import call, lit, prop, var
+from .expressions import call, col, cols, lam, lit, prop, tds, var
 
 # Pure infix symbol -> internal core-function name (inverse of
 # :data:`pure_python.compile.m3_to_pure._INFIX_OPERATORS`).
@@ -179,7 +179,54 @@ def _lower_atomic(nae) -> m3.ValueSpecification:
     literal = atom.instanceLiteralToken()
     if literal is not None:
         return lit(_lower_literal(literal))
+    dsl = atom.dsl()
+    if dsl is not None:  # a `#TDS{...}#` relation literal: keep its text verbatim
+        return tds(dsl.DSL_TEXT().getText())
+    column_builders = atom.columnBuilders()
+    if column_builders is not None:  # `~col` or `~[a, b]`
+        return _lower_column_builders(column_builders)
+    any_lambda = atom.anyLambda()
+    if any_lambda is not None:  # `{p, w, r | <body>}`
+        return _lower_lambda(any_lambda.lambdaFunction())
     raise ValueError(f"unsupported atomic expression: {atom.getText()!r}")
+
+
+def _lower_column_builders(column_builders):
+    """Lower simple ``~col`` / ``~[a, b]`` column specs.
+
+    A single ``oneColSpec`` with no lambda / aggregation function becomes a
+    ``ColSpec``; multiple become a ``ColSpecArray``. The Function-bearing
+    ``FuncColSpec`` / ``AggColSpec`` forms are intentionally out of scope here.
+    """
+    specs = column_builders.oneColSpec()
+    for spec in specs:
+        if spec.anyLambda() is not None or spec.extraFunction() is not None:
+            raise ValueError(
+                f"function-bearing column spec is not supported: {spec.getText()!r}"
+            )
+    names = [spec.columnName().getText() for spec in specs]
+    if len(names) == 1:
+        return col(names[0])
+    return cols(*names)
+
+
+def _lower_lambda(lambda_function) -> m3.LambdaFunction:
+    """Lower a ``lambdaFunction`` (``{params | body}``) back to a ``LambdaFunction``.
+
+    Re-feeds the body ``codeBlock`` text through :func:`parse_statements` and
+    rebuilds via :func:`pure_python.compile.expressions.lam` so the names carrier
+    (``openVariables``) and body graph match the forward builder.
+    """
+    names = [p.identifier().getText() for p in lambda_function.lambdaParam()]
+    body_text = lambda_function.lambdaPipe().codeBlock().getText()
+    statements = parse_statements(body_text)
+    if len(statements) != 1:
+        # `lam` builds single-statement bodies; fail loud rather than silently
+        # dropping the trailing statements of a multi-statement lambda body.
+        raise ValueError(f"multi-statement lambda body is not supported: {body_text!r}")
+    # `lam` calls `build(*params)`; the body is independent of the fresh vars it
+    # passes (it was parsed from text), so return the single parsed statement.
+    return lam(names, lambda *_: statements[0])
 
 
 def _lower_signed(signed) -> m3.ValueSpecification:

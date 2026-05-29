@@ -1,0 +1,193 @@
+"""Relation / TDS foundation: n-ary lambdas, `#TDS{}#` literals, simple column
+specs, and the `filter` / `select` verbs.
+
+Fast (jar-free) coverage: builders produce the expected m3; the fluent DSL
+matches the free builders under the shared structural ``canon`` projection; the
+emitter produces the exact Pure strings; and each emitted form reverse-parses
+back to the same graph (a structural Python -> m3 -> Pure -> m3 round trip).
+"""
+
+from __future__ import annotations
+
+import pytest
+
+from pure_python import m3
+from pure_python.compile import pure_expr
+from pure_python.compile.expressions import (
+    Expr,
+    c,
+    call,
+    coerce,
+    col,
+    cols,
+    lam,
+    tds,
+)
+from pure_python.compile.m3_to_pure import _expression
+
+from .test_expressions import canon
+
+
+# --- builders ---------------------------------------------------------------
+
+def test_tds_builds_relation_instance_value_from_csv():
+    node = tds("id,grp\n1,1\n2,0")
+    assert isinstance(node, m3.InstanceValue)
+    assert node.values == ["#TDS{id,grp\n1,1\n2,0}#"]
+    # discriminated from a plain string literal by a RelationType marker
+    assert isinstance(node.genericType.rawType, m3.RelationType)
+    assert node.multiplicity is m3.PureOne
+
+
+def test_tds_accepts_a_full_token_unchanged():
+    token = "#TDS{id,grp\n1,1}#"
+    assert tds(token).values == [token]
+
+
+def test_tds_rejects_hash_in_content():
+    # The `#TDS{...}#` token is `#`-delimited, so interior `#` cannot round-trip
+    # (the non-greedy DSL_TEXT lexer would truncate it). Reject at build time.
+    with pytest.raises(ValueError, match="#"):
+        tds("id,note\n1,item #1")
+
+
+def test_col_builds_name_only_colspec():
+    node = col("grp")
+    assert isinstance(node, m3.ColSpec)
+    assert node.name == "grp"
+
+
+def test_cols_builds_name_only_colspec_array():
+    node = cols("id", "grp")
+    assert isinstance(node, m3.ColSpecArray)
+    assert node.names == ["id", "grp"]
+
+
+def test_lam_builds_lambda_with_param_names_and_body():
+    from pure_python.compile.expressions import prop, var
+
+    node = lam(["r"], lambda r: r.grp > 0)
+    assert isinstance(node, m3.LambdaFunction)
+    assert node.openVariables == ["r"]  # names carried via openVariables
+    assert len(node.expressionSequence) == 1
+    assert canon(node.expressionSequence[0]) == canon(
+        call("greaterThan", prop(var("r"), "grp"), 0)
+    )
+
+
+def test_lam_arity_one_two_three():
+    assert lam(["r"], lambda r: r.grp).openVariables == ["r"]
+    assert lam(["p", "w"], lambda p, w: p + w).openVariables == ["p", "w"]
+    assert lam(["p", "w", "r"], lambda p, w, r: r.grp).openVariables == ["p", "w", "r"]
+
+
+def test_coerce_passes_lambda_and_colspecs_through():
+    lf = lam(["r"], lambda r: r.grp)
+    assert coerce(lf) is lf
+    cs = col("id")
+    assert coerce(cs) is cs
+    csa = cols("a", "b")
+    assert coerce(csa) is csa
+
+
+# --- DSL equals the builders ------------------------------------------------
+
+def test_fluent_filter_equals_free_builder():
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).filter(lam(["r"], lambda r: r.grp > 0))
+    builder = call("filter", tds("id,grp\n1,1\n2,0"), lam(["r"], lambda r: r.grp > 0))
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_select_equals_free_builder():
+    fluent = Expr(tds("id,grp\n1,1")).select(cols("id", "grp"))
+    builder = call("select", tds("id,grp\n1,1"), cols("id", "grp"))
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_lambda_body_uses_row_property_access():
+    node = lam(["r"], lambda r: r.grp > 0)
+    assert canon(node) == (
+        "lambda",
+        ("r",),
+        (("call", "greaterThan", (("prop", "grp", ("var", "r")), ("lit", "Integer", (0,)))),),
+    )
+
+
+# --- emit -------------------------------------------------------------------
+
+def test_emit_single_colspec():
+    assert _expression(col("id")) == "~id"
+
+
+def test_emit_colspec_array():
+    assert _expression(cols("id", "grp")) == "~[id, grp]"
+
+
+def test_emit_tds_literal_verbatim():
+    assert _expression(tds("id,grp\n1,1\n2,0")) == "#TDS{id,grp\n1,1\n2,0}#"
+
+
+def test_emit_lambda_one_two_three_params():
+    assert _expression(lam(["r"], lambda r: r.grp > 0)) == "{r | ($r.grp > 0)}"
+    assert _expression(lam(["p", "w"], lambda p, w: p + w)) == "{p, w | ($p + $w)}"
+    assert _expression(lam(["p", "w", "r"], lambda p, w, r: r.grp)) == "{p, w, r | $r.grp}"
+
+
+def test_emit_zero_param_lambda():
+    assert _expression(lam([], lambda: c(1))) == "{| 1}"
+
+
+def test_emit_filter_query():
+    node = call("filter", tds("id,grp\n1,1\n2,0"), lam(["r"], lambda r: r.grp > 0))
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->filter({r | ($r.grp > 0)})"
+
+
+def test_emit_select_query():
+    node = call("select", tds("id,grp\n1,1\n2,0"), cols("id", "grp"))
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->select(~[id, grp])"
+
+
+# --- reverse parse (round trip) ---------------------------------------------
+
+def _assert_round_trips(node) -> None:
+    emitted = _expression(node)
+    parsed = pure_expr.parse_expression(emitted)
+    assert canon(parsed) == canon(node)
+    assert _expression(parsed) == emitted
+
+
+def test_round_trip_tds_literal():
+    _assert_round_trips(tds("id,grp\n1,1\n2,0"))
+
+
+def test_round_trip_single_colspec():
+    _assert_round_trips(col("id"))
+
+
+def test_round_trip_colspec_array():
+    _assert_round_trips(cols("id", "grp"))
+
+
+def test_round_trip_lambda_one_two_three_params():
+    _assert_round_trips(lam(["r"], lambda r: r.grp > 0))
+    _assert_round_trips(lam(["p", "w"], lambda p, w: p + w))
+    _assert_round_trips(lam(["p", "w", "r"], lambda p, w, r: r.grp))
+
+
+def test_round_trip_zero_param_lambda():
+    _assert_round_trips(lam([], lambda: c(1)))
+
+
+def test_round_trip_filter_query():
+    node = call("filter", tds("id,grp\n1,1\n2,0"), lam(["r"], lambda r: r.grp > 0))
+    _assert_round_trips(node)
+
+
+def test_round_trip_select_query():
+    node = call("select", tds("id,grp\n1,1\n2,0"), cols("id", "grp"))
+    _assert_round_trips(node)
+
+
+def test_round_trip_select_single_column():
+    node = call("select", tds("id,grp\n1,1"), col("id"))
+    _assert_round_trips(node)

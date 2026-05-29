@@ -142,11 +142,21 @@ def _tagged_values(element: object) -> str:
     return f"{{{rendered}}} "
 
 
-def _expression(vs: m3.ValueSpecification) -> str:
-    """Render a ``ValueSpecification`` body as Pure source.
+def _is_tds(vs: m3.InstanceValue) -> bool:
+    """A ``#TDS{...}#`` relation literal is an ``InstanceValue`` whose
+    ``genericType.rawType`` is a ``RelationType`` (the discriminating marker set
+    by :func:`pure_python.compile.expressions.tds`)."""
+    generic = vs.genericType
+    return generic is not None and isinstance(generic.rawType, m3.RelationType)
+
+
+def _expression(vs) -> str:
+    """Render a ``ValueSpecification`` (or relation-layer node) body as Pure source.
 
     Binary core operators emit as fully parenthesized infix; property access and
-    every other function keep the arrow form.
+    every other function keep the arrow form. Relation-layer nodes
+    (``LambdaFunction``, ``ColSpec`` / ``ColSpecArray``, ``#TDS{}#`` literals)
+    have their own forms.
     """
     if isinstance(vs, m3.VariableExpression):
         return f"${vs.name}"
@@ -164,7 +174,18 @@ def _expression(vs: m3.ValueSpecification) -> str:
         receiver = _expression(vs.parametersValues[0])
         args = ", ".join(_expression(p) for p in vs.parametersValues[1:])
         return f"{receiver}->{vs.functionName}({args})"
+    if isinstance(vs, m3.LambdaFunction):
+        params = ", ".join(vs.openVariables)
+        body = " ".join(_expression(b) for b in vs.expressionSequence)
+        # Match the grammar: a parameterless lambda is `{| body}`.
+        return f"{{{params} | {body}}}" if params else f"{{| {body}}}"
+    if isinstance(vs, m3.ColSpec):
+        return f"~{vs.name}"
+    if isinstance(vs, m3.ColSpecArray):
+        return "~[" + ", ".join(vs.names) + "]"
     if isinstance(vs, m3.InstanceValue):
+        if _is_tds(vs):  # a `#TDS{...}#` literal: emit its text verbatim
+            return vs.values[0]
         if not vs.values:
             return "[]"
         if len(vs.values) == 1:

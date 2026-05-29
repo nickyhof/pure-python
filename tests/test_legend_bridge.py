@@ -12,9 +12,10 @@ from dataclasses import dataclass
 
 import pytest
 
+from pure_python import m3
 from pure_python.compile import compile_class, from_pure, to_pure_module
 from pure_python.compile.annotations import Body
-from pure_python.compile.expressions import c
+from pure_python.compile.expressions import c, call, lam, tds
 from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
@@ -142,3 +143,47 @@ def test_legend_executes_over_a_generated_model():
         model=model,
     )
     assert value == 1
+
+
+def test_legend_executes_dsl_filter_lambda_and_size():
+    # `filter`/`size` over a literal collection reduce to an Integer constant
+    # (`evaluate` only returns constants). The engine's Java backend executes
+    # collection `size`, but NOT the relation reducer `relation::size` (see
+    # test_legend_java_backend_lacks_relation_size_execution) -- so this exercises
+    # the reusable DSL machinery (an n-ary lambda + `filter` + `size`, which the
+    # relation query shares) over a collection it can actually run.
+    source = m3.InstanceValue(
+        values=[1, 2, 0],
+        genericType=m3.GenericType(rawType=m3.Integer),
+        multiplicity=m3.ZeroMany,
+    )
+    query = call("size", call("filter", source, lam(["r"], lambda r: r > 0)))
+    emitted = _expression(query)
+    assert emitted == "[1, 2, 0]->filter({r | ($r > 0)})->size()"
+    assert bridge.evaluate("|" + emitted) == 2  # two rows pass `$r > 0`
+
+
+def test_legend_parses_dsl_tds_query():
+    # The `legend-bridge` jar now bundles the `legend-engine-xt-tds-{grammar,
+    # compiler}` extensions, so the real engine PARSES our emitted
+    # `#TDS{...}#->filter(...)` query -- previously rejected with "Can't find an
+    # embedded Pure parser for the type 'TDS'". The wrapping function appears in
+    # the parsed model.
+    emitted = _expression(call("filter", tds("id,grp\n1,1\n2,0"), lam(["r"], lambda r: r.grp > 0)))
+    assert emitted == "#TDS{id,grp\n1,1\n2,0}#->filter({r | ($r.grp > 0)})"
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(e.get("_type") == "function" and e.get("package") == "test" for e in model["elements"])
+
+
+def test_legend_java_backend_lacks_relation_size_execution():
+    # TDS now parses AND compiles, but this engine build's Java execution codegen
+    # does not yet implement the relation reducers, so a TDS query cannot be
+    # executed down to a constant: `relation::size ... is not supported yet`. The
+    # error is raised in plan generation -- i.e. AFTER a successful compile, which
+    # is itself evidence the `#TDS{}#` literal compiles. Pin the boundary so a
+    # future engine that implements relation execution surfaces here.
+    emitted = _expression(
+        call("size", call("filter", tds("id,grp\n1,1\n2,0"), lam(["r"], lambda r: r.grp > 0)))
+    )
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)

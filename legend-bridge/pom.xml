@@ -36,6 +36,20 @@
       <artifactId>legend-engine-executionPlan-execution</artifactId>
       <version>${legend.engine.version}</version>
     </dependency>
+    <!-- Registers the `#TDS{...}#` embedded-Pure parser (grammar) and its
+         compiler extension, so relation/TDS literals parse, compile and
+         execute. Without these the engine reports "Can't find an embedded Pure
+         parser for the type 'TDS'". -->
+    <dependency>
+      <groupId>org.finos.legend.engine</groupId>
+      <artifactId>legend-engine-xt-tds-grammar</artifactId>
+      <version>${legend.engine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.finos.legend.engine</groupId>
+      <artifactId>legend-engine-xt-tds-compiler</artifactId>
+      <version>${legend.engine.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
