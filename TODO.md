@@ -163,14 +163,29 @@ Grouped by status, with pointers to the relevant code.
   derived-column verb is just `call("extend", rel, fcol(...))` / fluent
   `rel.extend(fcol(...))`. `m3_to_pure._expression` emits `~name:{r | <body>}`
   (lambda reused from the `LambdaFunction` emit) and `~[a:{...}, b:{...}]`, and
-  `pure_expr._lower_column_builders` re-parses them (rejecting the still-deferred
-  `AggColSpec` `extraFunction` form and mixed simple+func brackets), so a single
-  func spec / a func-spec array / an `extend` query survive
+  `pure_expr._lower_column_builders` re-parses them (rejecting mixed-kind
+  brackets), so a single func spec / a func-spec array / an `extend` query survive
   `Python -> m3 -> Pure -> m3` (jar-free, `tests/test_relation.py`); an `extend`
   query also parses + compiles via the real engine (`tests/test_legend_bridge.py`,
-  execution still blocked upstream as above). Deferred follow-ons:
-    - **`AggColSpec` (`~c:{map}:{agg}`) + `groupBy`** -- aggregation specs and
-      grouped aggregation.
+  execution still blocked upstream as above). Also extends the foundation with
+  **`AggColSpec` (`~name:{map}:{agg}`) + `groupBy`** -- `agg(name, map, reduce)`
+  builds an aggregation `m3.AggColSpec` (the per-row `map` lambda + the collection
+  `reduce` lambda) and `aggs(*specs)` an `AggColSpecArray` (the
+  `~[a:{...}:{...}, b:{...}:{...}]` bracket form); `coerce` passes both through,
+  so the grouped-aggregation verb is just
+  `call("groupBy", rel, cols(...), agg(...))` / fluent
+  `rel.groupBy(cols(...), agg(...))` (the grouping `ColSpecArray` first, then the
+  agg colspec/array). `m3_to_pure._expression` emits `~name:{map}:{agg}` (each
+  lambda reused from the `LambdaFunction` emit) and the `~[...]` array, and
+  `pure_expr._lower_column_builders` now re-parses the `extraFunction` (reduce)
+  lambda -- a `oneColSpec` with both an `anyLambda` (map) and an `extraFunction`
+  (reduce) lowers to an `AggColSpec` -- so a single agg spec / an agg-spec array /
+  a `groupBy` query survive `Python -> m3 -> Pure -> m3` (jar-free,
+  `tests/test_relation.py`); a `groupBy` query also parses + compiles via the real
+  engine (`tests/test_legend_bridge.py`; the engine resolves
+  `groupBy_Relation_1__ColSpecArray_1__AggColSpec_1__Relation_1_` and only fails
+  in plan generation -- `relation::groupBy ... is not supported yet` -- the same
+  execution boundary as above). Deferred follow-ons:
     - **`join` / `asOfJoin`** -- relation joins.
     - **window / OLAP functions** -- `over`, ranking / running aggregates.
     - **a `Frame` fluent class** -- a higher-level relation-query builder over

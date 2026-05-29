@@ -46,6 +46,10 @@ def canon(vs):
         return ("funccolspec", vs.name, canon(vs.function))
     if isinstance(vs, m3.FuncColSpecArray):
         return ("funccolspecarray", tuple(canon(s) for s in vs.funcSpecs))
+    if isinstance(vs, m3.AggColSpec):
+        return ("aggcolspec", vs.name, canon(vs.map), canon(vs.reduce))
+    if isinstance(vs, m3.AggColSpecArray):
+        return ("aggcolspecarray", tuple(canon(s) for s in vs.aggSpecs))
     if isinstance(vs, m3.InstanceValue):
         # A `#TDS{...}#` literal is discriminated by a RelationType rawType marker.
         if isinstance(vs.genericType.rawType, m3.RelationType):

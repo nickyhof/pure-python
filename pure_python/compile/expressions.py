@@ -34,6 +34,15 @@ application, expressing relation queries::
     Expr(tds("id,grp\\n1,1\\n2,0")).filter(lam(["r"], lambda r: r.grp > 0))
     # call("filter", <tds>, <lambda>)  -> #TDS{id,grp\\n1,1\\n2,0}#->filter({r | ($r.grp > 0)})
     call("select", tds("id,grp"), cols("id", "grp"))  # -> ...->select(~[id, grp])
+
+:func:`fcol` / :func:`fcols` carry a per-column lambda (``~name:{lambda}``) for the
+``extend`` verb; :func:`agg` / :func:`aggs` carry a per-row ``map`` plus a collection
+``reduce`` lambda (``~name:{map}:{agg}``) for the ``groupBy`` verb::
+
+    Expr(tds("id,val\\n1,10\\n1,20")).groupBy(
+        cols("id"), agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum()))
+    )
+    # -> #TDS{id,val\\n1,10\\n1,20}#->groupBy(~[id], ~total:{r | $r.val}:{c | $c->sum()})
 """
 
 from __future__ import annotations
@@ -98,6 +107,8 @@ _PASSTHROUGH_NODES = (
     m3.ColSpecArray,
     m3.FuncColSpec,
     m3.FuncColSpecArray,
+    m3.AggColSpec,
+    m3.AggColSpecArray,
 )
 
 
@@ -341,6 +352,37 @@ def fcols(*funcspecs: m3.FuncColSpec) -> m3.FuncColSpecArray:
     return m3.FuncColSpecArray(funcSpecs=list(funcspecs))
 
 
+def agg(name: str, map: m3.Function, reduce: m3.Function) -> m3.AggColSpec:
+    """An aggregation column spec ``~name:{map}:{agg}`` (``m3.AggColSpec``).
+
+    ``map`` is the per-row lambda producing a value; ``reduce`` is the lambda run
+    over that collection producing the aggregate -- both typically :func:`lam`-built
+    ``LambdaFunction``s (e.g.
+    ``agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum()))``
+    emits ``~total:{r | $r.val}:{c | $c->sum()}``). The ``groupBy`` verb takes one
+    of these (or an :func:`aggs` array) alongside its grouping column specs.
+    """
+    if not isinstance(map, m3.Function):
+        raise TypeError(
+            f"agg expects a Function map (e.g. a lam(...) LambdaFunction), got {map!r}"
+        )
+    if not isinstance(reduce, m3.Function):
+        raise TypeError(
+            f"agg expects a Function reduce (e.g. a lam(...) LambdaFunction), got {reduce!r}"
+        )
+    return m3.AggColSpec(name=name, map=map, reduce=reduce)
+
+
+def aggs(*aggspecs: m3.AggColSpec) -> m3.AggColSpecArray:
+    """An agg-column-spec array ``~[a:{...}:{...}, b:{...}:{...}]`` (``m3.AggColSpecArray``)."""
+    for spec in aggspecs:
+        if not isinstance(spec, m3.AggColSpec):
+            raise TypeError(
+                f"aggs expects AggColSpec entries (build with agg), got {spec!r}"
+            )
+    return m3.AggColSpecArray(aggSpecs=list(aggspecs))
+
+
 __all__ = [
     "Expr",
     "c",
@@ -357,4 +399,6 @@ __all__ = [
     "cols",
     "fcol",
     "fcols",
+    "agg",
+    "aggs",
 ]

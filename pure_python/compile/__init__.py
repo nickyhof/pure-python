@@ -9,6 +9,8 @@ from __future__ import annotations
 from .annotations import Body, Stereotype, Tag
 from .expressions import (
     Expr,
+    agg,
+    aggs,
     c,
     call,
     coerce,
@@ -59,4 +61,6 @@ __all__ = [
     "cols",
     "fcol",
     "fcols",
+    "agg",
+    "aggs",
 ]

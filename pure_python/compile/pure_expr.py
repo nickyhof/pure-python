@@ -30,7 +30,7 @@ from pure_python import m3
 from pure_python.codegen._pure_antlr.M3CoreLexer import M3CoreLexer
 from pure_python.codegen._pure_antlr.M3CoreParser import M3CoreParser
 
-from .expressions import call, col, cols, fcol, fcols, lam, lit, prop, tds, var
+from .expressions import agg, aggs, call, col, cols, fcol, fcols, lam, lit, prop, tds, var
 
 # Pure infix symbol -> internal core-function name (inverse of
 # :data:`pure_python.compile.m3_to_pure._INFIX_OPERATORS`).
@@ -192,50 +192,71 @@ def _lower_atomic(nae) -> m3.ValueSpecification:
 
 
 def _lower_column_builders(column_builders):
-    """Lower ``~col`` / ``~[a, b]`` simple and ``~c:{r|...}`` func column specs.
+    """Lower ``~col`` / ``~[a, b]``, ``~c:{r|...}`` and ``~c:{map}:{agg}`` specs.
 
-    A simple ``oneColSpec`` (no lambda / aggregation function) becomes a
-    ``ColSpec``; a func-bearing one (``columnName : anyLambda``, no
-    ``extraFunction``) becomes a ``FuncColSpec``. A single spec yields the scalar
-    form, multiple the array (``ColSpecArray`` / ``FuncColSpecArray``). The
-    aggregation ``AggColSpec`` form (``~c:{map}:{agg}``, an ``extraFunction``) is
-    still out of scope, and mixing simple + func specs in one ``~[...]`` is
-    rejected.
+    Three ``oneColSpec`` kinds map to three node families:
+
+    * simple (no ``anyLambda``, no ``extraFunction``) -> ``ColSpec``;
+    * func (``columnName : anyLambda``, no ``extraFunction``) -> ``FuncColSpec``;
+    * agg (``columnName : anyLambda`` *and* an ``extraFunction`` carrying the
+      reduce ``anyLambda``) -> ``AggColSpec``.
+
+    A single spec yields the scalar form, multiple the matching array
+    (``ColSpecArray`` / ``FuncColSpecArray`` / ``AggColSpecArray``). Mixing kinds
+    in one ``~[...]`` is rejected.
     """
     specs = column_builders.oneColSpec()
     simple_names: list[str] = []
     func_specs: list[m3.FuncColSpec] = []
+    agg_specs: list[m3.AggColSpec] = []
     for spec in specs:
-        if spec.extraFunction() is not None:
-            # `~c:{map}:{agg}` -- an AggColSpec, deferred to the groupBy slice.
-            raise ValueError(
-                f"aggregation column spec is not supported: {spec.getText()!r}"
-            )
+        extra_function = spec.extraFunction()
         any_lambda = spec.anyLambda()
-        if any_lambda is not None:
-            lambda_function = any_lambda.lambdaFunction()
-            if lambda_function is None:
-                # A bare `{| ...}` pipe / `p | ...` form is not produced by `fcol`.
+        if extra_function is not None:
+            # `~c:{map}:{agg}` -- an AggColSpec: the map lambda is the spec's own
+            # `anyLambda`, the reduce lambda hangs off `extraFunction : anyLambda`.
+            if any_lambda is None:
                 raise ValueError(
-                    f"unsupported func column spec lambda: {spec.getText()!r}"
+                    f"aggregation column spec missing its map lambda: {spec.getText()!r}"
                 )
+            map_lambda = _agg_lambda(any_lambda, spec)
+            reduce_lambda = _agg_lambda(extra_function.anyLambda(), spec)
+            agg_specs.append(
+                agg(spec.columnName().getText(), map_lambda, reduce_lambda)
+            )
+        elif any_lambda is not None:
             func_specs.append(
-                fcol(spec.columnName().getText(), _lower_lambda(lambda_function))
+                fcol(spec.columnName().getText(), _agg_lambda(any_lambda, spec))
             )
         else:
             simple_names.append(spec.columnName().getText())
-    if simple_names and func_specs:
+    kinds = [bool(simple_names), bool(func_specs), bool(agg_specs)]
+    if sum(kinds) > 1:
         raise ValueError(
-            "mixing simple and function-bearing column specs in one ~[...] "
-            "is not supported"
+            "mixing simple, function-bearing and aggregation column specs in one "
+            "~[...] is not supported"
         )
+    if agg_specs:
+        return agg_specs[0] if len(agg_specs) == 1 else aggs(*agg_specs)
     if func_specs:
-        if len(func_specs) == 1:
-            return func_specs[0]
-        return fcols(*func_specs)
+        return func_specs[0] if len(func_specs) == 1 else fcols(*func_specs)
     if len(simple_names) == 1:
         return col(simple_names[0])
     return cols(*simple_names)
+
+
+def _agg_lambda(any_lambda, spec) -> m3.LambdaFunction:
+    """Lower the ``anyLambda`` of a column spec, requiring the ``{params | body}`` form.
+
+    A bare ``{| ...}`` pipe / ``p | ...`` form is not produced by ``fcol`` / ``agg``,
+    so reject anything but the ``lambdaFunction`` alternative.
+    """
+    lambda_function = any_lambda.lambdaFunction() if any_lambda is not None else None
+    if lambda_function is None:
+        raise ValueError(
+            f"unsupported column spec lambda: {spec.getText()!r}"
+        )
+    return _lower_lambda(lambda_function)
 
 
 def _lower_lambda(lambda_function) -> m3.LambdaFunction:
