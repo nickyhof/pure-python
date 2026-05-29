@@ -6,9 +6,11 @@
 
 from __future__ import annotations
 
-from .annotations import Stereotype, Tag
+from .annotations import Body, Stereotype, Tag
+from .expressions import Expr, c, call, coerce, func, lit, not_, prop, var
 from .m3_to_pure import to_pure, to_pure_module
 from .m3_to_python import to_module, to_source
+from .pure_expr import parse_expression
 from .pure_to_m3 import from_pure
 from .python_to_m3 import Compiler, compile_class, compile_enumeration
 
@@ -21,6 +23,18 @@ __all__ = [
     "to_pure",
     "to_pure_module",
     "from_pure",
+    "parse_expression",
     "Stereotype",
     "Tag",
+    "Body",
+    # expression layer (builders + DSL)
+    "Expr",
+    "c",
+    "lit",
+    "var",
+    "call",
+    "func",
+    "prop",
+    "coerce",
+    "not_",
 ]

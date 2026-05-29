@@ -34,6 +34,8 @@ from decimal import Decimal
 
 from pure_python import m3
 from pure_python.compile import Compiler, Stereotype, Tag, from_pure, to_module, to_pure_module
+from pure_python.compile.annotations import Body
+from pure_python.compile.m3_to_pure import _expression
 
 RT = typing.TypeVar("RT")
 
@@ -65,7 +67,9 @@ class Account:
     featured: Wrapper[str] | None = None  # type arguments
 
     @property
-    def label(self) -> str:  # qualified (derived) property
+    def label(  # qualified (derived) property with a modelled body
+        self,
+    ) -> typing.Annotated[str, Body(lambda this: this.id + " (" + this.suit + ")")]:
         ...
 
 
@@ -173,11 +177,19 @@ def test_python_m3_pure_m3_python_round_trip():
     assert set(canonical_a) == ELEMENT_NAMES
     assert canonical_a == canonical_b == canonical_c
 
-    # (2a) Qualified/derived properties now survive by signature: the canonical
-    #      above already requires Account.label to match across A, B and C.
+    # (2a) Qualified/derived properties survive by signature: the canonical above
+    #      already requires Account.label to match across A, B and C.
     assert [q.name for q in forward.classes[Account].qualifiedProperties] == ["label"]
-    assert "label() { [] } : String[1];" in pure_source  # placeholder body (expr layer not modelled)
     assert canonical_c["Account"][5]["label"] == (("raw", "String", ()), 1, 1)
+
+    # (2c) The derived-property body graph survives Python -> m3 -> Pure -> m3,
+    #      emitted as fully parenthesized infix and statement-terminated.
+    expected_body = "((($this.id + ' (') + $this.suit) + ')')"
+    assert f"label() {{ {expected_body}; }} : String[1];" in pure_source
+    label_a = forward.classes[Account].qualifiedProperties[0]
+    label_b = registry_b["Account"].qualifiedProperties[0]
+    assert _expression(label_a.expressionSequence[0]) == expected_body
+    assert _expression(label_b.expressionSequence[0]) == expected_body
 
     # (2b) Stereotypes and tagged values survive the Pure boundary: present in A,
     #      written to the Pure source (with Profile blocks), and recovered in B and C.

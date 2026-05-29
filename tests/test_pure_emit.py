@@ -15,7 +15,8 @@ from pure_python.compile import (
     to_pure,
     to_pure_module,
 )
-from pure_python.compile.m3_to_pure import _multiplicity
+from pure_python.compile.annotations import Body
+from pure_python.compile.m3_to_pure import _expression, _multiplicity
 
 RT = typing.TypeVar("RT")
 
@@ -202,12 +203,42 @@ def test_qualified_property_round_trips_through_pure():
 
     cls = compile_class(Customer, package="demo")
     source = to_pure_module(cls)
+    # Signature-only (no Body) keeps the `[]` placeholder body.
     assert "greeting() { [] } : String[1];" in source
     back = from_pure(source)["Customer"]
     assert [q.name for q in back.qualifiedProperties] == ["greeting"]
     qp = back.qualifiedProperties[0]
     assert qp.genericType.rawType.name == "String"
     assert (qp.multiplicity.lowerBound.value, qp.multiplicity.upperBound.value) == (1, 1)
+    assert qp.expressionSequence == []  # no body -> empty sequence
+
+
+def test_qualified_property_with_body_emits_and_round_trips_through_pure():
+    @dataclasses.dataclass
+    class Customer:
+        firstName: str
+        lastName: str
+
+        @property
+        def fullName(
+            self,
+        ) -> typing.Annotated[str, Body(lambda this: this.firstName + " " + this.lastName)]:
+            ...
+
+    cls = compile_class(Customer, package="demo")
+    source = to_pure_module(cls)
+    assert (
+        "fullName() { (($this.firstName + ' ') + $this.lastName); } : String[1];"
+        in source
+    )
+
+    # The body graph survives m3 -> Pure -> m3 (re-emits to the same infix form).
+    back = from_pure(source)["Customer"]
+    qp = back.qualifiedProperties[0]
+    assert len(qp.expressionSequence) == 1
+    assert _expression(qp.expressionSequence[0]) == (
+        "(($this.firstName + ' ') + $this.lastName)"
+    )
 
 
 def test_reverse_round_trip_enum_and_profiles():

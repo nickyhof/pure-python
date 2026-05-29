@@ -48,9 +48,10 @@ Grouped by status, with pointers to the relevant code.
   `m3_to_pure` emits `Association` blocks and `pure_to_m3` lifts them back, with
   an `m3 -> Pure -> m3` round-trip test.
 - [x] **Parse qualified / derived properties in the readable grammar.**
-  `grammar.py` captures them by signature (parameters and lambda body skipped);
-  `m3_to_pure` emits `name() {} : Type[mult];` and `pure_to_m3` lifts them into
-  `m3.QualifiedProperty`, so they now survive the round trip.
+  `grammar.py` captures them by signature; `m3_to_pure` emits
+  `name() { [] } : Type[mult];` and `pure_to_m3` lifts them into
+  `m3.QualifiedProperty`, so they now survive the round trip. Their expression
+  bodies are now modelled too -- see the expression layer below.
 - [x] **Preserve property-level stereotypes and tagged values across the Pure
   boundary.** `grammar.py` now parses `<<profile.value>>` and
   `{profile.tag = 'v'}` annotations (instead of skipping them) and `pure_to_m3`
@@ -87,6 +88,16 @@ Grouped by status, with pointers to the relevant code.
     and `eval` (`tests/test_legend_bridge.py` runs one over a two-class model).
   - [ ] **Richer `eval` results.** Only expressions reducing to a `ConstantResult`
     are returned today; TDS/relation/streaming results need a serializer.
+  - [ ] **Reuse the JVM across bridge calls (`eval` is the suite bottleneck).**
+    Every `LegendBridge` call spawns a fresh `java -jar` that re-initializes the
+    whole Legend engine; the `eval` calls (~4.4s each) dominate test time.
+    *Done:* the bridge tests are now opt-in (`-m integration`, excluded by
+    default) and the bootstrap metamodel is shared via a session fixture, so the
+    default loop is fast. *Next, with the relation/TDS work:* a batched
+    `evalMany` command (compile the model once, evaluate many expressions in one
+    JVM). *Bigger follow-on:* a **persistent JVM daemon** -- `bridge.py` boots
+    the engine once and streams requests over stdin/socket (one init for the
+    whole session) instead of one process per call.
 
 - [ ] **Legend protocol model (`PureModelContextData`).** The deferred fork:
   the legend-engine JSON protocol (Mapping, Connection, Runtime, Service,
@@ -95,9 +106,24 @@ Grouped by status, with pointers to the relevant code.
 - [ ] **JSON (de)serialization of `m3` graphs.** Today `m3` graphs only render
   to source. A `to_json` / `from_json` makes them persistable and is a stepping
   stone toward the protocol model above.
-- [ ] **Expression / lambda / constraint representation.** The
-  `ValueSpecification` tree is generated but nothing populates function bodies,
-  constraints, or derived-property expressions.
+- [x] **Expression representation (slice 1).** `compile/expressions.py` builds
+  `ValueSpecification` graphs -- explicit builders (`lit`, `var`, `call`/`func`,
+  `prop`) plus a PyLegend-style DSL (`c(...)`, operator overloads, fluent
+  `.method(...)`, property access). A `Body(...)` marker on a `@property` return
+  type populates a `QualifiedProperty.expressionSequence`; `m3_to_pure` emits the
+  body with binary core operators as parenthesized infix
+  (`(($this.first + ' ') + $this.last)`) -- the form Legend's stdlib executes --
+  and other functions in arrow form; and `compile/pure_expr.py` re-parses the
+  captured body (including infix and negative literals) so the graph survives
+  `Python -> m3 -> Pure -> m3` (asserted in `tests/test_expressions.py` and the
+  full round-trip test, and executed via the Legend bridge). Out of slice 1:
+  collection/list literals, multi-arg
+  lambdas, `if`/`case`/`let`, milestoning sugar,
+  `Constraint` / `ConcreteFunctionDefinition` bodies, and m3->Python(.py) emission
+  of bodies (signature-only there).
+- [ ] **Lambda / constraint representation.** `Constraint` and
+  `ConcreteFunctionDefinition` bodies, and multi-parameter lambdas, remain
+  unmodelled.
 - [ ] **Project hygiene.** Add a `py.typed` marker (downstream typing), a CI
   workflow running the tests + drift check, and a console entry point for the
   generator.

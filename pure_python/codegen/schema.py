@@ -39,6 +39,7 @@ class MetaProperty:
     type_arguments: list[TypeRef] = field(default_factory=list)
     stereotypes: list[tuple[str, str]] = field(default_factory=list)  # (profile, value)
     tagged_values: list[tuple[str, str, str]] = field(default_factory=list)  # (profile, tag, value)
+    body: str | None = None  # qualified-property body text (None == signature-only)
 
 
 @dataclass

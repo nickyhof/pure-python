@@ -41,9 +41,8 @@ def test_path_helpers():
     assert inst.get("children") == []
 
 
-def test_full_bootstrap_top_level_counts(m3_source):
-    instances = parse(m3_source)
-    counts = collections.Counter(i.kind for i in instances)
+def test_full_bootstrap_top_level_counts(m3_instances):
+    counts = collections.Counter(i.kind for i in m3_instances)
     assert counts["Class"] == 85
     assert counts["PrimitiveType"] == 12
     assert counts["Enumeration"] == 2

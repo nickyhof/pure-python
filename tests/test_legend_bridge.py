@@ -7,18 +7,27 @@ module is skipped, so the default ``pytest`` run is unaffected.
 
 from __future__ import annotations
 
+import typing
 from dataclasses import dataclass
 
 import pytest
 
 from pure_python.compile import compile_class, from_pure, to_pure_module
+from pure_python.compile.annotations import Body
+from pure_python.compile.expressions import c
+from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
 bridge = LegendBridge()
-pytestmark = pytest.mark.skipif(
-    not bridge.available(),
-    reason="legend-bridge jar/JVM not available; build with `mvn -f legend-bridge package`",
-)
+# `integration` -> excluded from the default run (each call boots a fresh JVM +
+# Legend engine, ~4s); enable explicitly with `pytest -m integration`.
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        not bridge.available(),
+        reason="legend-bridge jar/JVM not available; build with `mvn -f legend-bridge package`",
+    ),
+]
 
 
 @dataclass
@@ -86,6 +95,41 @@ def test_legend_executes_pure_expressions():
     assert bridge.evaluate("|1 + 1") == 2
     assert bridge.evaluate("|[1, 2, 3]->sum()") == 6
     assert bridge.evaluate("|'a' + 'b'") == "ab"
+
+
+def test_legend_executes_dsl_emitted_infix_operators():
+    # The DSL emits fully parenthesized infix for the core binary operators, the
+    # form Legend's stdlib actually executes (arrow `1->plus(1)` has no two-arg
+    # match because core arithmetic binds variadically). Build with the DSL,
+    # emit, and let Legend run it.
+    def run(expr_node):
+        return bridge.evaluate("|" + _expression(expr_node))
+
+    assert _expression((c(1) + c(1)).node) == "(1 + 1)"
+    assert run((c(1) + c(1)).node) == 2
+    assert run((c(2) * c(3)).node) == 6
+    assert run((c(3) > c(2)).node) is True
+    assert run((c(6) == c(6)).node) is True
+    assert run((c(6) != c(7)).node) is True
+    assert run((c(4) / c(2)).node) == 2.0
+    assert run(((c(1) + c(2)) * c(3)).node) == 9
+
+
+def test_legend_executes_body_derived_property_model():
+    # A class with a Body-derived property, emitted to Pure, both parses and the
+    # derived property executes end-to-end through Legend.
+    @dataclass
+    class Item:
+        base: int
+
+        @property
+        def doubled(self) -> typing.Annotated[int, Body(lambda this: this.base * 2)]: ...
+
+    model = to_pure_module(compile_class(Item, package="demo"))
+    assert "doubled() { ($this.base * 2); }" in model
+    parsed = bridge.parse(model)
+    assert "Item" in {e.get("name") for e in parsed["elements"]}
+    assert bridge.evaluate("|^demo::Item(base=21).doubled", model=model) == 42
 
 
 def test_legend_executes_over_a_generated_model():

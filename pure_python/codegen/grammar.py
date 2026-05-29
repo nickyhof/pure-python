@@ -128,11 +128,14 @@ def _property(p) -> MetaProperty:
 
 def _qualified_property(q) -> MetaProperty:
     ref, lower, upper = _return_type(q.propertyReturnType())
+    body = q.qualifiedPropertyBody().codeBlock()
+    body_text = body.getText() if body is not None else None
     return MetaProperty(
         q.identifier().getText(), ref.name, lower, upper,
         type_arguments=ref.arguments,
         stereotypes=_stereotypes(q.stereotypes()),
         tagged_values=_tagged_values(q.taggedValues()),
+        body=body_text,
     )
 
 
