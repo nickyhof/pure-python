@@ -285,8 +285,37 @@ class Expr:
             raise AttributeError(name)
         return _Accessor(self.node, name)
 
+    def __getitem__(self, name: str) -> "_Accessor":
+        """Subscript property access ``r["Order Id"]`` == attribute ``r.amt``.
+
+        pylegend addresses columns by string (``r["Order Id"]``), which also
+        reaches columns whose names contain spaces or are Python keywords -- forms
+        attribute access cannot spell. It builds the SAME node attribute access
+        does (an :class:`_Accessor` over :func:`prop`), so ``r["x"]`` and ``r.x``
+        are interchangeable and canon-equal.
+        """
+        if not isinstance(name, str):
+            raise TypeError(f"column subscript must be a string name, got {name!r}")
+        return _Accessor(self.node, name)
+
     def __repr__(self) -> str:
         return f"Expr({self.node!r})"
+
+
+# A *tiny*, OLAP-specific snake_case -> camelCase alias map, applied ONLY when an
+# ``_Accessor`` is CALLED as a function (``p.row_number(r)``), never on property
+# access (``r.order_id`` stays the column ``order_id``). pylegend spells the
+# multi-word relation window functions snake_case (``row_number`` / ``dense_rank``),
+# but Pure's functions are camelCase (``rowNumber`` / ``denseRank``); the Legend
+# engine REJECTS the snake forms ("Function does not exist 'row_number'") and
+# COMPILES the camel ones. Single-word OLAP names (``rank`` / ``lag`` / ``lead`` /
+# ``rowNumber`` written directly) already match Pure, so they are absent here and
+# pass through unchanged. Scoped to method calls only and kept to this exact pair
+# so it can never rewrite a non-OLAP verb (``$c->sum()``) or a column name.
+_OLAP_METHOD_ALIASES: dict[str, str] = {
+    "row_number": "rowNumber",
+    "dense_rank": "denseRank",
+}
 
 
 class _Accessor(Expr):
@@ -295,6 +324,12 @@ class _Accessor(Expr):
     As an ``Expr`` it represents ``receiver.name`` (so ``this.first + 'x'``
     works); called, it builds ``receiver->name(args...)`` (so ``c(4).exp()`` and
     ``x.substring(0, 43)`` work).
+
+    When called, the function name is run through :data:`_OLAP_METHOD_ALIASES`
+    (``row_number`` -> ``rowNumber``, ``dense_rank`` -> ``denseRank``) so
+    pylegend's snake_case OLAP spellings emit the camelCase Pure functions the
+    engine resolves. The alias is applied ONLY here (the call path), so property
+    access (``r.order_id``) and every other method (``$c->sum()``) are untouched.
     """
 
     __slots__ = ("_receiver", "_name")
@@ -305,7 +340,8 @@ class _Accessor(Expr):
         super().__init__(prop(receiver, name))
 
     def __call__(self, *args: object) -> Expr:
-        return Expr(call(self._name, self._receiver, *args))
+        function_name = _OLAP_METHOD_ALIASES.get(self._name, self._name)
+        return Expr(call(function_name, self._receiver, *args))
 
 
 def c(value: object) -> Expr:
@@ -435,6 +471,40 @@ class JoinKind:
     LEFT = enum_ref("JoinKind", "LEFT")
     RIGHT = enum_ref("JoinKind", "RIGHT")
     FULL = enum_ref("JoinKind", "FULL")
+
+
+# pylegend / SQL-ish join-kind STRINGS -> the Pure `JoinKind` member. Note the
+# name mapping: pylegend spells the outer joins `LEFT_OUTER` / `RIGHT_OUTER`,
+# while Pure's enumeration members are `LEFT` / `RIGHT` (and `INNER` / `FULL`
+# match). Matched case-insensitively. The Pure-native `JoinKind.*` enum-ref is
+# still accepted directly (see :func:`join_kind`).
+_JOIN_KIND_STRINGS: dict[str, m3.InstanceValue] = {
+    "INNER": JoinKind.INNER,
+    "LEFT": JoinKind.LEFT,
+    "LEFT_OUTER": JoinKind.LEFT,
+    "RIGHT": JoinKind.RIGHT,
+    "RIGHT_OUTER": JoinKind.RIGHT,
+    "FULL": JoinKind.FULL,
+    "FULL_OUTER": JoinKind.FULL,
+}
+
+
+def join_kind(kind: object) -> m3.InstanceValue:
+    """Normalize a join kind to a Pure ``JoinKind`` enum-ref.
+
+    Accepts a pylegend string (``'INNER'`` / ``'LEFT_OUTER'`` / ``'RIGHT_OUTER'``
+    / ``'FULL'``, case-insensitive -- ``LEFT_OUTER`` -> ``JoinKind.LEFT``,
+    ``RIGHT_OUTER`` -> ``JoinKind.RIGHT``) or a ready-made :class:`JoinKind`
+    enum-ref (``JoinKind.LEFT``), which passes through unchanged. Additive sugar:
+    the Pure-native enum-ref keeps working.
+    """
+    if isinstance(kind, str):
+        member = _JOIN_KIND_STRINGS.get(kind.upper())
+        if member is None:
+            valid = ", ".join(sorted(_JOIN_KIND_STRINGS))
+            raise ValueError(f"unknown join kind {kind!r}; expected one of: {valid}")
+        return member
+    return kind
 
 
 def col(name: str) -> m3.ColSpec:
@@ -644,6 +714,65 @@ def over(
     return call("over", *args)
 
 
+def _partition_spec(partition_by: object) -> m3.ColSpec | m3.ColSpecArray:
+    """A partition argument -> a ``~col`` / ``~[a, b]`` spec (the ``over`` partition).
+
+    Accepts a single column name (-> :func:`col`), a list/tuple of names (->
+    :func:`cols`), or a ready-made :func:`col` / :func:`cols` spec (passed
+    through). One pre-built spec stays as given.
+    """
+    if isinstance(partition_by, str):
+        return col(partition_by)
+    if isinstance(partition_by, (list, tuple)):
+        return cols(*partition_by)
+    return partition_by  # already a ColSpec / ColSpecArray
+
+
+def _order_spec(order_by: object) -> object:
+    """An order argument -> a ``SortInfo`` / ``SortInfo[*]`` (the ``over`` sort).
+
+    Each entry may be an :func:`asc` / :func:`desc` ``SortInfo``, a ready-made
+    column spec, or a bare column *name* (ascending). A single entry stays a
+    scalar ``SortInfo``; several become an :func:`array` of them (the engine's
+    ``SortInfo[*]`` overload).
+    """
+    entries = order_by if isinstance(order_by, (list, tuple)) else [order_by]
+    directions = [e if not isinstance(e, str) else asc(col(e)) for e in entries]
+    if len(directions) == 1:
+        return directions[0]
+    return array(*directions)
+
+
+def window(
+    partition_by: object = None,
+    order_by: object = None,
+    frame: object = None,
+) -> m3.SimpleFunctionExpression:
+    """A pylegend-style window spec, returning the same ``over(...)`` node.
+
+    The two-step pylegend OLAP form pairs ``window(...)`` with
+    :meth:`Frame.window_extend`:
+
+        f.window_extend(
+            f.window(partition_by="cust", order_by="id", frame=rows(unbounded(), 0)),
+            ("rn", lambda p, w, r: p.row_number(r)),
+        )
+
+    * ``partition_by`` -- a column name, a list of names, or a ready-made
+      :func:`col` / :func:`cols` spec (the partition).
+    * ``order_by`` (optional) -- one or a list of :func:`asc` / :func:`desc`
+      ``SortInfo``s or bare names (a bare name = ascending); ``None`` = no order.
+    * ``frame`` (optional) -- a :func:`rows` / :func:`range_` frame, or ``None``.
+
+    Additive: builds the SAME node :func:`over` does, so ``window(...)`` and
+    ``over(...)`` are interchangeable in :meth:`Frame.window_extend`.
+    """
+    if partition_by is None:
+        raise ValueError("window requires a partition_by column (name, list, or spec)")
+    sort = _order_spec(order_by) if order_by is not None else None
+    return over(_partition_spec(partition_by), sort, frame)
+
+
 __all__ = [
     "Expr",
     "c",
@@ -659,6 +788,7 @@ __all__ = [
     "db_table",
     "enum_ref",
     "JoinKind",
+    "join_kind",
     "col",
     "cols",
     "fcol",
@@ -669,6 +799,7 @@ __all__ = [
     "asc",
     "desc",
     "over",
+    "window",
     "rows",
     "range_",
     "unbounded",

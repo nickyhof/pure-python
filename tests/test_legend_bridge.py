@@ -34,6 +34,7 @@ from pure_python.compile.expressions import (
     rows,
     tds,
     unbounded,
+    window,
 )
 from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
@@ -636,6 +637,152 @@ def test_legend_from_db_compile_needs_a_defined_database():
 
     emitted = Frame.from_db("my::Store", "myTable").limit(5).to_pure()
     with pytest.raises(Exception, match="store 'my::Store' can't be found"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_named_olap_functions_in_windowed_extend():
+    # The named OLAP functions PARSE + COMPILE inside a windowed `extend` over a
+    # `#TDS{...}#`, each resolving the `extend_..._Window_..._FuncColSpec_...`
+    # plan-gen boundary. The engine-resolved compilable forms (verified by probing
+    # the engine): `rowNumber($p, $r)` (p, r -- NOT p, w, r), `rank($p, $w, $r)`,
+    # `denseRank($p, $w, $r)`, `lag($p, $r)` / `lead($p, $r)` (p, r + optional
+    # Integer offset). The snake_case `row_number` / `dense_rank` are REJECTED by
+    # the engine ("Function does not exist"); the `Expr` call-path alias map emits
+    # the camelCase the engine resolves (so `p.row_number(r)` -> `$p->rowNumber($r)`
+    # here). Execution is NOT asserted -- relation execution is blocked upstream.
+    olap_columns = {
+        "rowNumber": ("rn", lambda p, w, r: p.row_number(r)),  # snake -> rowNumber
+        "rank": ("rk", lambda p, w, r: p.rank(w, r)),
+        "denseRank": ("dr", lambda p, w, r: p.dense_rank(w, r)),  # snake -> denseRank
+        "lag": ("lg", lambda p, w, r: p.lag(r)),
+        "lead": ("ld", lambda p, w, r: p.lead(r)),
+    }
+    for name, (colname, fn) in olap_columns.items():
+        query = call(
+            "extend",
+            tds("p,o,i\n0,1,10\n0,2,20\n100,1,10"),
+            over(col("p"), asc(col("o")), rows(unbounded(), 0)),
+            fcol(colname, lam(["p", "w", "r"], fn)),
+        )
+        emitted = _expression(query)
+        # PARSE: the wrapping function appears in the parsed model.
+        model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+        assert any(
+            e.get("_type") == "function" and e.get("package") == "test"
+            for e in model["elements"]
+        ), name
+        # COMPILE: the OLAP function resolves; only plan generation hits the boundary.
+        with pytest.raises(Exception, match="not supported yet"):
+            bridge.evaluate("|" + emitted)
+
+
+def test_legend_rejects_snake_case_olap_function_names():
+    # Proof the alias map is load-bearing: the raw snake_case spelling that
+    # pylegend uses (`row_number`) does NOT exist in Pure -- the engine rejects it
+    # at compile time with "Function does not exist", a DISTINCT, earlier error
+    # than the plan-gen boundary -- so emitting it verbatim would never compile.
+    from pure_python.compile.expressions import var
+
+    emitted = _expression(
+        call(
+            "extend",
+            tds("p,o,i\n0,1,10\n0,2,20"),
+            over(col("p"), asc(col("o")), rows(unbounded(), 0)),
+            fcol("c", lam(["p", "w", "r"], lambda p, w, r: call("row_number", var("p"), var("r")))),
+        )
+    )
+    with pytest.raises(Exception, match=r"Function does not exist 'row_number"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_windowed_aggregate_column():
+    # A cumulative windowed aggregate is the AGG-COLSPEC form
+    # `~c:{p, w, r | $r.i}:{y | $y->sum()}` (resolving
+    # `extend_..._Window_..._AggColSpec_...`), NOT a `$p->sum(...)` proxy call --
+    # the engine REJECTS `$p->sum(...)` over the window (only the collection
+    # `sum(Number[*])` matches). PARSES + COMPILES to the plan-gen boundary.
+    query = call(
+        "extend",
+        tds("p,o,i\n0,1,10\n0,2,20\n100,1,10"),
+        over(col("p"), asc(col("o")), rows(unbounded(), 0)),
+        agg("cum", lam(["p", "w", "r"], lambda p, w, r: r.i), lam(["y"], lambda y: y.sum())),
+    )
+    emitted = _expression(query)
+    assert emitted.endswith("~cum:{p, w, r | $r.i}:{y | $y->sum()})")
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_pylegend_style_frame_chain():
+    # The pylegend-aligned `Frame` surface end-to-end: subscript columns, a string
+    # join kind (`'LEFT_OUTER'` -> `JoinKind.LEFT`), the `window()` helper, and a
+    # named OLAP column (`p.row_number(r)` -> `$p->rowNumber($r)`). It emits exactly
+    # the Pure the free builders do and the real engine PARSES + COMPILES it, every
+    # verb resolving to a `meta::pure::functions::relation::<verb>` function; only
+    # plan generation hits the upstream execution boundary.
+    from pure_python.compile import Frame
+
+    # The join's two relations must not share a column name (Pure `join` unions the
+    # columns and rejects "The relation contains duplicates"), so the right side
+    # keys on `cid` matched against `cust`.
+    orders = Frame.from_tds("id,cust,amt\n1,a,10\n2,a,20\n3,b,5")
+    custs = Frame.from_tds("cid,region\na,US\nb,EU")
+    query = (
+        orders
+        .filter(lambda r: r["amt"] > 5)
+        .join(custs, lambda l, r: l.cust == r.cid, kind="LEFT_OUTER")
+        .window_extend(
+            Frame.window(partition_by="cust", order_by="amt", frame=rows(unbounded(), 0)),
+            ("rn", lambda p, w, r: p.row_number(r)),
+        )
+    )
+    emitted = query.to_pure()
+    assert emitted == (
+        "#TDS{id,cust,amt\n1,a,10\n2,a,20\n3,b,5}#"
+        "->filter({r | ($r.amt > 5)})"
+        "->join(#TDS{cid,region\na,US\nb,EU}#, JoinKind.LEFT, {l, r | ($l.cust == $r.cid)})"
+        "->extend(over(~cust, ~amt->ascending(), rows(unbounded(), 0)), "
+        "~rn:{p, w, r | $p->rowNumber($r)})"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_frame_as_of_join_four_arg():
+    # The 4-arg `as_of_join(other, match_function, join_condition=...)` wires the
+    # `asOfJoin_..._Function_1__Function_1__...` overload; it PARSES + COMPILES to
+    # the plan-gen boundary (the 3-arg form is covered separately above).
+    from pure_python.compile import Frame
+
+    # Distinct column names across the two relations (Pure `asOfJoin` unions the
+    # columns and rejects duplicates): the right side keys on `k2`.
+    query = Frame.from_tds("id,t,k\n1,5,9\n2,9,9").as_of_join(
+        Frame.from_tds("rid,rt,k2\n1,4,9\n2,8,9"),
+        lambda l, r: l.t >= r.rt,
+        join_condition=lambda l, r: l.k == r.k2,
+    )
+    emitted = query.to_pure()
+    assert emitted == (
+        "#TDS{id,t,k\n1,5,9\n2,9,9}#"
+        "->asOfJoin(#TDS{rid,rt,k2\n1,4,9\n2,8,9}#, "
+        "{l, r | ($l.t >= $r.rt)}, {l, r | ($l.k == $r.k2)})"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    with pytest.raises(Exception, match="not supported yet"):
         bridge.evaluate("|" + emitted)
 
 
