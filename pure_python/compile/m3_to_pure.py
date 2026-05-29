@@ -150,6 +150,15 @@ def _is_tds(vs: m3.InstanceValue) -> bool:
     return generic is not None and isinstance(generic.rawType, m3.RelationType)
 
 
+def _is_enum_ref(vs: m3.InstanceValue) -> bool:
+    """An enum-value reference (``JoinKind.INNER``) is an ``InstanceValue`` whose
+    ``genericType.rawType`` is an ``Enumeration`` (the discriminating marker set
+    by :func:`pure_python.compile.expressions.enum_ref`); its single value is the
+    verbatim ``Enumeration.VALUE`` text, emitted unquoted like a ``#TDS{}#``."""
+    generic = vs.genericType
+    return generic is not None and isinstance(generic.rawType, m3.Enumeration)
+
+
 def _func_col_spec(spec: m3.FuncColSpec) -> str:
     """Render a ``FuncColSpec`` as the un-``~``'d ``name:{lambda}`` core form.
 
@@ -220,6 +229,8 @@ def _expression(vs) -> str:
         return "~[" + ", ".join(_agg_col_spec(s) for s in vs.aggSpecs) + "]"
     if isinstance(vs, m3.InstanceValue):
         if _is_tds(vs):  # a `#TDS{...}#` literal: emit its text verbatim
+            return vs.values[0]
+        if _is_enum_ref(vs):  # an enum-value ref `JoinKind.INNER`: emit verbatim
             return vs.values[0]
         if not vs.values:
             return "[]"

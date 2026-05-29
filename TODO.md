@@ -234,9 +234,44 @@ Grouped by status, with pointers to the relevant code.
   (`ColSpecArray` / `FuncColSpecArray` / `AggColSpecArray`) for a single
   *bracketed* `~[a]` while a bracketless `~a` still lowers to the scalar -- a shared
   change exercised by select / extend / groupBy (all existing round trips still
-  pass). Deferred follow-ons:
-    - **`join` / `asOfJoin`** -- relation joins.
-    - **window / OLAP functions** -- `over`, ranking / running aggregates.
+  pass). Also adds **`join` / `asOfJoin` + enum-value references** -- the new
+  capability is representing an ENUM-VALUE REFERENCE (`JoinKind.INNER`) as a
+  `ValueSpecification`: the second relation is just a value (another `#TDS{}#`
+  literal or a `$var`) and the condition is the already-supported multi-param
+  lambda (`{l, r | $l.id == $r.rid}`). The metamodel has no `JoinKind` enum, so --
+  mirroring the `tds` pattern -- `enum_ref(enumeration, value)` stores the verbatim
+  emit text (`"JoinKind.INNER"`) on an `InstanceValue` discriminated by an
+  `Enumeration`-rawType marker (distinct from a string `lit`'s `String` and a TDS
+  literal's `RelationType`), so the emitter renders it unquoted and `canon`
+  projects it to a distinct `("enumref", ...)` shape; `JoinKind.INNER` / `.LEFT` /
+  `.RIGHT` / `.FULL` are exposed as ready-made constants (a small `JoinKind`
+  namespace). `m3_to_pure._expression` emits the reference verbatim, and
+  `pure_expr` adds an `instanceReference` lowering path: `_lower_atomic` lowers a
+  bare `instanceReference` (`JoinKind`) to a lightweight `_PendingReference`
+  carrying the qualified-name text, and `_lower_property_or_function` folds a
+  trailing parameterless `.VALUE` propertyExpression onto it to build the
+  `enum_ref` node; a pending reference left dangling, followed by an arrow call, or
+  carrying an `allOrFunction`/parameterized property is rejected loudly (so the
+  window `over(...)` form fails clearly rather than mis-lowering). `coerce` passes
+  the enum-ref + relation + lambda through, so the verbs are free fluent / `call`
+  forms: `rel.join(other, JoinKind.INNER, lam(["l","r"], ...))` and
+  `rel.asOfJoin(other, lam(["l","r"], ...))`. A bare `enum_ref`, a `join`, and an
+  `asOfJoin` survive `Python -> m3 -> Pure -> m3` (jar-free, `tests/test_relation.py`).
+  The real engine confirms the resolved overloads
+  (`join_Relation_1__Relation_1__JoinKind_1__Function_1__Relation_1_` and the
+  3-arg `asOfJoin_Relation_1__Relation_1__Function_1__Relation_1_`; a 4-arg
+  `asOfJoin(rel, rel, matchCond, joinCond)` also compiles) and that **bare**
+  `JoinKind.INNER` both PARSES and COMPILES (the compiler resolves the enumeration;
+  valid members INNER/LEFT/RIGHT/FULL each reach the plan-gen boundary, while
+  `OUTER` is REJECTED with "Can't find enum value 'OUTER'" -- proving the reference
+  is genuinely resolved, not ignored). Each query parses + compiles and only fails
+  in plan generation (same execution boundary as above; `tests/test_legend_bridge.py`).
+  Deferred follow-ons:
+    - **window / OLAP functions** -- `over`, ranking / running aggregates. The
+      remaining lowering gap is the bare-function-call receiver `over(...)` -- an
+      `instanceReference` with an `allOrFunction`/arrow-call suffix -- which
+      `pure_expr` now rejects loudly (it is the next slice, not silently
+      mis-lowered).
     - **a `Frame` fluent class** -- a higher-level relation-query builder over
       the free verbs.
     - **a batched `evalMany` bridge command** -- compile the model once and
