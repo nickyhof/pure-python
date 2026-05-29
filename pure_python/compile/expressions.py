@@ -93,6 +93,20 @@ _TDS_GENERIC_TYPE = m3.GenericType(rawType=m3.RelationType())
 # than adding any m3 type.)
 _ENUM_REF_GENERIC_TYPE = m3.GenericType(rawType=m3.Enumeration())
 
+# A shared marker ``GenericType`` whose ``rawType`` is a ``Relation``. It
+# discriminates a database-table relation source (``#>{db::Store.table}#``) from a
+# ``#TDS{...}#`` inline literal (rawType ``RelationType``), an enum-value reference
+# (rawType ``Enumeration``) and an ordinary string ``InstanceValue`` (rawType
+# ``String``) so the emitter renders the stored ``#>{...}#`` token verbatim
+# (unquoted) like a ``#TDS{}#`` literal. Mirrors the ``tds`` pattern -- a verbatim
+# token on an ``InstanceValue`` -- rather than adding any m3 type; ``m3.Relation``
+# (the relation *value*, distinct from ``RelationType`` the relation *type*) is a
+# convenient existing class to mark it. The engine parses this source as a
+# ``classInstance`` of ``type ">"`` whose value is the dotted store/table path; it
+# only *compiles* once the named database/store is defined (see the module note on
+# :func:`db_table`).
+_DB_TABLE_GENERIC_TYPE = m3.GenericType(rawType=m3.Relation())
+
 
 def _primitive_for(value: object) -> m3.PrimitiveType:
     """Map a Python literal to its Pure primitive, reusing ``python_to_m3``."""
@@ -341,6 +355,49 @@ def tds(text: str) -> m3.InstanceValue:
     )
 
 
+def db_table(database: str, table: str) -> m3.InstanceValue:
+    """A ``#>{database.table}#`` database-table relation source.
+
+    The other primary legendql source (besides the inline :func:`tds` literal): a
+    *pointer* to a table in a defined database/store, which Pure spells
+    ``#>{db::path::Store.tableName}#``. Mirroring :func:`tds`, the verbatim
+    ``#>{...}#`` token is stored on an ``InstanceValue`` discriminated by
+    :data:`_DB_TABLE_GENERIC_TYPE` (a ``Relation`` rawType marker, distinct from
+    the ``tds`` ``RelationType`` and the ``enum_ref`` ``Enumeration``) so the
+    emitter renders it verbatim; no path is parsed and no m3 store type is added.
+
+    ``database`` is the qualified store path (e.g. ``my::Store``), ``table`` the
+    table name. The engine *parses* this source (it becomes a ``classInstance`` of
+    ``type ">"`` whose value is the ``[database, table]`` path) and resolves the
+    relation verbs over it, but it only *compiles* once the named store is defined
+    in the model -- with no database it fails at compile time with
+    ``The store '<database>' can't be found.`` (verified via the Legend bridge).
+    So a ``from_db`` chain is asserted to PARSE; compiling it needs a real database
+    definition that this sugar layer deliberately does not fabricate.
+
+    Accepts either the bare ``database`` / ``table`` pair or, for symmetry with
+    :func:`tds`, a full ``#>{...}#`` token in ``database`` (with ``table`` unused).
+    """
+    if database.startswith("#>{") and database.endswith("}#"):
+        token = database
+        inner = database[len("#>{") : -len("}#")]
+    else:
+        inner = f"{database}.{table}"
+        token = f"#>{{{inner}}}#"
+    if "#" in inner:
+        # The Pure DSL token is `#`-delimited, so an interior `#` would truncate it
+        # on re-parse -- reject rather than corrupt (mirrors `tds`).
+        raise ValueError(
+            "a #>{...} database-table source cannot contain '#' in its content "
+            "(the Pure DSL token is '#'-delimited and would truncate)"
+        )
+    return m3.InstanceValue(
+        values=[token],
+        genericType=_DB_TABLE_GENERIC_TYPE,
+        multiplicity=m3.PureOne,
+    )
+
+
 def enum_ref(enumeration: str, value: str) -> m3.InstanceValue:
     """An enum-value reference ``Enumeration.VALUE`` (e.g. ``JoinKind.INNER``).
 
@@ -464,18 +521,33 @@ def array(*elements: object) -> m3.InstanceValue:
     )
 
 
+def _sort_colspec(colspec: object) -> object:
+    """Normalize a sort-direction argument: a bare column *name* -> a :func:`col`.
+
+    A ``SortInfo`` is built over a column spec (``~col``), so a bare string name is
+    the column ``asc("total")`` / ``desc("total")`` reads as -- promote it to a
+    :func:`col` rather than letting :func:`coerce` wrap it as a quoted string
+    literal. A :func:`col` ``ColSpec`` / other node passes through unchanged."""
+    return col(colspec) if isinstance(colspec, str) else coerce(colspec)
+
+
 def asc(colspec: object) -> m3.SimpleFunctionExpression:
     """A ``SortInfo`` ascending direction ``~col->ascending()`` (the engine's
     canonical spelling -- ``asc`` has no relation overload).
 
-    ``colspec`` is typically a :func:`col` ``~col``; passed through :func:`coerce`."""
-    return call("ascending", coerce(colspec))
+    ``colspec`` is a :func:`col` ``~col`` *or* a bare column name string
+    (``asc("total")`` builds the ``~total`` spec); other values pass through
+    :func:`coerce`."""
+    return call("ascending", _sort_colspec(colspec))
 
 
 def desc(colspec: object) -> m3.SimpleFunctionExpression:
     """A ``SortInfo`` descending direction ``~col->descending()`` (the engine's
-    canonical spelling -- ``desc`` has no relation overload)."""
-    return call("descending", coerce(colspec))
+    canonical spelling -- ``desc`` has no relation overload).
+
+    ``colspec`` is a :func:`col` ``~col`` *or* a bare column name string
+    (``desc("total")`` builds the ``~total`` spec)."""
+    return call("descending", _sort_colspec(colspec))
 
 
 # --- window / OLAP layer ----------------------------------------------------
@@ -584,6 +656,7 @@ __all__ = [
     "not_",
     "lam",
     "tds",
+    "db_table",
     "enum_ref",
     "JoinKind",
     "col",

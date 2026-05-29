@@ -310,10 +310,78 @@ Grouped by status, with pointers to the relevant code.
   `_RangeInterval` duration-unit frame variant (`_range(n, DurationUnit, ...)`);
   the coherent compilable subset above (partition + sort + `rows`/`_range` frame +
   windowed `extend`) is delivered.
+- [x] **legendql-style `Frame` query builder (slice 3).** A branded, **immutable**
+  fluent facade over the relation verbs, all in `compile/frame.py` (re-exported as
+  `compile.Frame`). It adds **no new representation**: a `Frame` wraps one relation
+  `ValueSpecification` node and every verb returns a NEW `Frame` wrapping
+  `call("verb", self._node, *args)` (never mutating the receiver), lowering via the
+  existing `_expression` / `to_pure` path. Row-proxy lambdas are wired through the
+  existing `lam` -- **no AST / lambda-source introspection**: a per-row method
+  (`filter` / `extend` / the `group_by` agg map) calls `lam(["r"], f)`, a join
+  condition `lam(["l", "r"], f)`, and the windowed-extend column lambda the
+  canonical `lam(["p", "w", "r"], f)`; arity is fixed per method, so the parameter
+  names are explicit (as `lam` already requires) and the user just writes
+  `lambda r: r.amt > 5`. Construct with `Frame.from_tds(text)` (inline `#TDS{...}#`
+  literal -- the primary, fully working source) or `Frame.from_db(database, table)`
+  (a `#>{database.table}#` database-table source -- see below). Methods (each
+  delegates to the existing builder): `from_tds` / `from_db`; `filter(p)`;
+  `select(*names)` (one name -> `col`, many -> `cols`); `extend(*("name", fn))`
+  (one -> `fcol`, many -> `fcols`); `group_by(keys, *("name", map, reduce))` (keys
+  a name or list -> `cols`; aggs -> `agg` / `aggs`); `join(other, on, kind=INNER)` +
+  `inner_join` / `left_join` / `right_join` / `full_join` convenience;
+  `as_of_join(other, on)`; `sort(*specs)` (each an `asc("c")` / `desc("c")` or a
+  bare name defaulting ascending; one -> scalar, many -> `array` list);
+  `limit(n)` / `drop(n)` / `slice(start, stop)` / `distinct()` /
+  `concatenate(other)`; `rename(old, new)`; `pivot(on, ("name", map, reduce))`;
+  `window_extend(over_spec, ("name", fn) | ("name", map, reduce))` (the chosen
+  window shape -- an explicit `over(...)` spec + a 3-param window lambda column,
+  reusing `over` / `rows` / `range_` / `unbounded`); and the readers `to_m3()`
+  (the node) / `to_pure()` (emitted Pure) / `__repr__`. A relation-valued `other`
+  in `join` / `as_of_join` / `concatenate` may be a `Frame`, a raw node, or a
+  `tds` / `db_table` source (a `Frame` is unwrapped to its node). To support the
+  bare-name sort sugar, `asc` / `desc` now also accept a column-*name* string
+  (promoting it to a `col`, backward-compatible with the existing `asc(col(...))`).
+  **Validation**: `tests/test_frame.py` (jar-free) asserts, per verb, that
+  `Frame(...).to_m3()` equals the equivalent hand-written `call(...)` / builder
+  graph under the shared `canon` (proving the facade is faithful sugar over the
+  verbs), that a verb is immutable (it does not mutate the receiver), and that
+  `.to_pure()` emits the exact expected strings (per verb + a multi-verb
+  `filter -> extend -> group_by -> sort -> limit` chain, a join, a windowed
+  extend, and the whole chain's graph vs the builder graph). The real engine
+  (`tests/test_legend_bridge.py`) PARSES + COMPILES a non-trivial `Frame` chain
+  (`filter -> groupBy -> sort -> limit`), a `filter -> inner_join` chain, and a
+  `window_extend`, each hitting the same plan-gen execution boundary as the free
+  builders. (An `extend(~c:{r | $r.amt * 2})` step BEFORE a `groupBy` was probed
+  and is a genuine engine *compile* constraint -- the engine infers the derived
+  column `[0..1]` and rejects "Collection element must have a multiplicity [1]" --
+  so it is excluded from the compilable engine chain; the `Frame.extend` sugar
+  itself is exercised jar-free.)
+- [x] **`from_db` / `#>{db.table}#` database-table source (slice 3).**
+  `db_table(database, table)` (in `compile/expressions.py`, re-exported) builds a
+  verbatim `#>{database.table}#` source -- mirroring the `tds` pattern: an
+  `InstanceValue` discriminated by a `Relation`-rawType marker (distinct from the
+  `tds` `RelationType` and the `enum_ref` `Enumeration`), emitted unquoted by
+  `m3_to_pure._is_db_table`; no path is parsed and no m3 store type is added.
+  `Frame.from_db(database, table)` wraps it. The real engine **PARSES** this source
+  (it becomes a `classInstance` of `type ">"` whose value is the `[database, table]`
+  path, and relation verbs resolve over it -- pinned in `tests/test_legend_bridge.py`),
+  but it only **COMPILES once the named store is defined**: with no database it
+  fails compile with `The store '<database>' can't be found.` (a DISTINCT, earlier
+  error than the relation plan-gen "not supported yet" boundary -- also pinned).
+  This sugar layer deliberately does NOT fabricate a database/store definition;
+  real `from_db` execution needs a modelled relational store + connection + runtime.
+  Follow-ons:
+    - **reverse-parse `#>{db::Store.table}#`** in `pure_expr` (lower the `type ">"`
+      `classInstance` back to a `db_table` node) so a `from_db` query round-trips
+      `Python -> m3 -> Pure -> m3` like the `tds` source does (currently the
+      forward emit + engine parse are covered, not the reverse lowering).
+    - **a store-aware `from_db` compile/execute path** -- model a relational store +
+      connection + runtime so a `#>{db.table}#` query compiles and executes against
+      a real database (needs the protocol-model / store work, Tier 2).
   Deferred follow-ons:
-    - **a `Frame` fluent class** -- a higher-level relation-query builder over
-      the free verbs (the free `over` / `rows` / `range_` / `unbounded` builders
-      are in place).
+    - **named OLAP convenience funcs** -- `rank` / `denseRank` / `rowNumber` /
+      `lag` / `lead` etc. as plain verbs/calls layered over the same `over` window
+      (and a `Frame` method or two for them).
     - **a batched `evalMany` bridge command** -- compile the model once and
       evaluate many expressions in one JVM (a Java-side change, explicitly *not*
       bundled with this slice).
