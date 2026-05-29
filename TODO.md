@@ -206,9 +206,36 @@ Grouped by status, with pointers to the relevant code.
   **REJECTED**: the engine has no relation overload for it, so it matched the
   *collection* `take` and failed with `Unhandled value type:
   meta::pure::metamodel::relation::TDS` -- it is not a relation verb and is excluded.
-  Deferred follow-ons:
+  Also adds **`sort` + `pivot`** and the underlying **`[...]` collection literal +
+  `ascending` / `descending` directions** they need. A `sort` direction is just an
+  arrow call `~col->ascending()` / `~col->descending()` (a `SimpleFunctionExpression`,
+  no new m3 type) -- `asc(colspec)` / `desc(colspec)` are thin helpers over `call`.
+  `sort` takes one direction or a collection of them: `array(*exprs)` builds a
+  `[a, b]` collection literal (a multi-value / `ZeroMany` `m3.InstanceValue` whose
+  `values` are the coerced element nodes -- no new m3 type, reusing the node the
+  emitter already rendered for scalar `[1, 2, 3]` lists), and
+  `pure_expr._lower_atomic` now lowers the `expressionsArray` `[...]` grammar
+  (lowering each element via `_lower_combined`), so an `array(...)` survives
+  `Python -> m3 -> Pure -> m3`. `pivot(~[grp], ~agg:{map}:{reduce})` is a free
+  fluent / `call` verb over a pivot `ColSpecArray` + an `AggColSpec`. The real
+  engine confirms the resolved overloads -- `sort_Relation_1__SortInfo_MANY__Relation_1_`
+  (both the scalar `~col->ascending()` and the bracketed multi
+  `[~a->ascending(), ~b->descending()]` forms compile via the `SortInfo[*]`
+  signature) and `pivot_Relation_1__ColSpecArray_1__AggColSpec_1__Relation_1_` --
+  with `asc` / `desc` probed and REJECTED (no relation overload; the names are
+  `ascending` / `descending`), a bare `~col` / `~[cols]` sort REJECTED (sort needs
+  a `SortInfo`, i.e. `->ascending()`), and the two-`ColSpecArray` pivot arity
+  REJECTED (no such overload). Each parses + compiles and only fails in plan
+  generation (same execution boundary as above; `tests/test_legend_bridge.py`).
+  **Resolved the single-element `~[a]` bracket asymmetry**: bracket presence *is*
+  recoverable from the parse tree (`columnBuilders.BRACKET_OPEN`), and the real
+  engine keeps `~[prod]` a one-element `ColSpecArray` (the `pivot` overload needs
+  it), so `_lower_column_builders` now returns the *Array* family
+  (`ColSpecArray` / `FuncColSpecArray` / `AggColSpecArray`) for a single
+  *bracketed* `~[a]` while a bracketless `~a` still lowers to the scalar -- a shared
+  change exercised by select / extend / groupBy (all existing round trips still
+  pass). Deferred follow-ons:
     - **`join` / `asOfJoin`** -- relation joins.
-    - **`sort` / `pivot`** -- ordering and the pivot reshape (next verb slice).
     - **window / OLAP functions** -- `over`, ranking / running aggregates.
     - **a `Frame` fluent class** -- a higher-level relation-query builder over
       the free verbs.

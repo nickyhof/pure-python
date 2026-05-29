@@ -15,7 +15,20 @@ import pytest
 from pure_python import m3
 from pure_python.compile import compile_class, from_pure, to_pure_module
 from pure_python.compile.annotations import Body
-from pure_python.compile.expressions import Expr, agg, c, call, col, cols, fcol, lam, tds
+from pure_python.compile.expressions import (
+    Expr,
+    agg,
+    array,
+    asc,
+    c,
+    call,
+    col,
+    cols,
+    desc,
+    fcol,
+    lam,
+    tds,
+)
 from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
@@ -245,6 +258,63 @@ def test_legend_parses_and_compiles_simple_relation_verb_chain():
     )
     # COMPILE: every verb resolves to a relation function; compilation succeeds
     # and only plan generation hits the upstream execution boundary.
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_parses_and_compiles_dsl_sort_query():
+    # `sort` over a `#TDS{...}#` literal PARSES and COMPILES via the real engine.
+    # The multi-key list form `[~id->ascending(), ~grp->descending()]` (an
+    # `array` of `SortInfo`s) resolves to `sort_Relation_1__SortInfo_MANY__Relation_1_`;
+    # compilation succeeds and only plan generation hits the upstream execution
+    # boundary ("... is not supported yet"), the same as the filter / groupBy
+    # cases. `ascending` / `descending` are the engine's direction function names
+    # (the short `asc` / `desc` have no relation overload).
+    query = call(
+        "sort",
+        tds("id,grp\n1,1\n2,0"),
+        array(asc(col("id")), desc(col("grp"))),
+    )
+    emitted = _expression(query)
+    assert emitted == (
+        "#TDS{id,grp\n1,1\n2,0}#->sort([~id->ascending(), ~grp->descending()])"
+    )
+    # PARSE: the wrapping function appears in the parsed model.
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    # COMPILE: `sort` resolves to a relation function; only plan generation fails.
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_parses_and_compiles_dsl_pivot_query():
+    # `pivot` over a `#TDS{...}#` literal PARSES and COMPILES via the real engine.
+    # The pivot column spec `~[prod]` (a one-element `ColSpecArray`) plus the
+    # aggregation `~amount:{r|...}:{c|...}` resolve to
+    # `pivot_Relation_1__ColSpecArray_1__AggColSpec_1__Relation_1_`; compilation
+    # succeeds and only plan generation hits the upstream execution boundary
+    # ("... is not supported yet"). The single-element `~[prod]` must stay a
+    # `ColSpecArray` (not collapse to a scalar `ColSpec`) for this overload to
+    # resolve -- the bracket-presence fix makes the round trip preserve it.
+    query = call(
+        "pivot",
+        tds("id,prod,amt\n1,a,10\n1,b,20"),
+        cols("prod"),
+        agg("amount", lam(["r"], lambda r: r.amt), lam(["c"], lambda c: c.sum())),
+    )
+    emitted = _expression(query)
+    assert emitted == (
+        "#TDS{id,prod,amt\n1,a,10\n1,b,20}#"
+        "->pivot(~[prod], ~amount:{r | $r.amt}:{c | $c->sum()})"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
     with pytest.raises(Exception, match="not supported yet"):
         bridge.evaluate("|" + emitted)
 

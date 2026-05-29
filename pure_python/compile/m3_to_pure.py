@@ -223,10 +223,39 @@ def _expression(vs) -> str:
             return vs.values[0]
         if not vs.values:
             return "[]"
-        if len(vs.values) == 1:
+        if len(vs.values) == 1 and not _is_node(vs.values[0]):
             return _literal(vs.values[0])
-        return "[" + ", ".join(_literal(v) for v in vs.values) + "]"
+        # A collection `[a, b, c]`: each element is either a scalar literal or a
+        # nested expression node (e.g. `[~a->ascending(), ~b->descending()]` for a
+        # `sort`). `array(...)` builds these; `pure_expr` lowers them back.
+        return "[" + ", ".join(_collection_element(v) for v in vs.values) + "]"
     raise TypeError(f"cannot emit value specification {vs!r}")
+
+
+def _is_node(value: object) -> bool:
+    """A collection element that is itself an expression node, not a raw scalar.
+
+    Mirrors :data:`pure_python.compile.expressions._PASSTHROUGH_NODES` plus the
+    ``ValueSpecification`` base -- the set of things ``array`` / ``coerce`` keep as
+    nodes (so each is emitted via :func:`_expression`, not :func:`_literal`)."""
+    return isinstance(
+        value,
+        (
+            m3.ValueSpecification,
+            m3.LambdaFunction,
+            m3.ColSpec,
+            m3.ColSpecArray,
+            m3.FuncColSpec,
+            m3.FuncColSpecArray,
+            m3.AggColSpec,
+            m3.AggColSpecArray,
+        ),
+    )
+
+
+def _collection_element(value: object) -> str:
+    """Emit one ``[...]`` element: a nested node via :func:`_expression`, else a literal."""
+    return _expression(value) if _is_node(value) else _literal(value)
 
 
 def _function_body(fd: m3.FunctionDefinition) -> str:
