@@ -150,6 +150,15 @@ def _is_tds(vs: m3.InstanceValue) -> bool:
     return generic is not None and isinstance(generic.rawType, m3.RelationType)
 
 
+def _func_col_spec(spec: m3.FuncColSpec) -> str:
+    """Render a ``FuncColSpec`` as the un-``~``'d ``name:{lambda}`` core form.
+
+    Shared by the bracketless ``~name:{...}`` and the bracketed
+    ``~[a:{...}, b:{...}]`` emits so the lambda spelling is identical in both.
+    """
+    return f"{spec.name}:{_expression(spec.function)}"
+
+
 def _expression(vs) -> str:
     """Render a ``ValueSpecification`` (or relation-layer node) body as Pure source.
 
@@ -183,6 +192,14 @@ def _expression(vs) -> str:
         return f"~{vs.name}"
     if isinstance(vs, m3.ColSpecArray):
         return "~[" + ", ".join(vs.names) + "]"
+    if isinstance(vs, m3.FuncColSpec):
+        # A function-bearing column spec `~name:{lambda}` (the bracketless form);
+        # the lambda reuses the `LambdaFunction` emit above.
+        return "~" + _func_col_spec(vs)
+    if isinstance(vs, m3.FuncColSpecArray):
+        # The grammar carries one leading `~` before the bracket; each inner spec
+        # is the un-`~`'d `name:{lambda}` form (`~[ oneColSpec, oneColSpec ]`).
+        return "~[" + ", ".join(_func_col_spec(s) for s in vs.funcSpecs) + "]"
     if isinstance(vs, m3.InstanceValue):
         if _is_tds(vs):  # a `#TDS{...}#` literal: emit its text verbatim
             return vs.values[0]

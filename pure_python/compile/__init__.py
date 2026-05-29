@@ -14,6 +14,8 @@ from .expressions import (
     coerce,
     col,
     cols,
+    fcol,
+    fcols,
     func,
     lam,
     lit,
@@ -55,4 +57,6 @@ __all__ = [
     "tds",
     "col",
     "cols",
+    "fcol",
+    "fcols",
 ]

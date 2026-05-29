@@ -89,9 +89,16 @@ def var(name: str) -> m3.VariableExpression:
 
 # Relation-layer argument nodes that are *not* ``ValueSpecification`` subclasses
 # (``LambdaFunction`` is a ``FunctionDefinition``; ``ColSpec`` / ``ColSpecArray``
-# derive from ``Any``) but are still valid function arguments -- a verb such as
-# ``filter`` / ``select`` takes them as a ``parametersValues`` entry.
-_PASSTHROUGH_NODES = (m3.LambdaFunction, m3.ColSpec, m3.ColSpecArray)
+# / ``FuncColSpec`` / ``FuncColSpecArray`` derive from ``Any``) but are still
+# valid function arguments -- a verb such as ``filter`` / ``select`` / ``extend``
+# takes them as a ``parametersValues`` entry.
+_PASSTHROUGH_NODES = (
+    m3.LambdaFunction,
+    m3.ColSpec,
+    m3.ColSpecArray,
+    m3.FuncColSpec,
+    m3.FuncColSpecArray,
+)
 
 
 def coerce(value: object) -> m3.ValueSpecification:
@@ -309,6 +316,31 @@ def cols(*names: str) -> m3.ColSpecArray:
     return m3.ColSpecArray(names=list(names))
 
 
+def fcol(name: str, function: m3.Function) -> m3.FuncColSpec:
+    """A function-bearing column spec ``~name:{r | <body>}`` (``m3.FuncColSpec``).
+
+    ``function`` is the derived-column expression, typically a :func:`lam`-built
+    ``LambdaFunction`` (e.g. ``fcol("doubled", lam(["r"], lambda r: r.id * 2))``
+    emits ``~doubled:{r | ($r.id * 2)}``). The ``extend`` verb takes one of these
+    (or a :func:`fcols` array) as its argument.
+    """
+    if not isinstance(function, m3.Function):
+        raise TypeError(
+            f"fcol expects a Function (e.g. a lam(...) LambdaFunction), got {function!r}"
+        )
+    return m3.FuncColSpec(name=name, function=function)
+
+
+def fcols(*funcspecs: m3.FuncColSpec) -> m3.FuncColSpecArray:
+    """A func-column-spec array ``~[a:{...}, b:{...}]`` (``m3.FuncColSpecArray``)."""
+    for spec in funcspecs:
+        if not isinstance(spec, m3.FuncColSpec):
+            raise TypeError(
+                f"fcols expects FuncColSpec entries (build with fcol), got {spec!r}"
+            )
+    return m3.FuncColSpecArray(funcSpecs=list(funcspecs))
+
+
 __all__ = [
     "Expr",
     "c",
@@ -323,4 +355,6 @@ __all__ = [
     "tds",
     "col",
     "cols",
+    "fcol",
+    "fcols",
 ]

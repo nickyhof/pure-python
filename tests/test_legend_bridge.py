@@ -15,7 +15,7 @@ import pytest
 from pure_python import m3
 from pure_python.compile import compile_class, from_pure, to_pure_module
 from pure_python.compile.annotations import Body
-from pure_python.compile.expressions import c, call, lam, tds
+from pure_python.compile.expressions import c, call, fcol, lam, tds
 from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
@@ -171,6 +171,19 @@ def test_legend_parses_dsl_tds_query():
     # the parsed model.
     emitted = _expression(call("filter", tds("id,grp\n1,1\n2,0"), lam(["r"], lambda r: r.grp > 0)))
     assert emitted == "#TDS{id,grp\n1,1\n2,0}#->filter({r | ($r.grp > 0)})"
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(e.get("_type") == "function" and e.get("package") == "test" for e in model["elements"])
+
+
+def test_legend_parses_dsl_tds_extend_query():
+    # A `FuncColSpec` (`~c:{r|...}`) + the `extend` verb over a `#TDS{...}#`
+    # literal PARSES and COMPILES via the real engine (same TDS extensions as
+    # the filter case). Execution is NOT asserted -- relation execution is blocked
+    # upstream on this engine build (see test_legend_java_backend_lacks_relation_size_execution).
+    emitted = _expression(
+        call("extend", tds("id\n1\n2"), fcol("doubled", lam(["r"], lambda r: r.id * 2)))
+    )
+    assert emitted == "#TDS{id\n1\n2}#->extend(~doubled:{r | ($r.id * 2)})"
     model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
     assert any(e.get("_type") == "function" and e.get("package") == "test" for e in model["elements"])
 

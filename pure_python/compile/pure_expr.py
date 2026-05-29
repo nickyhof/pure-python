@@ -30,7 +30,7 @@ from pure_python import m3
 from pure_python.codegen._pure_antlr.M3CoreLexer import M3CoreLexer
 from pure_python.codegen._pure_antlr.M3CoreParser import M3CoreParser
 
-from .expressions import call, col, cols, lam, lit, prop, tds, var
+from .expressions import call, col, cols, fcol, fcols, lam, lit, prop, tds, var
 
 # Pure infix symbol -> internal core-function name (inverse of
 # :data:`pure_python.compile.m3_to_pure._INFIX_OPERATORS`).
@@ -192,22 +192,50 @@ def _lower_atomic(nae) -> m3.ValueSpecification:
 
 
 def _lower_column_builders(column_builders):
-    """Lower simple ``~col`` / ``~[a, b]`` column specs.
+    """Lower ``~col`` / ``~[a, b]`` simple and ``~c:{r|...}`` func column specs.
 
-    A single ``oneColSpec`` with no lambda / aggregation function becomes a
-    ``ColSpec``; multiple become a ``ColSpecArray``. The Function-bearing
-    ``FuncColSpec`` / ``AggColSpec`` forms are intentionally out of scope here.
+    A simple ``oneColSpec`` (no lambda / aggregation function) becomes a
+    ``ColSpec``; a func-bearing one (``columnName : anyLambda``, no
+    ``extraFunction``) becomes a ``FuncColSpec``. A single spec yields the scalar
+    form, multiple the array (``ColSpecArray`` / ``FuncColSpecArray``). The
+    aggregation ``AggColSpec`` form (``~c:{map}:{agg}``, an ``extraFunction``) is
+    still out of scope, and mixing simple + func specs in one ``~[...]`` is
+    rejected.
     """
     specs = column_builders.oneColSpec()
+    simple_names: list[str] = []
+    func_specs: list[m3.FuncColSpec] = []
     for spec in specs:
-        if spec.anyLambda() is not None or spec.extraFunction() is not None:
+        if spec.extraFunction() is not None:
+            # `~c:{map}:{agg}` -- an AggColSpec, deferred to the groupBy slice.
             raise ValueError(
-                f"function-bearing column spec is not supported: {spec.getText()!r}"
+                f"aggregation column spec is not supported: {spec.getText()!r}"
             )
-    names = [spec.columnName().getText() for spec in specs]
-    if len(names) == 1:
-        return col(names[0])
-    return cols(*names)
+        any_lambda = spec.anyLambda()
+        if any_lambda is not None:
+            lambda_function = any_lambda.lambdaFunction()
+            if lambda_function is None:
+                # A bare `{| ...}` pipe / `p | ...` form is not produced by `fcol`.
+                raise ValueError(
+                    f"unsupported func column spec lambda: {spec.getText()!r}"
+                )
+            func_specs.append(
+                fcol(spec.columnName().getText(), _lower_lambda(lambda_function))
+            )
+        else:
+            simple_names.append(spec.columnName().getText())
+    if simple_names and func_specs:
+        raise ValueError(
+            "mixing simple and function-bearing column specs in one ~[...] "
+            "is not supported"
+        )
+    if func_specs:
+        if len(func_specs) == 1:
+            return func_specs[0]
+        return fcols(*func_specs)
+    if len(simple_names) == 1:
+        return col(simple_names[0])
+    return cols(*simple_names)
 
 
 def _lower_lambda(lambda_function) -> m3.LambdaFunction:
