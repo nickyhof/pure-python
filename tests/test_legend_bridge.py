@@ -15,7 +15,7 @@ import pytest
 from pure_python import m3
 from pure_python.compile import compile_class, from_pure, to_pure_module
 from pure_python.compile.annotations import Body
-from pure_python.compile.expressions import agg, c, call, cols, fcol, lam, tds
+from pure_python.compile.expressions import Expr, agg, c, call, col, cols, fcol, lam, tds
 from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
@@ -207,6 +207,46 @@ def test_legend_parses_dsl_tds_group_by_query():
     )
     model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
     assert any(e.get("_type") == "function" and e.get("package") == "test" for e in model["elements"])
+
+
+def test_legend_parses_and_compiles_simple_relation_verb_chain():
+    # A chain of the simple relation verbs (`drop` / `distinct` / `limit`, plus
+    # `slice` / `rename` / `concatenate`) over a `#TDS{...}#` literal both PARSES
+    # and COMPILES via the real engine. None need new lowering -- they are plain
+    # arrow calls over already-handled atomics (int literals, relations, `~col`
+    # colspecs). Each verb resolves to a `meta::pure::functions::relation::<verb>`
+    # function; compilation succeeds and only plan generation fails ("... is not
+    # supported yet"), the same execution boundary as the filter / groupBy cases
+    # (see test_legend_java_backend_lacks_relation_size_execution). `take` was
+    # probed and REJECTED -- it has no relation overload (it matched the
+    # collection `take` and failed with "Unhandled value type: ...relation::TDS"),
+    # so it is excluded from the verb set.
+    chain = (
+        Expr(tds("id,grp\n1,1\n2,0\n2,0"))
+        .rename(col("id"), col("identifier"))
+        .concatenate(tds("identifier,grp\n3,1\n4,0"))
+        .drop(1)
+        .slice(0, 10)
+        .distinct()
+        .limit(5)
+    )
+    emitted = _expression(chain.node)
+    assert emitted == (
+        "#TDS{id,grp\n1,1\n2,0\n2,0}#"
+        "->rename(~id, ~identifier)"
+        "->concatenate(#TDS{identifier,grp\n3,1\n4,0}#)"
+        "->drop(1)->slice(0, 10)->distinct()->limit(5)"
+    )
+    # PARSE: the wrapping function appears in the parsed model.
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    # COMPILE: every verb resolves to a relation function; compilation succeeds
+    # and only plan generation hits the upstream execution boundary.
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
 
 
 def test_legend_java_backend_lacks_relation_size_execution():

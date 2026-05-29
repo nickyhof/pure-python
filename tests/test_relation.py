@@ -390,3 +390,118 @@ def test_round_trip_group_by_query():
         agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum())),
     )
     _assert_round_trips(node)
+
+
+# --- simple relation verbs --------------------------------------------------
+# `limit` / `drop` / `slice` / `distinct` / `concatenate` / `rename` need no new
+# lowering: they are plain `SimpleFunctionExpression` calls over already-handled
+# atomics (int literals, `#TDS{}#` relations, `~col` colspecs), so they ride the
+# existing `call` / fluent arrow path and reverse-parse. The Legend engine
+# confirms each resolves to a `meta::pure::functions::relation::<verb>` function
+# (see `tests/test_legend_bridge.py`); `take` was probed and REJECTED -- it has
+# no relation overload, matching the collection `take` instead, so it is not a
+# relation verb and is excluded here.
+
+def test_fluent_limit_equals_free_builder():
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).limit(5)
+    builder = call("limit", tds("id,grp\n1,1\n2,0"), 5)
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_drop_equals_free_builder():
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).drop(2)
+    builder = call("drop", tds("id,grp\n1,1\n2,0"), 2)
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_slice_equals_free_builder():
+    # A two-arg verb exercises the fluent `_Accessor` *args passthrough.
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).slice(0, 10)
+    builder = call("slice", tds("id,grp\n1,1\n2,0"), 0, 10)
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_distinct_equals_free_builder():
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).distinct()
+    builder = call("distinct", tds("id,grp\n1,1\n2,0"))
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_concatenate_equals_free_builder():
+    # The second relation is another `#TDS{}#` literal.
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).concatenate(tds("id,grp\n3,1\n4,0"))
+    builder = call("concatenate", tds("id,grp\n1,1\n2,0"), tds("id,grp\n3,1\n4,0"))
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_rename_equals_free_builder():
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).rename(col("old"), col("new"))
+    builder = call("rename", tds("id,grp\n1,1\n2,0"), col("old"), col("new"))
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_emit_limit_query():
+    node = call("limit", tds("id,grp\n1,1\n2,0"), 5)
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->limit(5)"
+
+
+def test_emit_drop_query():
+    node = call("drop", tds("id,grp\n1,1\n2,0"), 2)
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->drop(2)"
+
+
+def test_emit_slice_query():
+    node = call("slice", tds("id,grp\n1,1\n2,0"), 0, 10)
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->slice(0, 10)"
+
+
+def test_emit_distinct_query():
+    node = call("distinct", tds("id,grp\n1,1\n2,0"))
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->distinct()"
+
+
+def test_emit_concatenate_query():
+    node = call("concatenate", tds("id,grp\n1,1\n2,0"), tds("id,grp\n3,1\n4,0"))
+    assert _expression(node) == (
+        "#TDS{id,grp\n1,1\n2,0}#->concatenate(#TDS{id,grp\n3,1\n4,0}#)"
+    )
+
+
+def test_emit_rename_query():
+    node = call("rename", tds("id,grp\n1,1\n2,0"), col("old"), col("new"))
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->rename(~old, ~new)"
+
+
+def test_emit_simple_verb_chain():
+    node = Expr(tds("id,grp\n1,1\n2,0")).drop(1).distinct().limit(5).node
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->drop(1)->distinct()->limit(5)"
+
+
+def test_round_trip_limit_query():
+    _assert_round_trips(call("limit", tds("id,grp\n1,1\n2,0"), 5))
+
+
+def test_round_trip_drop_query():
+    _assert_round_trips(call("drop", tds("id,grp\n1,1\n2,0"), 2))
+
+
+def test_round_trip_slice_query():
+    _assert_round_trips(call("slice", tds("id,grp\n1,1\n2,0"), 0, 10))
+
+
+def test_round_trip_distinct_query():
+    _assert_round_trips(call("distinct", tds("id,grp\n1,1\n2,0")))
+
+
+def test_round_trip_concatenate_query():
+    node = call("concatenate", tds("id,grp\n1,1\n2,0"), tds("id,grp\n3,1\n4,0"))
+    _assert_round_trips(node)
+
+
+def test_round_trip_rename_query():
+    _assert_round_trips(call("rename", tds("id,grp\n1,1\n2,0"), col("old"), col("new")))
+
+
+def test_round_trip_simple_verb_chain():
+    node = Expr(tds("id,grp\n1,1\n2,0")).drop(1).distinct().limit(5).node
+    _assert_round_trips(node)
