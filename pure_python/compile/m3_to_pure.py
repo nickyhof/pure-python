@@ -45,6 +45,18 @@ _INFIX_OPERATORS: dict[str, str] = {
     "greaterThanEqual": ">=",
 }
 
+# Window / OLAP constructors emitted as a *prefix* call ``fn(a, b, c)`` rather than
+# the default arrow form ``a->fn(b, c)``. These are the relation window functions
+# whose first argument is NOT a relation receiver: ``over`` (the window spec the
+# engine writes ``over(~grp, ...)`` and the canonical OLAP form uses), the frame
+# constructors ``rows`` / ``_range``, and the frame-bound sentinel ``unbounded``.
+# The engine *also* accepts the arrow spelling for ``over`` (``~grp->over(...)``),
+# but ``rows`` / ``_range`` / ``unbounded`` have no relation receiver to arrow
+# from, so prefix is required; emitting ``over`` prefix too matches the engine's
+# own canonical OLAP form. The inverse (a prefix call -> ``call(name, *args)``)
+# lives in :mod:`pure_python.compile.pure_expr`. Kept deliberately tight.
+_PREFIX_FUNCTIONS: frozenset[str] = frozenset({"over", "rows", "_range", "unbounded"})
+
 
 def _bounds(mult: m3.Multiplicity | None) -> tuple[int, int | None]:
     if mult is None:
@@ -197,6 +209,12 @@ def _expression(vs) -> str:
             left = _expression(vs.parametersValues[0])
             right = _expression(vs.parametersValues[1])
             return f"({left} {symbol} {right})"
+        if vs.functionName in _PREFIX_FUNCTIONS:
+            # A window / OLAP constructor emitted prefix-style `fn(a, b, c)`: no
+            # arg is a receiver, so every parameter is an argument (zero args ->
+            # `unbounded()`). The inverse lowering is in `pure_expr`.
+            args = ", ".join(_expression(p) for p in vs.parametersValues)
+            return f"{vs.functionName}({args})"
         if not vs.parametersValues:  # defensive -- builders always supply a receiver
             return f"{vs.functionName}()"
         receiver = _expression(vs.parametersValues[0])
