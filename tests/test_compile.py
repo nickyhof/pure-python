@@ -17,6 +17,8 @@ from pure_python.compile import (
     compile_enumeration,
     to_module,
 )
+from pure_python.compile.annotations import Body
+from pure_python.compile.m3_to_pure import _expression
 
 import typing
 
@@ -244,6 +246,26 @@ def test_qualified_property_from_python_property():
     assert summary.id == "summary()"
     assert isinstance(summary.genericType.rawType, m3.PrimitiveType)
     assert summary.genericType.rawType.name == "String"
+    assert summary.expressionSequence == []  # signature-only -> no body
+
+
+def test_qualified_property_body_marker_populates_expression_sequence():
+    @dataclasses.dataclass
+    class Person:
+        first: str
+        last: str
+
+        @property
+        def fullName(
+            self,
+        ) -> typing.Annotated[str, Body(lambda this: this.first + " " + this.last)]:
+            ...
+
+    cls = compile_class(Person, package="demo")
+    qp = cls.qualifiedProperties[0]
+    assert qp.name == "fullName"
+    assert len(qp.expressionSequence) == 1
+    assert _expression(qp.expressionSequence[0]) == "$this.first->plus(' ')->plus($this.last)"
 
 
 def _type_sig(generic) -> str:

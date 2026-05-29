@@ -48,9 +48,10 @@ Grouped by status, with pointers to the relevant code.
   `m3_to_pure` emits `Association` blocks and `pure_to_m3` lifts them back, with
   an `m3 -> Pure -> m3` round-trip test.
 - [x] **Parse qualified / derived properties in the readable grammar.**
-  `grammar.py` captures them by signature (parameters and lambda body skipped);
-  `m3_to_pure` emits `name() {} : Type[mult];` and `pure_to_m3` lifts them into
-  `m3.QualifiedProperty`, so they now survive the round trip.
+  `grammar.py` captures them by signature; `m3_to_pure` emits
+  `name() { [] } : Type[mult];` and `pure_to_m3` lifts them into
+  `m3.QualifiedProperty`, so they now survive the round trip. Their expression
+  bodies are now modelled too -- see the expression layer below.
 - [x] **Preserve property-level stereotypes and tagged values across the Pure
   boundary.** `grammar.py` now parses `<<profile.value>>` and
   `{profile.tag = 'v'}` annotations (instead of skipping them) and `pure_to_m3`
@@ -95,9 +96,21 @@ Grouped by status, with pointers to the relevant code.
 - [ ] **JSON (de)serialization of `m3` graphs.** Today `m3` graphs only render
   to source. A `to_json` / `from_json` makes them persistable and is a stepping
   stone toward the protocol model above.
-- [ ] **Expression / lambda / constraint representation.** The
-  `ValueSpecification` tree is generated but nothing populates function bodies,
-  constraints, or derived-property expressions.
+- [x] **Expression representation (slice 1).** `compile/expressions.py` builds
+  `ValueSpecification` graphs -- explicit builders (`lit`, `var`, `call`/`func`,
+  `prop`) plus a PyLegend-style DSL (`c(...)`, operator overloads, fluent
+  `.method(...)`, property access). A `Body(...)` marker on a `@property` return
+  type populates a `QualifiedProperty.expressionSequence`; `m3_to_pure` emits the
+  body in uniform arrow form (`$this.first->plus(' ')->plus($this.last)`); and
+  `compile/pure_expr.py` re-parses the captured body so the graph survives
+  `Python -> m3 -> Pure -> m3` (asserted in `tests/test_expressions.py` and the
+  full round-trip test). Out of slice 1: collection/list literals, multi-arg
+  lambdas, `if`/`case`/`let`, multi-statement bodies, milestoning sugar,
+  `Constraint` / `ConcreteFunctionDefinition` bodies, and m3->Python(.py) emission
+  of bodies (signature-only there).
+- [ ] **Lambda / constraint representation.** `Constraint` and
+  `ConcreteFunctionDefinition` bodies, and multi-parameter lambdas, remain
+  unmodelled.
 - [ ] **Project hygiene.** Add a `py.typed` marker (downstream typing), a CI
   workflow running the tests + drift check, and a console entry point for the
   generator.

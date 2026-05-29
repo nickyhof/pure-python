@@ -7,11 +7,15 @@ module is skipped, so the default ``pytest`` run is unaffected.
 
 from __future__ import annotations
 
+import typing
 from dataclasses import dataclass
 
 import pytest
 
 from pure_python.compile import compile_class, from_pure, to_pure_module
+from pure_python.compile.annotations import Body
+from pure_python.compile.expressions import c
+from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
 bridge = LegendBridge()
@@ -86,6 +90,38 @@ def test_legend_executes_pure_expressions():
     assert bridge.evaluate("|1 + 1") == 2
     assert bridge.evaluate("|[1, 2, 3]->sum()") == 6
     assert bridge.evaluate("|'a' + 'b'") == "ab"
+
+
+def test_legend_accepts_dsl_emitted_arrow_expression():
+    # The DSL emits a uniform arrow form. Legend's real grammar parser accepts
+    # it inside a function body. (Direct *execution* of `a->plus(b)` is skipped:
+    # Legend's core arithmetic functions bind variadically -- `plus(Integer[*])`
+    # -- so `1->plus(1)` is a two-arg call that the stdlib has no match for; the
+    # infix `1 + 1` desugars to `plus([1, 1])` instead. The arrow form is a
+    # deliberate, round-trippable representation, not an executable spelling of
+    # variadic core functions.)
+    plus = _expression((c(1) + c(1)).node)
+    assert plus == "1->plus(1)"
+    pure = "function demo::run(): Integer[1] { 1->plus(1) }"
+    model = bridge.parse(pure)
+    names = {e.get("name") for e in model["elements"]}
+    assert any(n.startswith("run") for n in names)
+
+
+def test_legend_accepts_body_derived_property_model():
+    # A class with a Body-derived property, emitted to Pure, is accepted by the
+    # real Legend grammar parser (the body is no longer a `[]` placeholder).
+    @dataclass
+    class Item:
+        base: int
+
+        @property
+        def doubled(self) -> typing.Annotated[int, Body(lambda this: this.base * 2)]: ...
+
+    model = to_pure_module(compile_class(Item, package="demo"))
+    assert "doubled() { $this.base->times(2) }" in model
+    parsed = bridge.parse(model)
+    assert "Item" in {e.get("name") for e in parsed["elements"]}
 
 
 def test_legend_executes_over_a_generated_model():
