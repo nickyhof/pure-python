@@ -303,13 +303,11 @@ Grouped by status, with pointers to the relevant code.
   (`extend_Relation_1___Window_1__AggColSpec_1__Relation_1_`) column. The engine
   ALSO accepts the arrow spelling `~grp->over(...)`, but prefix is the engine's own
   canonical OLAP form and the frame/bound constructors have no receiver to arrow
-  from, so all four emit prefix (and only prefix is reverse-parsed). **DEFERRED**:
-  the named OLAP convenience functions (`rank`, `denseRank`, `rowNumber`,
-  `lag`/`lead`, running `cumulativeDistribution`, etc. -- these layer on top of the
-  same `over` window and can be added as plain verbs/calls later) and the
-  `_RangeInterval` duration-unit frame variant (`_range(n, DurationUnit, ...)`);
-  the coherent compilable subset above (partition + sort + `rows`/`_range` frame +
-  windowed `extend`) is delivered.
+  from, so all four emit prefix (and only prefix is reverse-parsed). The named OLAP
+  convenience functions are now **DELIVERED** (see "named OLAP functions" below);
+  **DEFERRED**: the `_RangeInterval` duration-unit frame variant
+  (`_range(n, DurationUnit, ...)`); the coherent compilable subset above (partition
+  + sort + `rows`/`_range` frame + windowed `extend`) is delivered.
 - [x] **legendql-style `Frame` query builder (slice 3).** A branded, **immutable**
   fluent facade over the relation verbs, all in `compile/frame.py` (re-exported as
   `compile.Frame`). It adds **no new representation**: a `Frame` wraps one relation
@@ -384,12 +382,68 @@ Grouped by status, with pointers to the relevant code.
       connection + runtime so a `#>{db.table}#` query compiles and executes against
       a real database (needs the protocol-model / store work, Tier 2).
   Deferred follow-ons:
-    - **named OLAP convenience funcs** -- `rank` / `denseRank` / `rowNumber` /
-      `lag` / `lead` etc. as plain verbs/calls layered over the same `over` window
-      (and a `Frame` method or two for them).
     - **a batched `evalMany` bridge command** -- compile the model once and
       evaluate many expressions in one JVM (a Java-side change, explicitly *not*
       bundled with this slice).
+- [x] **Named OLAP functions (slice 4).** The relation window functions, written
+  the pylegend way as methods on the partial-frame proxy `p` inside a windowed
+  `extend` column lambda `{p, w, r | ...}`. No new m3 type and no new emit/lowering
+  -- they are ordinary `call(...)` arrow graphs that already round-trip through
+  `pure_expr`; the ONLY new machinery is a tiny snake->camel alias map. The crux:
+  pylegend spells the multi-word functions snake_case (`row_number` / `dense_rank`),
+  but Pure's are camelCase (`rowNumber` / `denseRank`) and the Legend engine
+  REJECTS the snake forms ("Function does not exist 'row_number'"). So
+  `_OLAP_METHOD_ALIASES = {"row_number": "rowNumber", "dense_rank": "denseRank"}`
+  is applied in `_Accessor.__call__` (the method-CALL path) ONLY -- never in
+  `__getattr__` property access (`r.order_id` stays the column), and never for
+  non-OLAP calls (`$c->sum()` / `$x->ascending()` are untouched). Single-word names
+  (`rank` / `lag` / `lead`) and the direct camelCase (`p.rowNumber(r)`) already
+  match Pure and pass through unchanged. **Engine-resolved compilable forms** (each
+  reaches the `extend_..._Window_..._{FuncColSpec,AggColSpec}_...` plan-gen boundary
+  via the Legend bridge): `rowNumber($p, $r)` (p, r -- NOT p, w, r),
+  `rank($p, $w, $r)`, `denseRank($p, $w, $r)`, `lag($p, $r[, offset])` /
+  `lead($p, $r[, offset])` (p, r + optional `Integer` offset), and `percentRank` /
+  `cumulativeDistribution($p, $w, $r)` / `ntile($p, $r, n)`. A **windowed aggregate**
+  (cumulative sum etc.) is the existing agg-colspec windowed `extend` column
+  `~c:{p, w, r | $r.i}:{y | $y->sum()}` (resolving the `AggColSpec` overload) -- NOT
+  a `$p->sum(...)` proxy call (the engine REJECTS that; only the collection
+  `sum(Number[*])` matches). Validation: `tests/test_relation.py` (jar-free) asserts
+  the snake spelling emits the camelCase function, equals the direct camelCase under
+  `canon`, leaves property access / non-OLAP calls untouched, and round-trips each
+  OLAP windowed `extend` `Python -> m3 -> Pure -> m3`; `tests/test_legend_bridge.py`
+  PARSES + COMPILES each surviving OLAP function and the windowed aggregate via the
+  real engine and pins the snake-name rejection.
+- [x] **pylegend `legendql_api`-additive `Frame` alignment (slice 4).** All in
+  `compile/`, all ADDITIVE -- the Pure-native `Frame` forms keep working unchanged.
+  Aligns the `Frame` surface to FINOS pylegend's `legendql_api` primary spellings:
+    - **Subscript columns** -- `Expr.__getitem__` so `r["Order Id"]` reaches a
+      column with spaces / keywords, building the SAME node as attribute access
+      `r.amt` (canon-equal), alongside it.
+    - **String join kinds** -- `Frame.join(..., kind=...)` (and the convenience
+      family) accept pylegend's strings `'INNER'` / `'LEFT_OUTER'` / `'RIGHT_OUTER'`
+      / `'FULL'` (case-insensitive) via `join_kind`, mapping the SQL-ish names to
+      Pure members (`LEFT_OUTER` -> `JoinKind.LEFT`, `RIGHT_OUTER` -> `JoinKind.RIGHT`);
+      the Pure-native `JoinKind.*` enum-ref still passes through.
+    - **`window(partition_by=, order_by=, frame=)`** -- a helper (re-exported and as
+      `Frame.window`) returning the same `over(...)` node, so the pylegend two-step
+      `f.window_extend(f.window(...), ("rn", lambda p, w, r: p.row_number(r)))`
+      works; `partition_by` is a name / list / spec, `order_by` an `asc`/`desc` or
+      bare name (ascending) or a list of them. Direct `over(...)` still usable.
+    - **`Frame.rename`** -- accepts a mapping (`rename({"old": "new"})`) or kwargs
+      (`rename(old="new")`) alongside the positional `rename(old, new)`; several
+      pairs are emitted as a CHAIN of `->rename(~old, ~new)` verbs (one per entry --
+      the chained form compiles, verified via the bridge).
+    - **`Frame.as_of_join`** -- accepts pylegend's optional
+      `(other, match_function, join_condition=None)`, wiring the 4-arg `asOfJoin`
+      overload when given (and keeping the 3-arg form when omitted); both compile.
+    - A `Frame` passed as `other` is still unwrapped to its node everywhere.
+  Validation: `tests/test_frame.py` (jar-free) asserts each additive form builds the
+  same graph as the Pure-native one under `canon` (subscript == attribute, string
+  kind == enum kind, `window()` == `over()`, dict/kwargs `rename` == chained
+  positional, 4-arg `as_of_join`), exact `.to_pure()` per form and a full
+  pylegend-style chain; `tests/test_legend_bridge.py` PARSES + COMPILES the
+  pylegend-style chain (subscript + string join kind + `window()` + an OLAP column)
+  and the 4-arg `as_of_join` via the real engine.
 - [ ] **Lambda / constraint representation.** `Constraint` and
   `ConcreteFunctionDefinition` bodies remain unmodelled. (Multi-parameter
   lambdas are now built by `lam` -- see the relation/TDS foundation above.)

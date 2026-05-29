@@ -25,6 +25,7 @@ from .expressions import (
     fcol,
     fcols,
     func,
+    join_kind,
     lam,
     lit,
     not_,
@@ -35,6 +36,7 @@ from .expressions import (
     tds,
     unbounded,
     var,
+    window,
 )
 from .frame import Frame
 from .m3_to_pure import to_pure, to_pure_module
@@ -71,6 +73,7 @@ __all__ = [
     "db_table",
     "enum_ref",
     "JoinKind",
+    "join_kind",
     "col",
     "cols",
     "fcol",
@@ -81,6 +84,7 @@ __all__ = [
     "asc",
     "desc",
     "over",
+    "window",
     "rows",
     "range_",
     "unbounded",

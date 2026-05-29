@@ -60,8 +60,10 @@ from .expressions import (
     desc,
     fcol,
     fcols,
+    join_kind,
     lam,
     tds,
+    window,
 )
 from .m3_to_pure import _expression
 
@@ -187,16 +189,19 @@ class Frame:
         self,
         other: object,
         on: Callable[[Expr, Expr], object],
-        kind: m3.InstanceValue = JoinKind.INNER,
+        kind: object = JoinKind.INNER,
     ) -> "Frame":
         """``->join(other, kind, {l, r | <on>})`` -- relational join.
 
         ``other`` is the right relation (a ``Frame`` / raw node / :func:`tds` /
         :func:`db_table`), ``on`` a two-row condition lambda (``lambda l, r: l.id
-        == r.fid``) wired via :func:`lam`, and ``kind`` one of the
-        :class:`JoinKind` constants (default ``INNER``).
+        == r.fid``) wired via :func:`lam`, and ``kind`` either a :class:`JoinKind`
+        constant (default ``INNER``) or a pylegend string -- ``'INNER'`` /
+        ``'LEFT_OUTER'`` / ``'RIGHT_OUTER'`` / ``'FULL'`` (case-insensitive;
+        ``LEFT_OUTER`` -> ``JoinKind.LEFT``, ``RIGHT_OUTER`` -> ``JoinKind.RIGHT``),
+        normalized via :func:`join_kind`.
         """
-        return self._verb("join", _unwrap(other), kind, lam(_JOIN, on))
+        return self._verb("join", _unwrap(other), join_kind(kind), lam(_JOIN, on))
 
     def inner_join(self, other: object, on: Callable[[Expr, Expr], object]) -> "Frame":
         """:meth:`join` with ``JoinKind.INNER``."""
@@ -214,14 +219,30 @@ class Frame:
         """:meth:`join` with ``JoinKind.FULL``."""
         return self.join(other, on, JoinKind.FULL)
 
-    def as_of_join(self, other: object, on: Callable[[Expr, Expr], object]) -> "Frame":
-        """``->asOfJoin(other, {l, r | <on>})`` -- the 3-arg as-of (temporal) join.
+    def as_of_join(
+        self,
+        other: object,
+        on: Callable[[Expr, Expr], object],
+        join_condition: Callable[[Expr, Expr], object] | None = None,
+    ) -> "Frame":
+        """``->asOfJoin(other, {l, r | <match>}[, {l, r | <join>}])`` -- as-of join.
 
-        ``other`` is the right relation; ``on`` the two-row match condition
+        ``other`` is the right relation; ``on`` the two-row *match* condition
         (``lambda l, r: l.t >= r.rt``) wired via :func:`lam`. No ``JoinKind`` (the
-        3-arg overload takes none).
+        as-of overloads take none).
+
+        With ``join_condition`` omitted this is the 3-arg overload
+        (``asOfJoin_Relation_1__Relation_1__Function_1__Relation_1_``). pylegend's
+        ``as_of_join(other, match_function, join_condition=...)`` second condition
+        wires the 4-arg overload
+        (``asOfJoin_Relation_1__Relation_1__Function_1__Function_1__Relation_1_``),
+        emitting ``->asOfJoin(other, {match}, {join})`` -- both compile (verified
+        via the Legend bridge).
         """
-        return self._verb("asOfJoin", _unwrap(other), lam(_JOIN, on))
+        match = lam(_JOIN, on)
+        if join_condition is None:
+            return self._verb("asOfJoin", _unwrap(other), match)
+        return self._verb("asOfJoin", _unwrap(other), match, lam(_JOIN, join_condition))
 
     # -- ordering ------------------------------------------------------
     def sort(self, *specs: object) -> "Frame":
@@ -269,13 +290,43 @@ class Frame:
         return self._verb("concatenate", _unwrap(other))
 
     # -- renaming ------------------------------------------------------
-    def rename(self, old: str, new: str) -> "Frame":
-        """``->rename(~old, ~new)`` -- rename one column.
+    def rename(
+        self,
+        old: str | dict[str, str] | None = None,
+        new: str | None = None,
+        **column_renames: str,
+    ) -> "Frame":
+        """``->rename(~old, ~new)`` -- rename one or more columns.
 
-        Takes the old and new names as plain strings (built into scalar
-        :func:`col` specs), the cleanest two-argument form.
+        Three additive call shapes, all building the same graph:
+
+        * positional ``rename("old", "new")`` -- the Pure-native one-pair form.
+        * a mapping ``rename({"old": "new", ...})`` -- pylegend's
+          ``rename(column_renames)``.
+        * keyword ``rename(old="new", ...)`` -- pylegend kwargs.
+
+        Pure's ``rename`` takes ONE ``(~old, ~new)`` pair per call, so several
+        pairs are emitted as a *chain* of ``->rename(~old, ~new)`` verbs (one per
+        entry, in order; the chained form compiles -- verified via the Legend
+        bridge). Names are built into scalar :func:`col` specs.
         """
-        return self._verb("rename", col(old), col(new))
+        if isinstance(old, dict):
+            if new is not None:
+                raise ValueError("rename(mapping) takes no positional `new`")
+            pairs = list(old.items())
+        elif old is not None:
+            if new is None:
+                raise ValueError("rename(old, new) requires both names")
+            pairs = [(old, new)]
+        else:
+            pairs = []
+        pairs += list(column_renames.items())
+        if not pairs:
+            raise ValueError("rename requires at least one (old, new) pair")
+        frame = self
+        for old_name, new_name in pairs:
+            frame = frame._verb("rename", col(old_name), col(new_name))
+        return frame
 
     # -- pivot ---------------------------------------------------------
     def pivot(
@@ -296,6 +347,31 @@ class Frame:
         return self._verb("pivot", cols(*on_names), agg_spec)
 
     # -- window / OLAP -------------------------------------------------
+    @staticmethod
+    def window(
+        partition_by: object = None,
+        order_by: object = None,
+        frame: object = None,
+    ) -> m3.SimpleFunctionExpression:
+        """A pylegend-style ``over(...)`` window spec for :meth:`window_extend`.
+
+        Thin wrapper over the :func:`window` builder so the two-step pylegend OLAP
+        form reads on the ``Frame``::
+
+            f.window_extend(
+                f.window(partition_by="cust", order_by="id", frame=rows(unbounded(), 0)),
+                ("rn", lambda p, w, r: p.row_number(r)),
+            )
+
+        ``partition_by`` is a column name / list of names / ready-made
+        :func:`col` / :func:`cols` spec; ``order_by`` one or a list of
+        :func:`asc` / :func:`desc` ``SortInfo``s or bare names (a bare name =
+        ascending); ``frame`` an optional :func:`rows` / :func:`range_` frame.
+        Returns the SAME node :func:`over` does, so a direct ``over(...)`` is
+        still usable in :meth:`window_extend`.
+        """
+        return window(partition_by, order_by, frame)
+
     def window_extend(
         self,
         window: m3.SimpleFunctionExpression,
