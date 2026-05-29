@@ -11,15 +11,17 @@ Two layers sit here:
   matching core-function ``call``, and attribute access doubles as property
   access (``this.first``) and fluent function application (``c(4).exp()``)::
 
-      c(4) / 2                      # 4->divide(2)
-      c(3) - c(2)                   # 3->minus(2)
-      c(6) == 6                     # 6->eq(6)
-      c(1.0).exp().log()            # 1.0->exp()->log()
+      c(4) / 2                      # divide(4, 2)  -> emits (4 / 2)
+      c(3) - c(2)                   # minus(3, 2)   -> emits (3 - 2)
+      c(6) == 6                     # eq(6, 6)      -> emits (6 == 6)
+      c(1.0).exp().log()            # log(exp(1.0)) -> emits 1.0->exp()->log()
       c("hello world").substring(0, 4)
 
-These are the values authored into a derived-property body via the
-:class:`pure_python.compile.annotations.Body` marker, then emitted as real Pure
-by :mod:`pure_python.compile.m3_to_pure` and re-parsed by
+The operator builders all produce a core-function ``call`` node; the binary core
+operators emit as parenthesized *infix* and other functions as arrow form (see
+:mod:`pure_python.compile.m3_to_pure`). These are the values authored into a
+derived-property body via the :class:`pure_python.compile.annotations.Body`
+marker, then emitted as real Pure and re-parsed by
 :mod:`pure_python.compile.pure_expr`.
 """
 
@@ -131,6 +133,14 @@ class Expr:
     def __init__(self, node: m3.ValueSpecification):
         self.node = node
 
+    def __bool__(self) -> bool:
+        # `__eq__`/`__lt__`/... return an `Expr`, so chained comparisons
+        # (`a < b < c`) and `if expr:` would silently misbehave. Refuse instead.
+        raise TypeError(
+            "Expr has no truth value; chained comparisons and boolean use are "
+            "unsupported -- build calls explicitly"
+        )
+
     # -- arithmetic ----------------------------------------------------
     def __add__(self, other: object) -> "Expr":
         return Expr(call("plus", self.node, coerce(other)))
@@ -161,8 +171,8 @@ class Expr:
         return Expr(call("eq", self.node, coerce(other)))
 
     def __ne__(self, other: object) -> "Expr":  # type: ignore[override]
-        # `!=` is `eq` wrapped in `not`, so the reverse parser only needs `eq`.
-        return not_(call("eq", self.node, coerce(other)))
+        # A dedicated `notEqual` so `!=` emits and round-trips as infix.
+        return Expr(call("notEqual", self.node, coerce(other)))
 
     def __lt__(self, other: object) -> "Expr":
         return Expr(call("lessThan", self.node, coerce(other)))

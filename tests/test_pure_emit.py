@@ -228,16 +228,16 @@ def test_qualified_property_with_body_emits_and_round_trips_through_pure():
     cls = compile_class(Customer, package="demo")
     source = to_pure_module(cls)
     assert (
-        "fullName() { $this.firstName->plus(' ')->plus($this.lastName) } : String[1];"
+        "fullName() { (($this.firstName + ' ') + $this.lastName); } : String[1];"
         in source
     )
 
-    # The body graph survives m3 -> Pure -> m3 (re-emits to the same arrow form).
+    # The body graph survives m3 -> Pure -> m3 (re-emits to the same infix form).
     back = from_pure(source)["Customer"]
     qp = back.qualifiedProperties[0]
     assert len(qp.expressionSequence) == 1
     assert _expression(qp.expressionSequence[0]) == (
-        "$this.firstName->plus(' ')->plus($this.lastName)"
+        "(($this.firstName + ' ') + $this.lastName)"
     )
 
 

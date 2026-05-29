@@ -64,10 +64,14 @@ def _profile(name: str, profiles: dict[str, m3.Profile]) -> m3.Profile:
 
 
 def _body_expressions(body: str | None) -> list[m3.ValueSpecification]:
-    """Lower a captured qualified-property body, treating ``[]`` as no body."""
+    """Lower a captured qualified-property body, treating ``[]`` as no body.
+
+    A body may hold several ``;``-separated statements; lower every one so the
+    ``expressionSequence`` is preserved (not silently truncated to the first).
+    """
     if body is None or body == "[]":
         return []
-    return [pure_expr.parse_expression(body)]
+    return pure_expr.parse_statements(body)
 
 
 def from_pure(source: str) -> dict[str, m3.Type]:

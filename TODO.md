@@ -101,11 +101,14 @@ Grouped by status, with pointers to the relevant code.
   `prop`) plus a PyLegend-style DSL (`c(...)`, operator overloads, fluent
   `.method(...)`, property access). A `Body(...)` marker on a `@property` return
   type populates a `QualifiedProperty.expressionSequence`; `m3_to_pure` emits the
-  body in uniform arrow form (`$this.first->plus(' ')->plus($this.last)`); and
-  `compile/pure_expr.py` re-parses the captured body so the graph survives
+  body with binary core operators as parenthesized infix
+  (`(($this.first + ' ') + $this.last)`) -- the form Legend's stdlib executes --
+  and other functions in arrow form; and `compile/pure_expr.py` re-parses the
+  captured body (including infix and negative literals) so the graph survives
   `Python -> m3 -> Pure -> m3` (asserted in `tests/test_expressions.py` and the
-  full round-trip test). Out of slice 1: collection/list literals, multi-arg
-  lambdas, `if`/`case`/`let`, multi-statement bodies, milestoning sugar,
+  full round-trip test, and executed via the Legend bridge). Out of slice 1:
+  collection/list literals, multi-arg
+  lambdas, `if`/`case`/`let`, milestoning sugar,
   `Constraint` / `ConcreteFunctionDefinition` bodies, and m3->Python(.py) emission
   of bodies (signature-only there).
 - [ ] **Lambda / constraint representation.** `Constraint` and

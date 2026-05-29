@@ -8,22 +8,42 @@ classes / enumerations it references) and render readable Pure::
         <<pii.sensitive>> firstName : String[1];
         age : Integer[0..1];
         addresses : demo::Address[*];
-        fullName() { $this.firstName->plus($this.lastName) } : String[1];
+        fullName() { ($this.firstName + $this.lastName); } : String[1];
     }
 
 Type parameters, type arguments, stereotypes and tagged values are all
 rendered. Qualified (derived) properties carry their ``expressionSequence``
-body, emitted in uniform arrow form (``$this.firstName->plus(...)``) by
-:func:`_expression`; a signature-only qualified property (no body) still emits
-the ``[]`` placeholder. Associations are emitted too.
+body, emitted by :func:`_expression`. Binary core operators are emitted as
+fully parenthesized *infix* (``($this.firstName + ' ')``) -- this is what
+Legend's stdlib actually executes, since its arithmetic / comparison functions
+bind variadically and the arrow spelling (``1->plus(1)``) has no two-arg match.
+Every other function (``exp``, ``substring``, ``not`` ...) keeps the arrow form
+(``$this.first->substring(0, 4)``). A signature-only qualified property (no
+body) still emits the ``[]`` placeholder. Associations are emitted too.
 """
 
 from __future__ import annotations
 
 import datetime
 import decimal
+import math
 
 from pure_python import m3
+
+# Core binary functions emitted as parenthesized infix (the inverse table lives
+# in :mod:`pure_python.compile.pure_expr`). Anything not here is arrow-emitted.
+_INFIX_OPERATORS: dict[str, str] = {
+    "plus": "+",
+    "minus": "-",
+    "times": "*",
+    "divide": "/",
+    "eq": "==",
+    "notEqual": "!=",
+    "lessThan": "<",
+    "lessThanEqual": "<=",
+    "greaterThan": ">",
+    "greaterThanEqual": ">=",
+}
 
 
 def _bounds(mult: m3.Multiplicity | None) -> tuple[int, int | None]:
@@ -68,17 +88,43 @@ def _stereotypes(element: object) -> str:
     return f"<<{rendered}>> "
 
 
+def _escape_string(value: str) -> str:
+    """Escape a Python string for a Pure single-quoted literal.
+
+    Pure processes C-style backslash escapes inside single quotes (verified via
+    Legend: ``'a\\\\b'`` -> ``a\\b``, ``'o\\'clock'`` -> ``o'clock``), so the
+    backslash must be doubled first, then the quote and the control characters
+    escaped. :func:`pure_python.compile.pure_expr._unescape_string` is the exact
+    inverse so strings round-trip and stay Legend-acceptable.
+    """
+    return (
+        value.replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("\n", "\\n")
+        .replace("\t", "\\t")
+        .replace("\r", "\\r")
+    )
+
+
 def _literal(value: object) -> str:
     """Render a Python value as a Pure literal token (the shared escaper)."""
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, str):
-        return "'" + value.replace("'", "\\'") + "'"
+        return "'" + _escape_string(value) + "'"
     if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError(f"cannot emit non-finite float {value!r} as a Pure literal")
         text = repr(value)
         return text if any(c in text for c in ".eEnN") else f"{text}.0"
     if isinstance(value, decimal.Decimal):
         return f"{value}D"
+    # `bytes` (Pure `Byte`) and `datetime.time` (Pure `StrictTime`) are buildable
+    # in m3 but have no emittable literal grammar here yet.
+    if isinstance(value, (bytes, bytearray)):
+        raise NotImplementedError("emitting a Pure Byte literal is not supported")
+    if isinstance(value, datetime.time):
+        raise NotImplementedError("emitting a Pure StrictTime literal is not supported")
     if isinstance(value, datetime.datetime):
         return "%" + value.strftime("%Y-%m-%dT%H:%M:%S")
     if isinstance(value, datetime.date):
@@ -97,24 +143,44 @@ def _tagged_values(element: object) -> str:
 
 
 def _expression(vs: m3.ValueSpecification) -> str:
-    """Render a ``ValueSpecification`` body in uniform Pure arrow form."""
+    """Render a ``ValueSpecification`` body as Pure source.
+
+    Binary core operators emit as fully parenthesized infix; property access and
+    every other function keep the arrow form.
+    """
     if isinstance(vs, m3.VariableExpression):
         return f"${vs.name}"
     if isinstance(vs, m3.SimpleFunctionExpression):
         if vs.propertyName is not None:
             receiver = _expression(vs.parametersValues[0])
             return f"{receiver}.{vs.propertyName.values[0]}"
+        symbol = _INFIX_OPERATORS.get(vs.functionName)
+        if symbol is not None and len(vs.parametersValues) == 2:
+            left = _expression(vs.parametersValues[0])
+            right = _expression(vs.parametersValues[1])
+            return f"({left} {symbol} {right})"
+        if not vs.parametersValues:  # defensive -- builders always supply a receiver
+            return f"{vs.functionName}()"
         receiver = _expression(vs.parametersValues[0])
         args = ", ".join(_expression(p) for p in vs.parametersValues[1:])
         return f"{receiver}->{vs.functionName}({args})"
     if isinstance(vs, m3.InstanceValue):
-        return _literal(vs.values[0]) if vs.values else "[]"
+        if not vs.values:
+            return "[]"
+        if len(vs.values) == 1:
+            return _literal(vs.values[0])
+        return "[" + ", ".join(_literal(v) for v in vs.values) + "]"
     raise TypeError(f"cannot emit value specification {vs!r}")
 
 
 def _function_body(fd: m3.FunctionDefinition) -> str:
-    """Join an ``expressionSequence`` with ``;`` (a single expression -> itself)."""
-    return "; ".join(_expression(vs) for vs in fd.expressionSequence)
+    """Render an ``expressionSequence``: each statement terminated with ``;``.
+
+    Pure's ``codeBlock`` requires a trailing ``;`` after each non-final line, and
+    a single trailing ``;`` is harmless, so terminate every statement -- the
+    captured text then re-parses (see :func:`pure_expr.parse_expression`).
+    """
+    return " ".join(f"{_expression(vs)};" for vs in fd.expressionSequence)
 
 
 def _qualified_name(element: object) -> str:

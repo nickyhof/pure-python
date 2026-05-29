@@ -182,9 +182,10 @@ def test_python_m3_pure_m3_python_round_trip():
     assert [q.name for q in forward.classes[Account].qualifiedProperties] == ["label"]
     assert canonical_c["Account"][5]["label"] == (("raw", "String", ()), 1, 1)
 
-    # (2c) The derived-property body graph survives Python -> m3 -> Pure -> m3.
-    expected_body = "$this.id->plus(' (')->plus($this.suit)->plus(')')"
-    assert f"label() {{ {expected_body} }} : String[1];" in pure_source
+    # (2c) The derived-property body graph survives Python -> m3 -> Pure -> m3,
+    #      emitted as fully parenthesized infix and statement-terminated.
+    expected_body = "((($this.id + ' (') + $this.suit) + ')')"
+    assert f"label() {{ {expected_body}; }} : String[1];" in pure_source
     label_a = forward.classes[Account].qualifiedProperties[0]
     label_b = registry_b["Account"].qualifiedProperties[0]
     assert _expression(label_a.expressionSequence[0]) == expected_body

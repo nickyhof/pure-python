@@ -265,7 +265,7 @@ def test_qualified_property_body_marker_populates_expression_sequence():
     qp = cls.qualifiedProperties[0]
     assert qp.name == "fullName"
     assert len(qp.expressionSequence) == 1
-    assert _expression(qp.expressionSequence[0]) == "$this.first->plus(' ')->plus($this.last)"
+    assert _expression(qp.expressionSequence[0]) == "(($this.first + ' ') + $this.last)"
 
 
 def _type_sig(generic) -> str:

@@ -92,25 +92,27 @@ def test_legend_executes_pure_expressions():
     assert bridge.evaluate("|'a' + 'b'") == "ab"
 
 
-def test_legend_accepts_dsl_emitted_arrow_expression():
-    # The DSL emits a uniform arrow form. Legend's real grammar parser accepts
-    # it inside a function body. (Direct *execution* of `a->plus(b)` is skipped:
-    # Legend's core arithmetic functions bind variadically -- `plus(Integer[*])`
-    # -- so `1->plus(1)` is a two-arg call that the stdlib has no match for; the
-    # infix `1 + 1` desugars to `plus([1, 1])` instead. The arrow form is a
-    # deliberate, round-trippable representation, not an executable spelling of
-    # variadic core functions.)
-    plus = _expression((c(1) + c(1)).node)
-    assert plus == "1->plus(1)"
-    pure = "function demo::run(): Integer[1] { 1->plus(1) }"
-    model = bridge.parse(pure)
-    names = {e.get("name") for e in model["elements"]}
-    assert any(n.startswith("run") for n in names)
+def test_legend_executes_dsl_emitted_infix_operators():
+    # The DSL emits fully parenthesized infix for the core binary operators, the
+    # form Legend's stdlib actually executes (arrow `1->plus(1)` has no two-arg
+    # match because core arithmetic binds variadically). Build with the DSL,
+    # emit, and let Legend run it.
+    def run(expr_node):
+        return bridge.evaluate("|" + _expression(expr_node))
+
+    assert _expression((c(1) + c(1)).node) == "(1 + 1)"
+    assert run((c(1) + c(1)).node) == 2
+    assert run((c(2) * c(3)).node) == 6
+    assert run((c(3) > c(2)).node) is True
+    assert run((c(6) == c(6)).node) is True
+    assert run((c(6) != c(7)).node) is True
+    assert run((c(4) / c(2)).node) == 2.0
+    assert run(((c(1) + c(2)) * c(3)).node) == 9
 
 
-def test_legend_accepts_body_derived_property_model():
-    # A class with a Body-derived property, emitted to Pure, is accepted by the
-    # real Legend grammar parser (the body is no longer a `[]` placeholder).
+def test_legend_executes_body_derived_property_model():
+    # A class with a Body-derived property, emitted to Pure, both parses and the
+    # derived property executes end-to-end through Legend.
     @dataclass
     class Item:
         base: int
@@ -119,9 +121,10 @@ def test_legend_accepts_body_derived_property_model():
         def doubled(self) -> typing.Annotated[int, Body(lambda this: this.base * 2)]: ...
 
     model = to_pure_module(compile_class(Item, package="demo"))
-    assert "doubled() { $this.base->times(2) }" in model
+    assert "doubled() { ($this.base * 2); }" in model
     parsed = bridge.parse(model)
     assert "Item" in {e.get("name") for e in parsed["elements"]}
+    assert bridge.evaluate("|^demo::Item(base=21).doubled", model=model) == 42
 
 
 def test_legend_executes_over_a_generated_model():
