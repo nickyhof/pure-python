@@ -43,6 +43,19 @@ application, expressing relation queries::
         cols("id"), agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum()))
     )
     # -> #TDS{id,val\\n1,10\\n1,20}#->groupBy(~[id], ~total:{r | $r.val}:{c | $c->sum()})
+
+:func:`array` builds a collection literal ``[a, b, c]`` (a multi-value
+``InstanceValue``), and :func:`asc` / :func:`desc` the ``~col->ascending()`` /
+``~col->descending()`` sort directions; the ``sort`` verb takes one direction or
+an :func:`array` of them, and the ``pivot`` verb takes a pivot column spec plus
+an :func:`agg`::
+
+    Expr(tds("id,grp\\n1,1\\n2,0")).sort(array(asc(col("id")), desc(col("grp"))))
+    # -> #TDS{id,grp\\n1,1\\n2,0}#->sort([~id->ascending(), ~grp->descending()])
+    Expr(tds("id,prod,amt\\n1,a,10")).pivot(
+        cols("prod"), agg("amount", lam(["r"], lambda r: r.amt), lam(["c"], lambda c: c.sum()))
+    )
+    # -> #TDS{id,prod,amt\\n1,a,10}#->pivot(~[prod], ~amount:{r | $r.amt}:{c | $c->sum()})
 """
 
 from __future__ import annotations
@@ -383,6 +396,38 @@ def aggs(*aggspecs: m3.AggColSpec) -> m3.AggColSpecArray:
     return m3.AggColSpecArray(aggSpecs=list(aggspecs))
 
 
+def array(*elements: object) -> m3.InstanceValue:
+    """A collection literal ``[a, b, c]`` (a multi-value ``m3.InstanceValue``).
+
+    Each element is :func:`coerce`d (an ``Expr`` unwrapped, an ``m3`` node passed
+    through, a scalar wrapped as a :func:`lit`) and stored on an ``InstanceValue``
+    with ``ZeroMany`` multiplicity -- the same node the emitter already renders as
+    ``[a, b, c]`` (the inverse of :mod:`pure_python.compile.pure_expr`'s
+    ``expressionsArray`` lowering). Holds either scalars (``array(1, 2, 3)`` ->
+    ``[1, 2, 3]``) or sub-expressions (``array(asc(col("a")), desc(col("b")))`` ->
+    ``[~a->ascending(), ~b->descending()]``, the list form a ``sort`` takes).
+    """
+    return m3.InstanceValue(
+        values=[coerce(e) for e in elements],
+        genericType=m3.GenericType(),
+        multiplicity=m3.ZeroMany,
+    )
+
+
+def asc(colspec: object) -> m3.SimpleFunctionExpression:
+    """A ``SortInfo`` ascending direction ``~col->ascending()`` (the engine's
+    canonical spelling -- ``asc`` has no relation overload).
+
+    ``colspec`` is typically a :func:`col` ``~col``; passed through :func:`coerce`."""
+    return call("ascending", coerce(colspec))
+
+
+def desc(colspec: object) -> m3.SimpleFunctionExpression:
+    """A ``SortInfo`` descending direction ``~col->descending()`` (the engine's
+    canonical spelling -- ``desc`` has no relation overload)."""
+    return call("descending", coerce(colspec))
+
+
 __all__ = [
     "Expr",
     "c",
@@ -401,4 +446,7 @@ __all__ = [
     "fcols",
     "agg",
     "aggs",
+    "array",
+    "asc",
+    "desc",
 ]

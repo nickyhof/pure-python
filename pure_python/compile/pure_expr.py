@@ -30,7 +30,21 @@ from pure_python import m3
 from pure_python.codegen._pure_antlr.M3CoreLexer import M3CoreLexer
 from pure_python.codegen._pure_antlr.M3CoreParser import M3CoreParser
 
-from .expressions import agg, aggs, call, col, cols, fcol, fcols, lam, lit, prop, tds, var
+from .expressions import (
+    agg,
+    aggs,
+    array,
+    call,
+    col,
+    cols,
+    fcol,
+    fcols,
+    lam,
+    lit,
+    prop,
+    tds,
+    var,
+)
 
 # Pure infix symbol -> internal core-function name (inverse of
 # :data:`pure_python.compile.m3_to_pure._INFIX_OPERATORS`).
@@ -165,13 +179,17 @@ def _arithmetic_symbol(arithmetic) -> str:
 def _lower_atomic(nae) -> m3.ValueSpecification:
     atom = nae.atomicExpression()
     if atom is None:
-        # A grouped expression `( ... )` or a signed (`-`/`+`) expression.
+        # A grouped expression `( ... )`, a signed (`-`/`+`) expression, or a
+        # collection literal `[a, b, c]` (an `expressionsArray`).
         combined = nae.combinedExpression()
         if combined is not None:
             return _lower_combined(combined)
         signed = nae.signedExpression()
         if signed is not None:
             return _lower_signed(signed)
+        expressions_array = nae.expressionsArray()
+        if expressions_array is not None:
+            return _lower_expressions_array(expressions_array)
         raise ValueError(f"unsupported expression: {nae.getText()!r}")
     variable = atom.variable()
     if variable is not None:
@@ -191,6 +209,19 @@ def _lower_atomic(nae) -> m3.ValueSpecification:
     raise ValueError(f"unsupported atomic expression: {atom.getText()!r}")
 
 
+def _lower_expressions_array(expressions_array) -> m3.InstanceValue:
+    """Lower a collection literal ``[a, b, c]`` (an ``expressionsArray``).
+
+    Each element is an ``expression`` (lowered by :func:`_lower_expression`); the
+    elements become the ``values`` of a multi-value ``InstanceValue`` -- the
+    inverse of :func:`pure_python.compile.expressions.array` and what the emitter
+    renders as ``[a, b, c]``. Used for a ``sort`` direction list
+    (``[~a->ascending(), ~b->descending()]``).
+    """
+    elements = [_lower_expression(e) for e in expressions_array.expression()]
+    return array(*elements)
+
+
 def _lower_column_builders(column_builders):
     """Lower ``~col`` / ``~[a, b]``, ``~c:{r|...}`` and ``~c:{map}:{agg}`` specs.
 
@@ -201,10 +232,18 @@ def _lower_column_builders(column_builders):
     * agg (``columnName : anyLambda`` *and* an ``extraFunction`` carrying the
       reduce ``anyLambda``) -> ``AggColSpec``.
 
-    A single spec yields the scalar form, multiple the matching array
-    (``ColSpecArray`` / ``FuncColSpecArray`` / ``AggColSpecArray``). Mixing kinds
-    in one ``~[...]`` is rejected.
+    A scalar spec (no brackets, ``~a`` / ``~a:{...}`` / ``~a:{...}:{...}``) yields
+    the scalar form; a bracketed spec (``~[a]`` / ``~[a, b]`` ...) yields the
+    matching array (``ColSpecArray`` / ``FuncColSpecArray`` / ``AggColSpecArray``)
+    even for a single element -- the real engine keeps ``~[a]`` a one-element
+    ``ColSpecArray`` (it resolves ``pivot(Relation, ColSpecArray, ...)``), so the
+    bracket presence is read from the parse tree (``BRACKET_OPEN``) and preserved.
+    Mixing kinds in one ``~[...]`` is rejected.
     """
+    # Bracket presence is recoverable from the tree: `columnBuilders` is
+    # `TILDE (oneColSpec | '[' (oneColSpec (',' oneColSpec)*)? ']')`, so a present
+    # `BRACKET_OPEN` token means the array form even for a single element.
+    bracketed = column_builders.BRACKET_OPEN() is not None
     specs = column_builders.oneColSpec()
     simple_names: list[str] = []
     func_specs: list[m3.FuncColSpec] = []
@@ -237,10 +276,14 @@ def _lower_column_builders(column_builders):
             "~[...] is not supported"
         )
     if agg_specs:
-        return agg_specs[0] if len(agg_specs) == 1 else aggs(*agg_specs)
+        if len(agg_specs) == 1 and not bracketed:
+            return agg_specs[0]
+        return aggs(*agg_specs)
     if func_specs:
-        return func_specs[0] if len(func_specs) == 1 else fcols(*func_specs)
-    if len(simple_names) == 1:
+        if len(func_specs) == 1 and not bracketed:
+            return func_specs[0]
+        return fcols(*func_specs)
+    if len(simple_names) == 1 and not bracketed:
         return col(simple_names[0])
     return cols(*simple_names)
 

@@ -17,11 +17,14 @@ from pure_python.compile.expressions import (
     Expr,
     agg,
     aggs,
+    array,
+    asc,
     c,
     call,
     coerce,
     col,
     cols,
+    desc,
     fcol,
     fcols,
     lam,
@@ -380,9 +383,9 @@ def test_round_trip_agg_colspec_array():
 
 
 def test_round_trip_group_by_query():
-    # A two-column grouping keeps the `ColSpecArray` shape under reverse parse (a
-    # single `~[id]` lowers to a scalar `ColSpec`, the same asymmetry the single-
-    # column `select` round trip side-steps with `col` rather than `cols`).
+    # A two-column grouping keeps the `ColSpecArray` shape under reverse parse.
+    # (A single bracketed `~[id]` now also stays a `ColSpecArray` thanks to the
+    # bracket-presence fix -- see the single-element bracket tests below.)
     node = call(
         "groupBy",
         tds("grp,id,val\n1,1,10\n1,1,20"),
@@ -504,4 +507,200 @@ def test_round_trip_rename_query():
 
 def test_round_trip_simple_verb_chain():
     node = Expr(tds("id,grp\n1,1\n2,0")).drop(1).distinct().limit(5).node
+    _assert_round_trips(node)
+
+
+# --- collection literals, sort and pivot ------------------------------------
+# `sort` takes one `SortInfo` (`~col->ascending()`) or a collection of them; the
+# engine resolves `sort_Relation_1__SortInfo_MANY__Relation_1_` for both the
+# scalar and the bracketed multi forms (confirmed via the Legend bridge). `pivot`
+# takes a pivot column spec (`~[col]`) plus an aggregation; the engine resolves
+# `pivot_Relation_1__ColSpecArray_1__AggColSpec_1__Relation_1_`. Both need the
+# `array(...)` collection literal (`[a, b]`, an `expressionsArray`) and the
+# `ascending` / `descending` direction helpers built here.
+
+# --- array builder ----------------------------------------------------------
+
+def test_array_builds_multi_value_instance_value():
+    node = array(1, 2, 3)
+    assert isinstance(node, m3.InstanceValue)
+    # each element is coerced to a node (here `lit`s), held with ZeroMany mult
+    assert all(isinstance(v, m3.InstanceValue) for v in node.values)
+    assert [v.values[0] for v in node.values] == [1, 2, 3]
+    assert node.multiplicity is m3.ZeroMany
+
+
+def test_array_coerces_elements():
+    # Exprs are unwrapped, m3 nodes pass through, scalars become `lit`s.
+    node = array(c(1), col("a"))
+    assert isinstance(node.values[0], m3.InstanceValue)  # c(1) -> lit
+    assert node.values[0].values == [1]
+    assert isinstance(node.values[1], m3.ColSpec)  # col passes through
+
+
+def test_array_of_sort_infos():
+    node = array(asc(col("id")), desc(col("grp")))
+    assert canon(node) == (
+        "collection",
+        (
+            ("call", "ascending", (("colspec", "id"),)),
+            ("call", "descending", (("colspec", "grp"),)),
+        ),
+    )
+
+
+def test_coerce_passes_array_through():
+    a = array(1, 2)
+    assert coerce(a) is a
+
+
+# --- direction helpers ------------------------------------------------------
+
+def test_asc_builds_ascending_call():
+    node = asc(col("id"))
+    assert isinstance(node, m3.SimpleFunctionExpression)
+    assert node.functionName == "ascending"
+    assert canon(node) == ("call", "ascending", (("colspec", "id"),))
+
+
+def test_desc_builds_descending_call():
+    node = desc(col("grp"))
+    assert node.functionName == "descending"
+    assert canon(node) == ("call", "descending", (("colspec", "grp"),))
+
+
+# --- DSL equals the builders ------------------------------------------------
+
+def test_fluent_sort_scalar_equals_free_builder():
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).sort(asc(col("grp")))
+    builder = call("sort", tds("id,grp\n1,1\n2,0"), asc(col("grp")))
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_sort_multi_key_equals_free_builder():
+    keys = lambda: array(asc(col("id")), desc(col("grp")))
+    fluent = Expr(tds("id,grp\n1,1\n2,0")).sort(keys())
+    builder = call("sort", tds("id,grp\n1,1\n2,0"), keys())
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_pivot_equals_free_builder():
+    spec = lambda: agg("amount", lam(["r"], lambda r: r.amt), lam(["c"], lambda c: c.sum()))
+    fluent = Expr(tds("id,prod,amt\n1,a,10\n1,b,20")).pivot(cols("prod"), spec())
+    builder = call("pivot", tds("id,prod,amt\n1,a,10\n1,b,20"), cols("prod"), spec())
+    assert canon(fluent.node) == canon(builder)
+
+
+# --- emit -------------------------------------------------------------------
+
+def test_emit_array_of_scalars():
+    assert _expression(array(1, 2, 3)) == "[1, 2, 3]"
+
+
+def test_emit_array_of_sort_infos():
+    node = array(asc(col("id")), desc(col("grp")))
+    assert _expression(node) == "[~id->ascending(), ~grp->descending()]"
+
+
+def test_emit_sort_scalar_query():
+    node = call("sort", tds("id,grp\n1,1\n2,0"), asc(col("grp")))
+    assert _expression(node) == "#TDS{id,grp\n1,1\n2,0}#->sort(~grp->ascending())"
+
+
+def test_emit_sort_multi_key_query():
+    node = call(
+        "sort",
+        tds("id,grp\n1,1\n2,0"),
+        array(asc(col("id")), desc(col("grp"))),
+    )
+    assert _expression(node) == (
+        "#TDS{id,grp\n1,1\n2,0}#->sort([~id->ascending(), ~grp->descending()])"
+    )
+
+
+def test_emit_pivot_query():
+    node = call(
+        "pivot",
+        tds("id,prod,amt\n1,a,10\n1,b,20"),
+        cols("prod"),
+        agg("amount", lam(["r"], lambda r: r.amt), lam(["c"], lambda c: c.sum())),
+    )
+    assert _expression(node) == (
+        "#TDS{id,prod,amt\n1,a,10\n1,b,20}#"
+        "->pivot(~[prod], ~amount:{r | $r.amt}:{c | $c->sum()})"
+    )
+
+
+# --- single-element bracket preservation ------------------------------------
+# The real engine keeps `~[a]` a one-element `ColSpecArray` (it resolves the
+# `pivot(Relation, ColSpecArray, AggColSpec)` overload), and bracket presence is
+# recoverable from the parse tree (`columnBuilders.BRACKET_OPEN`), so a single
+# bracketed `~[a]` reverse-parses to the *Array* family while a bracketless `~a`
+# stays the scalar. The shared `_lower_column_builders` change is exercised by
+# select/extend/groupBy too (their existing round trips still pass).
+
+def test_emit_single_element_colspec_array():
+    assert _expression(cols("id")) == "~[id]"
+
+
+def test_round_trip_single_element_colspec_array_stays_array():
+    node = cols("id")
+    parsed = pure_expr.parse_expression(_expression(node))
+    assert isinstance(parsed, m3.ColSpecArray)  # NOT collapsed to a scalar ColSpec
+    assert canon(parsed) == canon(node)
+
+
+def test_round_trip_single_element_func_colspec_array_stays_array():
+    node = fcols(fcol("a", lam(["r"], lambda r: r.x + 1)))
+    parsed = pure_expr.parse_expression(_expression(node))
+    assert isinstance(parsed, m3.FuncColSpecArray)
+    assert canon(parsed) == canon(node)
+
+
+def test_round_trip_single_element_agg_colspec_array_stays_array():
+    node = aggs(agg("t", lam(["r"], lambda r: r.v), lam(["c"], lambda c: c.sum())))
+    parsed = pure_expr.parse_expression(_expression(node))
+    assert isinstance(parsed, m3.AggColSpecArray)
+    assert canon(parsed) == canon(node)
+
+
+def test_round_trip_scalar_colspec_stays_scalar():
+    # A bracketless `~a` still lowers to the scalar `ColSpec` (the bracket fix is
+    # keyed on `BRACKET_OPEN`, so the non-bracketed form is unaffected).
+    node = col("id")
+    parsed = pure_expr.parse_expression(_expression(node))
+    assert isinstance(parsed, m3.ColSpec)
+    assert canon(parsed) == canon(node)
+
+
+# --- reverse parse (round trip) ---------------------------------------------
+
+def test_round_trip_array_of_scalars():
+    _assert_round_trips(array(1, 2, 3))
+
+
+def test_round_trip_array_of_sort_infos():
+    _assert_round_trips(array(asc(col("id")), desc(col("grp"))))
+
+
+def test_round_trip_sort_scalar_query():
+    _assert_round_trips(call("sort", tds("id,grp\n1,1\n2,0"), asc(col("grp"))))
+
+
+def test_round_trip_sort_multi_key_query():
+    node = call(
+        "sort",
+        tds("id,grp\n1,1\n2,0"),
+        array(asc(col("id")), desc(col("grp"))),
+    )
+    _assert_round_trips(node)
+
+
+def test_round_trip_pivot_query():
+    node = call(
+        "pivot",
+        tds("id,prod,amt\n1,a,10\n1,b,20"),
+        cols("prod"),
+        agg("amount", lam(["r"], lambda r: r.amt), lam(["c"], lambda c: c.sum())),
+    )
     _assert_round_trips(node)

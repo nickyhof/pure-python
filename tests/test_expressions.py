@@ -54,9 +54,33 @@ def canon(vs):
         # A `#TDS{...}#` literal is discriminated by a RelationType rawType marker.
         if isinstance(vs.genericType.rawType, m3.RelationType):
             return ("tds", tuple(vs.values))
+        # A collection literal `[a, b, c]` (from `array`) is a multi-value /
+        # ZeroMany `InstanceValue`; recurse into element nodes / scalars. A scalar
+        # `lit` (PureOne, single value) keeps the `("lit", ...)` shape below.
+        if vs.multiplicity is m3.ZeroMany or len(vs.values) != 1:
+            return ("collection", tuple(_canon_element(v) for v in vs.values))
         raw = vs.genericType.rawType
         return ("lit", getattr(raw, "name", None), tuple(vs.values))
     raise TypeError(f"unexpected node {vs!r}")
+
+
+def _canon_element(value):
+    """A collection element: recurse into expression nodes, keep scalars verbatim."""
+    if isinstance(
+        value,
+        (
+            m3.ValueSpecification,
+            m3.LambdaFunction,
+            m3.ColSpec,
+            m3.ColSpecArray,
+            m3.FuncColSpec,
+            m3.FuncColSpecArray,
+            m3.AggColSpec,
+            m3.AggColSpecArray,
+        ),
+    ):
+        return canon(value)
+    return value
 
 
 # --- builders ---------------------------------------------------------------
@@ -243,6 +267,26 @@ def test_literal_rejects_unemittable_primitives():
         _literal(b"bytes")
     with pytest.raises((ValueError, NotImplementedError)):
         _literal(datetime.time(1, 2, 3))
+
+
+def test_canon_collection_recurses_into_elements():
+    # `array(...)` produces a multi-value / ZeroMany InstanceValue; `canon`
+    # projects it to a `("collection", ...)` tuple, recursing into node elements
+    # (so an `array` of sub-expressions compares structurally, not by raw node).
+    from pure_python.compile.expressions import array, c
+
+    # `array` coerces scalars to `lit` nodes, so each element canonizes to a lit.
+    assert canon(array(1, 2, 3)) == (
+        "collection",
+        (("lit", "Integer", (1,)), ("lit", "Integer", (2,)), ("lit", "Integer", (3,))),
+    )
+    assert canon(array(c(1) + c(2), c(3))) == (
+        "collection",
+        (
+            ("call", "plus", (("lit", "Integer", (1,)), ("lit", "Integer", (2,)))),
+            ("lit", "Integer", (3,)),
+        ),
+    )
 
 
 def test_emit_multi_value_instance_value_is_list_literal():
