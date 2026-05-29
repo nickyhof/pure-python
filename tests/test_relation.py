@@ -15,6 +15,8 @@ from pure_python import m3
 from pure_python.compile import pure_expr
 from pure_python.compile.expressions import (
     Expr,
+    agg,
+    aggs,
     c,
     call,
     coerce,
@@ -98,6 +100,46 @@ def test_coerce_passes_func_colspecs_through():
     assert coerce(fca) is fca
 
 
+def test_agg_builds_agg_colspec_from_map_and_reduce():
+    map_fn = lam(["r"], lambda r: r.val)
+    reduce_fn = lam(["c"], lambda c: c.sum())
+    node = agg("total", map_fn, reduce_fn)
+    assert isinstance(node, m3.AggColSpec)
+    assert node.name == "total"
+    assert node.map is map_fn
+    assert node.reduce is reduce_fn
+
+
+def test_agg_rejects_non_function_map():
+    with pytest.raises(TypeError, match="Function"):
+        agg("x", "not a function", lam(["c"], lambda c: c.sum()))
+
+
+def test_agg_rejects_non_function_reduce():
+    with pytest.raises(TypeError, match="Function"):
+        agg("x", lam(["r"], lambda r: r.val), "not a function")
+
+
+def test_aggs_builds_agg_colspec_array():
+    a = agg("total", lam(["r"], lambda r: r.x), lam(["c"], lambda c: c.sum()))
+    b = agg("cnt", lam(["r"], lambda r: r.y), lam(["c"], lambda c: c.count()))
+    node = aggs(a, b)
+    assert isinstance(node, m3.AggColSpecArray)
+    assert node.aggSpecs == [a, b]
+
+
+def test_aggs_rejects_non_agg_colspec():
+    with pytest.raises(TypeError, match="AggColSpec"):
+        aggs(fcol("a", lam(["r"], lambda r: r.x)))
+
+
+def test_coerce_passes_agg_colspecs_through():
+    ac = agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum()))
+    assert coerce(ac) is ac
+    aca = aggs(ac)
+    assert coerce(aca) is aca
+
+
 def test_lam_builds_lambda_with_param_names_and_body():
     from pure_python.compile.expressions import prop, var
 
@@ -152,6 +194,23 @@ def test_fluent_extend_with_func_colspec_array_equals_free_builder():
     )
     fluent = Expr(tds("x,y\n1,2")).extend(specs())
     builder = call("extend", tds("x,y\n1,2"), specs())
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_group_by_equals_free_builder():
+    spec = lambda: agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum()))
+    fluent = Expr(tds("id,val\n1,10\n1,20")).groupBy(cols("id"), spec())
+    builder = call("groupBy", tds("id,val\n1,10\n1,20"), cols("id"), spec())
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_group_by_with_agg_array_equals_free_builder():
+    specs = lambda: aggs(
+        agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum())),
+        agg("cnt", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.count())),
+    )
+    fluent = Expr(tds("id,val\n1,10\n1,20")).groupBy(cols("id"), specs())
+    builder = call("groupBy", tds("id,val\n1,10\n1,20"), cols("id"), specs())
     assert canon(fluent.node) == canon(builder)
 
 
@@ -216,6 +275,33 @@ def test_emit_extend_query():
     assert _expression(node) == "#TDS{id\n1\n2}#->extend(~doubled:{r | ($r.id * 2)})"
 
 
+def test_emit_single_agg_colspec():
+    node = agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum()))
+    assert _expression(node) == "~total:{r | $r.val}:{c | $c->sum()}"
+
+
+def test_emit_agg_colspec_array():
+    node = aggs(
+        agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum())),
+        agg("cnt", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.count())),
+    )
+    assert _expression(node) == (
+        "~[total:{r | $r.val}:{c | $c->sum()}, cnt:{r | $r.val}:{c | $c->count()}]"
+    )
+
+
+def test_emit_group_by_query():
+    node = call(
+        "groupBy",
+        tds("id,val\n1,10\n1,20"),
+        cols("id"),
+        agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum())),
+    )
+    assert _expression(node) == (
+        "#TDS{id,val\n1,10\n1,20}#->groupBy(~[id], ~total:{r | $r.val}:{c | $c->sum()})"
+    )
+
+
 # --- reverse parse (round trip) ---------------------------------------------
 
 def _assert_round_trips(node) -> None:
@@ -276,4 +362,31 @@ def test_round_trip_func_colspec_array():
 
 def test_round_trip_extend_query():
     node = call("extend", tds("id\n1\n2"), fcol("doubled", lam(["r"], lambda r: r.id * 2)))
+    _assert_round_trips(node)
+
+
+def test_round_trip_single_agg_colspec():
+    _assert_round_trips(
+        agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum()))
+    )
+
+
+def test_round_trip_agg_colspec_array():
+    node = aggs(
+        agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum())),
+        agg("cnt", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.count())),
+    )
+    _assert_round_trips(node)
+
+
+def test_round_trip_group_by_query():
+    # A two-column grouping keeps the `ColSpecArray` shape under reverse parse (a
+    # single `~[id]` lowers to a scalar `ColSpec`, the same asymmetry the single-
+    # column `select` round trip side-steps with `col` rather than `cols`).
+    node = call(
+        "groupBy",
+        tds("grp,id,val\n1,1,10\n1,1,20"),
+        cols("grp", "id"),
+        agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum())),
+    )
     _assert_round_trips(node)

@@ -15,7 +15,7 @@ import pytest
 from pure_python import m3
 from pure_python.compile import compile_class, from_pure, to_pure_module
 from pure_python.compile.annotations import Body
-from pure_python.compile.expressions import c, call, fcol, lam, tds
+from pure_python.compile.expressions import agg, c, call, cols, fcol, lam, tds
 from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
@@ -184,6 +184,27 @@ def test_legend_parses_dsl_tds_extend_query():
         call("extend", tds("id\n1\n2"), fcol("doubled", lam(["r"], lambda r: r.id * 2)))
     )
     assert emitted == "#TDS{id\n1\n2}#->extend(~doubled:{r | ($r.id * 2)})"
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(e.get("_type") == "function" and e.get("package") == "test" for e in model["elements"])
+
+
+def test_legend_parses_dsl_tds_group_by_query():
+    # An `AggColSpec` (`~name:{map}:{agg}`) + the `groupBy` verb over a `#TDS{...}#`
+    # literal PARSES and COMPILES via the real engine (same TDS extensions as the
+    # filter / extend cases). The grouping `ColSpecArray` comes first, then the agg
+    # colspec. Execution is NOT asserted -- relation execution is blocked upstream on
+    # this engine build (see test_legend_java_backend_lacks_relation_size_execution).
+    emitted = _expression(
+        call(
+            "groupBy",
+            tds("id,val\n1,10\n1,20"),
+            cols("id"),
+            agg("total", lam(["r"], lambda r: r.val), lam(["c"], lambda c: c.sum())),
+        )
+    )
+    assert emitted == (
+        "#TDS{id,val\n1,10\n1,20}#->groupBy(~[id], ~total:{r | $r.val}:{c | $c->sum()})"
+    )
     model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
     assert any(e.get("_type") == "function" and e.get("package") == "test" for e in model["elements"])
 

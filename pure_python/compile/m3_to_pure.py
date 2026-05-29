@@ -159,6 +159,16 @@ def _func_col_spec(spec: m3.FuncColSpec) -> str:
     return f"{spec.name}:{_expression(spec.function)}"
 
 
+def _agg_col_spec(spec: m3.AggColSpec) -> str:
+    """Render an ``AggColSpec`` as the un-``~``'d ``name:{map}:{agg}`` core form.
+
+    Shared by the bracketless ``~name:{...}:{...}`` and the bracketed
+    ``~[a:{...}:{...}, b:{...}:{...}]`` emits so the lambda spelling is identical
+    in both; each lambda reuses the ``LambdaFunction`` emit.
+    """
+    return f"{spec.name}:{_expression(spec.map)}:{_expression(spec.reduce)}"
+
+
 def _expression(vs) -> str:
     """Render a ``ValueSpecification`` (or relation-layer node) body as Pure source.
 
@@ -200,6 +210,14 @@ def _expression(vs) -> str:
         # The grammar carries one leading `~` before the bracket; each inner spec
         # is the un-`~`'d `name:{lambda}` form (`~[ oneColSpec, oneColSpec ]`).
         return "~[" + ", ".join(_func_col_spec(s) for s in vs.funcSpecs) + "]"
+    if isinstance(vs, m3.AggColSpec):
+        # An aggregation column spec `~name:{map}:{agg}` (the bracketless form);
+        # each lambda reuses the `LambdaFunction` emit above.
+        return "~" + _agg_col_spec(vs)
+    if isinstance(vs, m3.AggColSpecArray):
+        # One leading `~` before the bracket; each inner spec is the un-`~`'d
+        # `name:{map}:{agg}` form (`~[ oneColSpec, oneColSpec ]`).
+        return "~[" + ", ".join(_agg_col_spec(s) for s in vs.aggSpecs) + "]"
     if isinstance(vs, m3.InstanceValue):
         if _is_tds(vs):  # a `#TDS{...}#` literal: emit its text verbatim
             return vs.values[0]
