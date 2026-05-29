@@ -15,6 +15,7 @@ from pure_python import m3
 from pure_python.compile import pure_expr
 from pure_python.compile.expressions import (
     Expr,
+    JoinKind,
     agg,
     aggs,
     array,
@@ -25,6 +26,7 @@ from pure_python.compile.expressions import (
     col,
     cols,
     desc,
+    enum_ref,
     fcol,
     fcols,
     lam,
@@ -704,3 +706,141 @@ def test_round_trip_pivot_query():
         agg("amount", lam(["r"], lambda r: r.amt), lam(["c"], lambda c: c.sum())),
     )
     _assert_round_trips(node)
+
+
+# --- join / asOfJoin + enum-value references --------------------------------
+# The genuinely new capability here is representing an ENUM-VALUE REFERENCE
+# (`JoinKind.INNER`) as a `ValueSpecification`. The second relation is just a
+# value (another `#TDS{}#` literal here) and the condition is the already-
+# supported multi-param lambda (`{l, r | $l.id == $r.rid}`). The metamodel has
+# no `JoinKind` enum, so `enum_ref` mirrors the `tds` pattern: a verbatim token
+# on an `InstanceValue` discriminated by an `Enumeration` rawType marker. The
+# Legend engine confirms the resolved overloads (see `tests/test_legend_bridge.py`):
+# `join_Relation_1__Relation_1__JoinKind_1__Function_1__Relation_1_` and
+# `asOfJoin_Relation_1__Relation_1__Function_1__Relation_1_`, and that bare
+# `JoinKind.INNER` both PARSES and COMPILES (valid members: INNER/LEFT/RIGHT/FULL;
+# OUTER was probed and REJECTED -- not a member of the enumeration).
+
+# --- enum_ref builder -------------------------------------------------------
+
+def test_enum_ref_builds_instance_value_with_enumeration_marker():
+    node = enum_ref("JoinKind", "INNER")
+    assert isinstance(node, m3.InstanceValue)
+    # the verbatim emit text is the single value
+    assert node.values == ["JoinKind.INNER"]
+    # discriminated from a string literal (String) and a TDS literal (RelationType)
+    assert isinstance(node.genericType.rawType, m3.Enumeration)
+    assert not isinstance(node.genericType.rawType, m3.RelationType)
+    assert node.multiplicity is m3.PureOne
+
+
+def test_enum_ref_accepts_a_qualified_path():
+    node = enum_ref("meta::pure::functions::relation::JoinKind", "LEFT")
+    assert node.values == ["meta::pure::functions::relation::JoinKind.LEFT"]
+
+
+def test_coerce_passes_enum_ref_through():
+    er = enum_ref("JoinKind", "INNER")
+    assert coerce(er) is er
+
+
+def test_join_kind_constants_are_enum_refs():
+    assert canon(JoinKind.INNER) == ("enumref", ("JoinKind.INNER",))
+    assert canon(JoinKind.LEFT) == ("enumref", ("JoinKind.LEFT",))
+    assert canon(JoinKind.RIGHT) == ("enumref", ("JoinKind.RIGHT",))
+    assert canon(JoinKind.FULL) == ("enumref", ("JoinKind.FULL",))
+
+
+# --- DSL equals the builders ------------------------------------------------
+
+def test_fluent_join_equals_free_builder():
+    cond = lambda: lam(["l", "r"], lambda l, r: l.id == r.rid)
+    fluent = Expr(tds("id,name\n1,a")).join(tds("rid,val\n1,10"), JoinKind.INNER, cond())
+    builder = call("join", tds("id,name\n1,a"), tds("rid,val\n1,10"), JoinKind.INNER, cond())
+    assert canon(fluent.node) == canon(builder)
+
+
+def test_fluent_as_of_join_equals_free_builder():
+    cond = lambda: lam(["l", "r"], lambda l, r: l.t >= r.rt)
+    fluent = Expr(tds("id,t\n1,5")).asOfJoin(tds("rid,rt\n1,4"), cond())
+    builder = call("asOfJoin", tds("id,t\n1,5"), tds("rid,rt\n1,4"), cond())
+    assert canon(fluent.node) == canon(builder)
+
+
+# --- emit -------------------------------------------------------------------
+
+def test_emit_enum_ref_verbatim():
+    assert _expression(enum_ref("JoinKind", "INNER")) == "JoinKind.INNER"
+    assert _expression(JoinKind.LEFT) == "JoinKind.LEFT"
+
+
+def test_emit_join_query():
+    node = call(
+        "join",
+        tds("id,name\n1,a\n2,b"),
+        tds("rid,val\n1,10\n2,20"),
+        JoinKind.INNER,
+        lam(["l", "r"], lambda l, r: l.id == r.rid),
+    )
+    assert _expression(node) == (
+        "#TDS{id,name\n1,a\n2,b}#"
+        "->join(#TDS{rid,val\n1,10\n2,20}#, JoinKind.INNER, {l, r | ($l.id == $r.rid)})"
+    )
+
+
+def test_emit_as_of_join_query():
+    node = call(
+        "asOfJoin",
+        tds("id,t\n1,5\n2,9"),
+        tds("rid,rt\n1,4\n2,8"),
+        lam(["l", "r"], lambda l, r: l.t >= r.rt),
+    )
+    assert _expression(node) == (
+        "#TDS{id,t\n1,5\n2,9}#"
+        "->asOfJoin(#TDS{rid,rt\n1,4\n2,8}#, {l, r | ($l.t >= $r.rt)})"
+    )
+
+
+# --- reverse parse (round trip) ---------------------------------------------
+
+def test_round_trip_enum_ref():
+    _assert_round_trips(enum_ref("JoinKind", "INNER"))
+
+
+def test_round_trip_enum_ref_qualified():
+    _assert_round_trips(enum_ref("meta::pure::functions::relation::JoinKind", "FULL"))
+
+
+def test_round_trip_join_query():
+    node = call(
+        "join",
+        tds("id,name\n1,a\n2,b"),
+        tds("rid,val\n1,10\n2,20"),
+        JoinKind.INNER,
+        lam(["l", "r"], lambda l, r: l.id == r.rid),
+    )
+    _assert_round_trips(node)
+
+
+def test_round_trip_as_of_join_query():
+    node = call(
+        "asOfJoin",
+        tds("id,t\n1,5\n2,9"),
+        tds("rid,rt\n1,4\n2,8"),
+        lam(["l", "r"], lambda l, r: l.t >= r.rt),
+    )
+    _assert_round_trips(node)
+
+
+def test_bare_instance_reference_without_value_is_rejected():
+    # A bare `JoinKind` (a pending instanceReference) is not a value on its own;
+    # only `JoinKind.VALUE` is meaningful. Fail loud rather than mis-lower.
+    with pytest.raises(ValueError, match="bare instance reference"):
+        pure_expr.parse_expression("JoinKind")
+
+
+def test_instance_reference_call_receiver_is_rejected():
+    # The bare-function-call receiver form (window `over(...)`) is a separate
+    # slice; an `instanceReference` followed by an arrow call must error clearly.
+    with pytest.raises(ValueError, match="instance reference"):
+        pure_expr.parse_expression("JoinKind->over(~grp)")

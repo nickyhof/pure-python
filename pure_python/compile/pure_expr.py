@@ -37,6 +37,7 @@ from .expressions import (
     call,
     col,
     cols,
+    enum_ref,
     fcol,
     fcols,
     lam,
@@ -60,6 +61,27 @@ _INFIX_FUNCTIONS: dict[str, str] = {
     ">": "greaterThan",
     ">=": "greaterThanEqual",
 }
+
+
+class _PendingReference:
+    """A bare ``instanceReference`` (``JoinKind``) awaiting its ``.VALUE`` suffix.
+
+    The grammar lexes an enum-value reference ``JoinKind.INNER`` as an
+    ``instanceReference`` (``JoinKind``) followed by a ``propertyExpression``
+    (``.INNER``). Only the combined form is meaningful here (it is the inverse of
+    :func:`pure_python.compile.expressions.enum_ref`), so :func:`_lower_atomic`
+    lowers the bare reference to this carrier and
+    :func:`_lower_property_or_function` folds the ``.VALUE`` suffix on, building
+    the ``enum_ref`` node. A pending reference left dangling, followed by a call
+    ``(...)``, or carrying an ``allOrFunction`` (the ``over(...)`` window-function
+    receiver) is rejected loudly rather than silently mis-lowered -- that
+    bare-function-call receiver form is a separate, not-yet-supported slice.
+    """
+
+    __slots__ = ("path",)
+
+    def __init__(self, path: str):
+        self.path = path
 
 
 class _Raise:
@@ -125,6 +147,13 @@ def _lower_expression(expr) -> m3.ValueSpecification:
     node = _lower_atomic(expr.nonArrowOrEqualExpression())
     for pof in expr.propertyOrFunctionExpression():
         node = _lower_property_or_function(node, pof)
+    # A pending instance reference must have been resolved into an `enum_ref` by a
+    # trailing `.VALUE` propertyExpression; a bare `JoinKind` is not a value here.
+    if isinstance(node, _PendingReference):
+        raise ValueError(
+            f"unsupported bare instance reference (expected an enum value such as "
+            f"{node.path}.VALUE): {node.path!r}"
+        )
     equal = expr.equalNotEqual()
     if equal is not None:
         node = _fold_equal_not_equal(node, equal)
@@ -206,7 +235,33 @@ def _lower_atomic(nae) -> m3.ValueSpecification:
     any_lambda = atom.anyLambda()
     if any_lambda is not None:  # `{p, w, r | <body>}`
         return _lower_lambda(any_lambda.lambdaFunction())
+    instance_reference = atom.instanceReference()
+    if instance_reference is not None:
+        return _lower_instance_reference(instance_reference)
     raise ValueError(f"unsupported atomic expression: {atom.getText()!r}")
+
+
+def _lower_instance_reference(instance_reference):
+    """Lower a bare ``instanceReference`` (``JoinKind``) to a pending reference.
+
+    Only the qualified-name form with no trailing ``allOrFunction`` (``over(...)``
+    / ``.all()`` / a call) is supported -- the enum-value-reference receiver. The
+    ``allOrFunction`` form (the bare-function-call receiver that window functions
+    such as ``over(...)`` need) is a separate slice, so reject it loudly rather
+    than silently mis-lower. A ``PATH_SEPARATOR``-only or ``unitName`` reference
+    is likewise unsupported here.
+    """
+    if instance_reference.allOrFunction() is not None:
+        raise ValueError(
+            "unsupported instance reference with a call/all suffix "
+            f"(bare-function-call receiver is not supported): {instance_reference.getText()!r}"
+        )
+    qualified_name = instance_reference.qualifiedName()
+    if qualified_name is None:
+        raise ValueError(
+            f"unsupported instance reference: {instance_reference.getText()!r}"
+        )
+    return _PendingReference(qualified_name.getText())
 
 
 def _lower_expressions_array(expressions_array) -> m3.InstanceValue:
@@ -339,7 +394,27 @@ def _lower_property_or_function(receiver, pof) -> m3.ValueSpecification:
     property_expr = pof.propertyExpression()
     if property_expr is not None:
         name = _property_name(property_expr.propertyName())
+        if isinstance(receiver, _PendingReference):
+            # `JoinKind` (a pending instanceReference) folded with `.INNER` (a
+            # parameterless propertyExpression) is an enum-value reference. A
+            # parameterized `.prop(args)` form is not an enum value, so reject it.
+            if (
+                property_expr.functionExpressionParameters() is not None
+                or property_expr.functionExpressionLatestMilestoningDateParameter()
+                is not None
+            ):
+                raise ValueError(
+                    "unsupported property call on an instance reference: "
+                    f"{receiver.path}.{name}(...)"
+                )
+            return enum_ref(receiver.path, name)
         return prop(receiver, name)
+    if isinstance(receiver, _PendingReference):
+        # A pending reference followed by an arrow `->fn(...)` is the
+        # bare-function-call receiver form (window `over(...)`), a separate slice.
+        raise ValueError(
+            f"unsupported function call on an instance reference: {receiver.path}->..."
+        )
     function_expr = pof.functionExpression()
     # One functionExpression can chain `->f(..)->g(..)`: fold each pair on.
     names = function_expr.qualifiedName()

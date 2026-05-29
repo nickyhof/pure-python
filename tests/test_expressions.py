@@ -54,6 +54,10 @@ def canon(vs):
         # A `#TDS{...}#` literal is discriminated by a RelationType rawType marker.
         if isinstance(vs.genericType.rawType, m3.RelationType):
             return ("tds", tuple(vs.values))
+        # An enum-value reference (`JoinKind.INNER`) is discriminated by an
+        # Enumeration rawType marker; its value is the verbatim qualified name.
+        if isinstance(vs.genericType.rawType, m3.Enumeration):
+            return ("enumref", tuple(vs.values))
         # A collection literal `[a, b, c]` (from `array`) is a multi-value /
         # ZeroMany `InstanceValue`; recurse into element nodes / scalars. A scalar
         # `lit` (PureOne, single value) keeps the `("lit", ...)` shape below.
@@ -287,6 +291,17 @@ def test_canon_collection_recurses_into_elements():
             ("lit", "Integer", (3,)),
         ),
     )
+
+
+def test_canon_distinguishes_enum_ref_from_string_literal():
+    # An enum-value reference (`JoinKind.INNER`) and a same-text string literal
+    # canonize to *different* shapes -- the `Enumeration` rawType marker keeps the
+    # reference distinct from a quoted string, so `canon` is not vacuous for joins.
+    from pure_python.compile.expressions import enum_ref
+
+    assert canon(enum_ref("JoinKind", "INNER")) == ("enumref", ("JoinKind.INNER",))
+    assert canon(lit("JoinKind.INNER")) == ("lit", "String", ("JoinKind.INNER",))
+    assert canon(enum_ref("JoinKind", "INNER")) != canon(lit("JoinKind.INNER"))
 
 
 def test_emit_multi_value_instance_value_is_list_literal():

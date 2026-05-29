@@ -17,6 +17,7 @@ from pure_python.compile import compile_class, from_pure, to_pure_module
 from pure_python.compile.annotations import Body
 from pure_python.compile.expressions import (
     Expr,
+    JoinKind,
     agg,
     array,
     asc,
@@ -25,6 +26,7 @@ from pure_python.compile.expressions import (
     col,
     cols,
     desc,
+    enum_ref,
     fcol,
     lam,
     tds,
@@ -315,6 +317,100 @@ def test_legend_parses_and_compiles_dsl_pivot_query():
         e.get("_type") == "function" and e.get("package") == "test"
         for e in model["elements"]
     )
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_parses_and_compiles_dsl_join_query():
+    # `join` over two `#TDS{...}#` literals PARSES and COMPILES via the real
+    # engine. The second relation is a plain value (another `#TDS{}#`), the
+    # `JoinKind.INNER` argument is an enum-value reference (a bare `JoinKind`
+    # instanceReference + `.INNER` propertyExpression -- the engine resolves the
+    # enumeration; bare `JoinKind.INNER` both parses AND compiles), and the
+    # condition is the already-supported multi-param lambda. The engine resolves
+    # `join_Relation_1__Relation_1__JoinKind_1__Function_1__Relation_1_`;
+    # compilation succeeds and only plan generation hits the upstream execution
+    # boundary ("... is not supported yet"), the same as the filter / groupBy /
+    # sort / pivot cases (see test_legend_java_backend_lacks_relation_size_execution).
+    query = call(
+        "join",
+        tds("id,name\n1,a\n2,b"),
+        tds("rid,val\n1,10\n2,20"),
+        JoinKind.INNER,
+        lam(["l", "r"], lambda l, r: l.id == r.rid),
+    )
+    emitted = _expression(query)
+    assert emitted == (
+        "#TDS{id,name\n1,a\n2,b}#"
+        "->join(#TDS{rid,val\n1,10\n2,20}#, JoinKind.INNER, {l, r | ($l.id == $r.rid)})"
+    )
+    # PARSE: the wrapping function appears in the parsed model.
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    # COMPILE: `join` resolves to a relation function (the enum-value reference
+    # `JoinKind.INNER` compiles); only plan generation hits the upstream boundary.
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_each_valid_join_kind_and_rejects_outer():
+    # The engine resolves the bare `JoinKind` enumeration; INNER/LEFT/RIGHT/FULL
+    # are valid members (each compiles past name resolution to the plan-gen
+    # boundary), while OUTER is NOT a member and fails earlier with a distinct
+    # "Can't find enum value 'OUTER'" error -- proving the compiler genuinely
+    # resolves the enum-value reference rather than ignoring it.
+    def join_query(kind_ref):
+        return _expression(
+            call(
+                "join",
+                tds("id,name\n1,a"),
+                tds("rid,val\n1,10"),
+                kind_ref,
+                lam(["l", "r"], lambda l, r: l.id == r.rid),
+            )
+        )
+
+    for kind in (JoinKind.INNER, JoinKind.LEFT, JoinKind.RIGHT, JoinKind.FULL):
+        # COMPILE: a valid member reaches the plan-gen "not supported yet" boundary.
+        with pytest.raises(Exception, match="not supported yet"):
+            bridge.evaluate("|" + join_query(kind))
+
+    # An unknown member is rejected at compile time, not at the plan-gen boundary.
+    with pytest.raises(Exception, match="Can't find enum value 'OUTER'"):
+        bridge.evaluate("|" + join_query(enum_ref("JoinKind", "OUTER")))
+
+
+def test_legend_parses_and_compiles_dsl_as_of_join_query():
+    # `asOfJoin` over two `#TDS{...}#` literals PARSES and COMPILES via the real
+    # engine. Unlike `join`, the 3-arg overload takes NO `JoinKind` -- just the
+    # second relation and a single condition lambda. The engine resolves
+    # `asOfJoin_Relation_1__Relation_1__Function_1__Relation_1_`; compilation
+    # succeeds and only plan generation hits the upstream execution boundary
+    # ("... is not supported yet"), the same as the join case above. (A 4-arg
+    # `asOfJoin(rel, rel, matchCond, joinCond)` overload also compiles
+    # --`asOfJoin_Relation_1__Relation_1__Function_1__Function_1__Relation_1_`-- but
+    # the 3-arg form is the representative case here.)
+    query = call(
+        "asOfJoin",
+        tds("id,t\n1,5\n2,9"),
+        tds("rid,rt\n1,4\n2,8"),
+        lam(["l", "r"], lambda l, r: l.t >= r.rt),
+    )
+    emitted = _expression(query)
+    assert emitted == (
+        "#TDS{id,t\n1,5\n2,9}#"
+        "->asOfJoin(#TDS{rid,rt\n1,4\n2,8}#, {l, r | ($l.t >= $r.rt)})"
+    )
+    # PARSE: the wrapping function appears in the parsed model.
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    # COMPILE: `asOfJoin` resolves to a relation function; only plan generation fails.
     with pytest.raises(Exception, match="not supported yet"):
         bridge.evaluate("|" + emitted)
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 from .annotations import Body, Stereotype, Tag
 from .expressions import (
     Expr,
+    JoinKind,
     agg,
     aggs,
     array,
@@ -19,6 +20,7 @@ from .expressions import (
     col,
     cols,
     desc,
+    enum_ref,
     fcol,
     fcols,
     func,
@@ -60,6 +62,8 @@ __all__ = [
     "not_",
     "lam",
     "tds",
+    "enum_ref",
+    "JoinKind",
     "col",
     "cols",
     "fcol",

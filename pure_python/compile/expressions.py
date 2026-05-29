@@ -82,6 +82,17 @@ _IMPORT_GROUP_SENTINEL = m3.ImportGroup()
 # the two sides agree under ``canon``.
 _TDS_GENERIC_TYPE = m3.GenericType(rawType=m3.RelationType())
 
+# A shared marker ``GenericType`` whose ``rawType`` is an ``Enumeration``. It
+# discriminates an enum-value reference (``JoinKind.INNER``) from an ordinary
+# string ``InstanceValue`` (rawType ``String``) and from a ``#TDS{...}#`` literal
+# (rawType ``RelationType``) so the emitter renders the stored qualified-name
+# text verbatim (``JoinKind.INNER``) instead of as a quoted string. ``pure_expr``
+# reuses the same marker when it reconstructs the reference so the two sides agree
+# under ``canon``. (The metamodel has no ``JoinKind`` enum, so this reuses the
+# existing ``tds`` pattern -- a verbatim token on an ``InstanceValue`` -- rather
+# than adding any m3 type.)
+_ENUM_REF_GENERIC_TYPE = m3.GenericType(rawType=m3.Enumeration())
+
 
 def _primitive_for(value: object) -> m3.PrimitiveType:
     """Map a Python literal to its Pure primitive, reusing ``python_to_m3``."""
@@ -330,6 +341,45 @@ def tds(text: str) -> m3.InstanceValue:
     )
 
 
+def enum_ref(enumeration: str, value: str) -> m3.InstanceValue:
+    """An enum-value reference ``Enumeration.VALUE`` (e.g. ``JoinKind.INNER``).
+
+    The second relation of a ``join`` is just a value (another ``#TDS{}#`` or a
+    ``$var``) and the ``JoinKind`` argument is a *reference* to an enumeration
+    value, which Pure spells ``JoinKind.INNER`` (or a qualified path
+    ``meta::pure::functions::relation::JoinKind.INNER``). The metamodel has no
+    ``JoinKind`` enum, so -- mirroring :func:`tds` -- store the verbatim emit text
+    (``"JoinKind.INNER"``) on an ``InstanceValue`` discriminated by
+    :data:`_ENUM_REF_GENERIC_TYPE` (a ``RelationType``-style marker, here an
+    ``Enumeration`` rawType) so the emitter renders it verbatim and
+    :mod:`pure_python.compile.pure_expr` reconstructs the same node.
+
+    ``enumeration`` is the qualified-or-bare enumeration name, ``value`` the
+    member name; the engine accepts the bare ``JoinKind.INNER`` (verified via the
+    Legend bridge -- it both parses and compiles), so that is what is emitted.
+    """
+    return m3.InstanceValue(
+        values=[f"{enumeration}.{value}"],
+        genericType=_ENUM_REF_GENERIC_TYPE,
+        multiplicity=m3.PureOne,
+    )
+
+
+class JoinKind:
+    """Ready-made :func:`enum_ref` constants for the ``JoinKind`` enumeration.
+
+    The Legend engine resolves the bare ``JoinKind`` enumeration and accepts
+    these four members (``OUTER`` was probed and rejected -- it is not a member);
+    each compiles to the ``meta::pure::functions::relation::join`` overload. Use
+    as ``rel.join(other, JoinKind.INNER, cond)``.
+    """
+
+    INNER = enum_ref("JoinKind", "INNER")
+    LEFT = enum_ref("JoinKind", "LEFT")
+    RIGHT = enum_ref("JoinKind", "RIGHT")
+    FULL = enum_ref("JoinKind", "FULL")
+
+
 def col(name: str) -> m3.ColSpec:
     """A single column spec ``~name`` (a name-only ``m3.ColSpec``)."""
     return m3.ColSpec(name=name)
@@ -440,6 +490,8 @@ __all__ = [
     "not_",
     "lam",
     "tds",
+    "enum_ref",
+    "JoinKind",
     "col",
     "cols",
     "fcol",
