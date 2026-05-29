@@ -10,15 +10,18 @@ A Python representation of the Pure (FINOS Legend) M3 metamodel. It (a) **genera
 
 ```bash
 pip install -e ".[dev]"        # Python >= 3.10; installs pytest
-python -m pytest -q            # run all tests
+python -m pytest -q            # run the fast suite (excludes the JVM bridge tests)
+python -m pytest -m integration -q   # run ONLY the Legend bridge tests (needs the jar)
 python -m pytest tests/test_compile.py::test_rich_round_trip_preserves_generics_annotations_and_qualified_properties -q   # single test
 python -m pure_python.codegen.generate   # regenerate pure_python/m3/metamodel.py from vendored .pure sources
 mvn -f legend-bridge package             # (optional, needs JDK 21 + Maven) build the Legend bridge jar
 ```
 
-There is no separate lint step configured. The Legend bridge is optional: its
-tests (`tests/test_legend_bridge.py`) skip unless the jar exists (or
-`PURE_PYTHON_LEGEND_BRIDGE_JAR` points at one).
+There is no separate lint step configured. The Legend bridge is optional and
+slow (each `LegendBridge` call boots a fresh JVM + Legend engine, ~4s), so its
+tests (`tests/test_legend_bridge.py`) are marked `integration` and **excluded
+from the default `pytest` run**; pass `-m integration` to run them. They also
+skip unless the jar exists (or `PURE_PYTHON_LEGEND_BRIDGE_JAR` points at one).
 
 ## Critical: the metamodel is generated, not hand-written
 

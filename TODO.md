@@ -88,6 +88,16 @@ Grouped by status, with pointers to the relevant code.
     and `eval` (`tests/test_legend_bridge.py` runs one over a two-class model).
   - [ ] **Richer `eval` results.** Only expressions reducing to a `ConstantResult`
     are returned today; TDS/relation/streaming results need a serializer.
+  - [ ] **Reuse the JVM across bridge calls (`eval` is the suite bottleneck).**
+    Every `LegendBridge` call spawns a fresh `java -jar` that re-initializes the
+    whole Legend engine; the `eval` calls (~4.4s each) dominate test time.
+    *Done:* the bridge tests are now opt-in (`-m integration`, excluded by
+    default) and the bootstrap metamodel is shared via a session fixture, so the
+    default loop is fast. *Next, with the relation/TDS work:* a batched
+    `evalMany` command (compile the model once, evaluate many expressions in one
+    JVM). *Bigger follow-on:* a **persistent JVM daemon** -- `bridge.py` boots
+    the engine once and streams requests over stdin/socket (one init for the
+    whole session) instead of one process per call.
 
 - [ ] **Legend protocol model (`PureModelContextData`).** The deferred fork:
   the legend-engine JSON protocol (Mapping, Connection, Runtime, Service,

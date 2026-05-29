@@ -19,10 +19,15 @@ from pure_python.compile.m3_to_pure import _expression
 from pure_python.legend import LegendBridge
 
 bridge = LegendBridge()
-pytestmark = pytest.mark.skipif(
-    not bridge.available(),
-    reason="legend-bridge jar/JVM not available; build with `mvn -f legend-bridge package`",
-)
+# `integration` -> excluded from the default run (each call boots a fresh JVM +
+# Legend engine, ~4s); enable explicitly with `pytest -m integration`.
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        not bridge.available(),
+        reason="legend-bridge jar/JVM not available; build with `mvn -f legend-bridge package`",
+    ),
+]
 
 
 @dataclass

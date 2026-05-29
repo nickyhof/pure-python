@@ -20,3 +20,7 @@ dev = ["pytest>=7"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: drives the real Legend engine via the JVM bridge (slow). Excluded from the default run; enable with `-m integration`.",
+]
