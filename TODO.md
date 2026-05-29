@@ -370,11 +370,16 @@ Grouped by status, with pointers to the relevant code.
   error than the relation plan-gen "not supported yet" boundary -- also pinned).
   This sugar layer deliberately does NOT fabricate a database/store definition;
   real `from_db` execution needs a modelled relational store + connection + runtime.
+  **Reverse-parse now lands:** the vendored `M3CoreParser` grammar lexes
+  `#>{db::Store.table}#` as one `DSL_TEXT` `dsl()` island (the SAME accessor as a
+  `#TDS{...}#` literal -- the whole `#...#` token, `::` and interior `.` intact),
+  so `pure_expr._lower_atomic` dispatches the `#>{...}#` prefix to `db_table`
+  (passing the verbatim token, no fragile last-`.` path split) and `#TDS{...}#` to
+  `tds`. A bare `db_table(...)` and a `db_table(...)->filter(...)->limit(...)` chain
+  now round-trip `Python -> m3 -> Pure -> m3` byte-faithfully and canon-equal the
+  forward builder (and a `Frame.from_db(...)` chain too) -- pinned in
+  `tests/test_relation.py`.
   Follow-ons:
-    - **reverse-parse `#>{db::Store.table}#`** in `pure_expr` (lower the `type ">"`
-      `classInstance` back to a `db_table` node) so a `from_db` query round-trips
-      `Python -> m3 -> Pure -> m3` like the `tds` source does (currently the
-      forward emit + engine parse are covered, not the reverse lowering).
     - **a store-aware `from_db` compile/execute path** -- model a relational store +
       connection + runtime so a `#>{db.table}#` query compiles and executes against
       a real database (needs the protocol-model / store work, Tier 2).

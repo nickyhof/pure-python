@@ -37,6 +37,7 @@ from .expressions import (
     call,
     col,
     cols,
+    db_table,
     enum_ref,
     fcol,
     fcols,
@@ -232,8 +233,20 @@ def _lower_atomic(nae) -> m3.ValueSpecification:
     if literal is not None:
         return lit(_lower_literal(literal))
     dsl = atom.dsl()
-    if dsl is not None:  # a `#TDS{...}#` relation literal: keep its text verbatim
-        return tds(dsl.DSL_TEXT().getText())
+    if dsl is not None:
+        # A `#...#` DSL island: the vendored grammar lexes the whole token as one
+        # `DSL_TEXT`, so keep its text verbatim and dispatch on the island prefix.
+        # `#>{db::Store.table}#` is a database-table relation source (rebuilt with
+        # `db_table`, the inverse of its forward builder); `#TDS{...}#` is an inline
+        # relation literal (rebuilt with `tds`). Both store the verbatim token so
+        # the reparsed node equals the one the builder produced (under `canon`).
+        text = dsl.DSL_TEXT().getText()
+        if text.startswith("#>{"):
+            # `db_table` accepts a full `#>{...}#` token in its first arg (the
+            # second is unused), so pass the verbatim text -- no fragile last-`.`
+            # split of the `database.table` path is needed for the round trip.
+            return db_table(text, "")
+        return tds(text)
     column_builders = atom.columnBuilders()
     if column_builders is not None:  # `~col` or `~[a, b]`
         return _lower_column_builders(column_builders)

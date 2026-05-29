@@ -25,6 +25,7 @@ from pure_python.compile.expressions import (
     coerce,
     col,
     cols,
+    db_table,
     desc,
     enum_ref,
     fcol,
@@ -322,6 +323,44 @@ def _assert_round_trips(node) -> None:
 
 def test_round_trip_tds_literal():
     _assert_round_trips(tds("id,grp\n1,1\n2,0"))
+
+
+def test_round_trip_db_table_source():
+    # `#>{db::Store.table}#` is a second `#...#` DSL island the vendored grammar
+    # lexes as one `DSL_TEXT` token; `pure_expr` dispatches the `#>{...}#` prefix
+    # to `db_table` (vs `#TDS{...}#` to `tds`) and reconstructs the same node.
+    _assert_round_trips(db_table("my::Store", "myTable"))
+
+
+def test_round_trip_db_table_chain():
+    # The verb chain rides the existing arrow-call lowering; only the bare source
+    # atom needed the new island branch.
+    node = call(
+        "limit",
+        call("filter", db_table("my::Store", "t"), lam(["r"], lambda r: r.x > 1)),
+        5,
+    )
+    _assert_round_trips(node)
+
+
+def test_reparsed_db_table_equals_builder():
+    # The reparsed bare source canon-equals the forward `db_table` node (same
+    # verbatim token, same `Relation`-rawType discriminator).
+    parsed = pure_expr.parse_expression("#>{my::Store.myTable}#")
+    assert canon(parsed) == canon(db_table("my::Store", "myTable"))
+
+
+def test_round_trip_frame_from_db_chain():
+    # The user-facing entry point: `Frame.from_db(...).filter(...).limit(...)`,
+    # `.to_pure()`, then re-parse back to the equivalent graph.
+    from pure_python.compile import Frame
+
+    frame = Frame.from_db("my::Store", "myTable").filter(lambda r: r.amt > 5).limit(3)
+    emitted = frame.to_pure()
+    assert emitted == "#>{my::Store.myTable}#->filter({r | ($r.amt > 5)})->limit(3)"
+    parsed = pure_expr.parse_expression(emitted)
+    assert canon(parsed) == canon(frame.to_m3())
+    assert _expression(parsed) == emitted
 
 
 def test_round_trip_single_colspec():
