@@ -145,8 +145,18 @@ Grouped by status, with pointers to the relevant code.
   the engine's Java execution codegen does not yet implement the relation
   reducers (`relation::size ... is not supported yet`), so a TDS query cannot be
   executed down to a constant on this build (both the parse/compile success and
-  the execution boundary are pinned in `tests/test_legend_bridge.py`). Deferred
-  follow-ons:
+  the execution boundary are pinned in `tests/test_legend_bridge.py`).
+  Investigated routing relation queries through an embedded **DuckDB** store
+  executor (the path Legend's own relation PCT tests use): the wiring works (the
+  `RelationalStoreExecutorBuilder` auto-discovers, the DuckDB native lib loads,
+  and a TDS literal materializes and runs), but composing an operator over an
+  *inline* `#TDS{}#` literal fails in 4.129.8 SQL generation -- `processTdsFilter`
+  can't cast a literal source (`ClassInstanceHolder`) to a `SelectWithCursor`.
+  The only workaround (the PCT `testAdapterForRelationalWithDuckDBExecution`)
+  needs `meta::pure::extension::runtime::getExtensions` from the engine-internal
+  `core_external_extensions` repo, which is not a published Maven artifact. So
+  real relation execution needs a newer legend-engine (with inline-TDS SQL
+  generation) or a full engine/server deployment. Deferred follow-ons:
     - **`FuncColSpec` (`~c:{r|...}`) + `extend`** -- function-bearing column
       specs and the derived-column verb.
     - **`AggColSpec` (`~c:{map}:{agg}`) + `groupBy`** -- aggregation specs and
