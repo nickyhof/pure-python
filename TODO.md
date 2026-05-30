@@ -444,6 +444,60 @@ Grouped by status, with pointers to the relevant code.
   pylegend-style chain; `tests/test_legend_bridge.py` PARSES + COMPILES the
   pylegend-style chain (subscript + string join kind + `window()` + an OLAP column)
   and the 4-arg `as_of_join` via the real engine.
+- [x] **Typed `Schema` / `Column` layer for `Frame` (Tier 1, slice 5).** A
+  pylegend-style typed-schema layer the `Frame` carries alongside its node, in a
+  new `compile/schema.py` (re-exported from `compile` and `compile.frame`). New
+  classes: `Column(name, type)` (the `type` is an `m3.PrimitiveType` singleton or
+  a Python builtin, **coerced via the EXACT `python_to_m3._PRIMITIVE` mapping**
+  -- no second source of truth), with pylegend-style snake_case factories
+  `Column.string` / `.integer` / `.float_` / `.boolean` / `.decimal` / `.byte` /
+  `.strict_date` / `.date_time` / `.strict_time`; `Schema(columns=...)` with
+  `Schema.from_columns(*cols)` and the kwargs `Schema.of(cust=str, amt=int,
+  ship_date=date)` constructor; `SchemaError(ValueError)` for the validation
+  raise (a `ValueError` subclass so existing `raises(ValueError)` checks keep
+  working). `Frame.from_db` / `Frame.from_tds` gain an optional `schema=` kwarg,
+  and the new `Frame.from_rows(schema, rows)` builds the `#TDS{...}#` literal
+  from typed rows (tuples or dicts) -- each cell serialized in its column's
+  Pure-canonical inner-text form (`Integer`/`Byte` -> `str(int)`, `Float` -> `str(float)`,
+  `Boolean` -> `true`/`false`, `String` -> raw text (rejects `,`/`\n`/`#`),
+  `StrictDate` -> `YYYY-MM-DD` (`.isoformat()`), `DateTime` -> `YYYY-MM-DDTHH:MM:SS`
+  (`.isoformat(sep="T")`, microseconds dropped), `StrictTime` -> `HH:MM:SS`).
+  Every verb is **additively** schema-aware: with `schema=None` the `Frame`
+  emits BYTE-IDENTICAL Pure to before (the full prior fast + integration suites
+  still pass unchanged); with a schema attached, verbs validate explicit string
+  column args BEFORE building the m3 node and propagate per a rule table:
+  pass-through (`filter`, `sort`, `limit`, `slice`, `distinct`, `drop(n)`),
+  computed mechanically (`select` -> selected, `drop(*names)` -> remaining via
+  `select(~[remaining])`, `rename` -> one-for-one renamed, `concatenate` ->
+  left when both schemas equal else SchemaError on mismatch / `None` if either
+  unknown), and unknown-by-default with an `out_schema=` kwarg
+  (`extend` / `window_extend` / `group_by` / `pivot` / `join` / `as_of_join`).
+  Joins with both schemas known infer the column union and raise SchemaError on
+  a name collision; `out_schema=` overrides. Validation errors carry the verb
+  name, the bad column, and the available columns. Validation: `tests/test_frame_schema.py`
+  (NEW) pins the singleton/builtin coercion (one assertion per primitive),
+  factory construction, `Schema.of(**typed)`, `__getitem__` int/str, and
+  `SchemaError` on missing column; `tests/test_frame.py` (extended) covers
+  `from_db`/`from_tds`/`from_rows` schema carry, the getters, every verb's
+  positive + negative cases, propagation per rule, `concatenate` schema
+  mismatch raise, `join` collision raise (both sides named in the message),
+  and -- as the "no regression" proof -- a typed chain emits the SAME Pure
+  text + m3 graph (under `canon`) as the untyped equivalent. Bridge spot
+  checks (`tests/test_legend_bridge.py`): a `from_rows`-built TDS with mixed
+  primitives + `select` PARSES + COMPILES via the real engine (pins the
+  per-primitive serialization choice -- a future engine that rejected one
+  would surface here), and a typed `from_db` + filter + `out_schema`-bearing
+  `extend` + `select` + `sort` chain PARSES + COMPILES. The schema is NOT in
+  the m3 type system: no codegen / metamodel changes.
+- [ ] **Schema-aware row proxy / typed expression bodies (Tier 2).** The next
+  layer on top of the typed `Schema`: thread the column types into the
+  row-proxy `Expr` so `r.amt` carries the column's primitive (typing lambda
+  bodies), validate column names *inside* lambda bodies against the schema
+  (catching `r.ammt` at build-time, not just explicit verb-arg strings), and
+  infer the output type of derived columns (`r.amt * 2` -> `Integer`) so
+  `extend(...)` and `group_by(...)` *autocompute* their `out_schema` instead
+  of requiring it. Out of this slice; the Tier 1 layer above is the
+  foundation.
 - [ ] **Lambda / constraint representation.** `Constraint` and
   `ConcreteFunctionDefinition` bodies remain unmodelled. (Multi-parameter
   lambdas are now built by `lam` -- see the relation/TDS foundation above.)

@@ -798,3 +798,81 @@ def test_legend_java_backend_lacks_relation_size_execution():
     )
     with pytest.raises(Exception, match="not supported yet"):
         bridge.evaluate("|" + emitted)
+
+
+# --- typed-schema layer (Tier 1) bridge spot checks -------------------------
+
+def test_legend_compiles_frame_from_rows_built_tds_literal():
+    # `Frame.from_rows(schema, rows)` builds a `#TDS{header\nrow\n...}#` literal
+    # whose cell serializations are canonical Pure forms (booleans -> true/false,
+    # dates -> %Y-%m-%d, datetimes -> %Y-%m-%dT%H:%M:%S, ints/floats -> str, raw
+    # strings). The real engine PARSES + COMPILES the resulting query (hitting
+    # the same plan-gen execution boundary as the free-builder TDS cases). This
+    # pins each serialization choice: a future engine that REJECTS one would
+    # surface here.
+    import datetime as _dt
+    from pure_python.compile import Column, Frame, Schema
+
+    schema = Schema.from_columns(
+        Column.integer("i"),
+        Column.string("s"),
+        Column.float_("f"),
+        Column.boolean("b"),
+        Column.strict_date("d"),
+        Column.date_time("dt"),
+    )
+    query = Frame.from_rows(
+        schema,
+        [
+            (1, "a", 1.5, True, _dt.date(2020, 1, 2), _dt.datetime(2020, 1, 2, 10, 30, 0)),
+            (2, "b", 2.5, False, _dt.date(2021, 12, 31), _dt.datetime(2021, 12, 31, 23, 59, 59)),
+        ],
+    ).select("i", "s", "d")
+    emitted = query.to_pure()
+    assert emitted == (
+        "#TDS{i,s,f,b,d,dt\n"
+        "1,a,1.5,true,2020-01-02,2020-01-02T10:30:00\n"
+        "2,b,2.5,false,2021-12-31,2021-12-31T23:59:59}#"
+        "->select(~[i, s, d])"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
+    with pytest.raises(Exception, match="not supported yet"):
+        bridge.evaluate("|" + emitted)
+
+
+def test_legend_compiles_typed_chain_with_out_schema_extend():
+    # An out_schema=-bearing `extend` keeps schema validation alive through the
+    # tail of the chain; the emitted Pure (a `select` of the extended column)
+    # PARSES + COMPILES via the real engine. The schema layer is invisible to
+    # the emit -- this asserts the typed Frame surface produces the SAME Pure
+    # as the free-builder equivalent and reaches the same plan-gen boundary.
+    from pure_python.compile import Frame, Schema, desc
+
+    schema = Schema.of(cust=str, amt=int)
+    query = (
+        Frame.from_tds("cust,amt\na,10\nb,20", schema=schema)
+        .filter(lambda r: r.amt > 5)
+        .extend(("doubled", lambda r: r.amt * 2), out_schema=Schema.of(doubled=int))
+        .select("cust", "doubled")
+        .sort(desc("doubled"))
+    )
+    # Validation rides through the tail (the schema is known until .select).
+    assert query.schema is not None
+    assert query.schema.names() == ("cust", "doubled")
+    emitted = query.to_pure()
+    assert emitted == (
+        "#TDS{cust,amt\na,10\nb,20}#"
+        "->filter({r | ($r.amt > 5)})"
+        "->extend(~doubled:{r | ($r.amt * 2)})"
+        "->select(~[cust, doubled])"
+        "->sort(~doubled->descending())"
+    )
+    model = bridge.parse(f"function test::f(): Any[*] {{ {emitted} }}")
+    assert any(
+        e.get("_type") == "function" and e.get("package") == "test"
+        for e in model["elements"]
+    )
