@@ -13,12 +13,17 @@ in joins / concatenate are covered too.
 
 from __future__ import annotations
 
+import datetime
+
 import pytest
 
 from pure_python import m3
 from pure_python.compile import (
+    Column,
     Frame,
     JoinKind,
+    Schema,
+    SchemaError,
     agg,
     aggs,
     array,
@@ -798,3 +803,379 @@ def test_pylegend_style_chain_to_pure():
         "~rn:{p, w, r | $p->rowNumber($r)})"
         "->rename(~rn, ~row_num)"
     )
+
+# --- typed-schema layer: from_db / from_tds / from_rows + getters -----------
+
+def test_from_tds_carries_an_optional_schema():
+    s = Schema.of(id=int, grp=int)
+    f = Frame.from_tds("id,grp\n1,1", schema=s)
+    assert f.schema is s
+    assert f.columns == s.columns
+    # Emit is unchanged -- the TDS text is the source of truth.
+    assert f.to_pure() == "#TDS{id,grp\n1,1}#"
+
+
+def test_from_db_carries_an_optional_schema():
+    s = Schema.of(id=int, name=str)
+    f = Frame.from_db("my::Store", "myTable", schema=s)
+    assert f.schema is s
+    assert f.to_pure() == "#>{my::Store.myTable}#"
+
+
+def test_from_rows_builds_a_tds_literal_from_typed_rows_positional():
+    s = Schema.of(id=int, name=str, amt=float)
+    f = Frame.from_rows(s, [(1, "a", 1.5), (2, "b", 2.5)])
+    assert f.schema is s
+    assert f.to_pure() == "#TDS{id,name,amt\n1,a,1.5\n2,b,2.5}#"
+
+
+def test_from_rows_accepts_dict_rows_by_name():
+    s = Schema.of(id=int, name=str)
+    f = Frame.from_rows(s, [{"id": 1, "name": "a"}, {"name": "b", "id": 2}])
+    # Dict rows are reordered to schema order before serialization.
+    assert f.to_pure() == "#TDS{id,name\n1,a\n2,b}#"
+
+
+def test_from_rows_empty_rows_produces_header_only_tds():
+    s = Schema.of(id=int, name=str)
+    f = Frame.from_rows(s, [])
+    assert f.to_pure() == "#TDS{id,name}#"
+
+
+def test_from_rows_dict_row_missing_column_raises_schema_error():
+    s = Schema.of(id=int, name=str)
+    with pytest.raises(SchemaError, match="missing columns"):
+        Frame.from_rows(s, [{"id": 1}])
+
+
+def test_from_rows_tuple_row_arity_mismatch_raises_schema_error():
+    s = Schema.of(id=int, name=str)
+    with pytest.raises(SchemaError, match="2 columns"):
+        Frame.from_rows(s, [(1,)])
+
+
+def test_from_rows_string_cell_containing_comma_rejected():
+    s = Schema.of(name=str)
+    with pytest.raises(SchemaError, match="delimiter"):
+        Frame.from_rows(s, [("a,b",)])
+
+
+def test_from_rows_serializes_each_primitive_in_its_pure_canonical_form():
+    import datetime
+    s = Schema.from_columns(
+        Column.integer("i"),
+        Column.float_("f"),
+        Column.boolean("b"),
+        Column.string("s"),
+        Column.strict_date("d"),
+        Column.date_time("dt"),
+        Column.strict_time("t"),
+    )
+    f = Frame.from_rows(
+        s,
+        [(
+            -3,
+            1.5,
+            True,
+            "hello",
+            datetime.date(2020, 1, 2),
+            datetime.datetime(2020, 1, 2, 10, 30, 0),
+            datetime.time(10, 30, 0),
+        )],
+    )
+    assert f.to_pure() == (
+        "#TDS{i,f,b,s,d,dt,t\n"
+        "-3,1.5,true,hello,2020-01-02,2020-01-02T10:30:00,10:30:00}#"
+    )
+
+
+def test_schema_and_columns_are_none_without_a_schema():
+    f = Frame.from_tds("id\n1")
+    assert f.schema is None
+    assert f.columns is None
+
+
+# --- pass-through: filter / sort / limit / drop(n) / slice / distinct -------
+
+def test_filter_passes_through_input_schema():
+    s = Schema.of(id=int, amt=int)
+    f = Frame.from_tds("id,amt\n1,10", schema=s).filter(lambda r: r.amt > 5)
+    assert f.schema is s
+
+
+def test_sort_pass_through_validates_a_bare_column_name():
+    s = Schema.of(id=int, amt=int)
+    Frame.from_tds("id,amt\n1,10", schema=s).sort("amt")  # OK
+    with pytest.raises(SchemaError, match="verb='sort'"):
+        Frame.from_tds("id,amt\n1,10", schema=s).sort("ammt")
+
+
+def test_sort_pass_through_preserves_schema():
+    s = Schema.of(id=int, amt=int)
+    f = Frame.from_tds("id,amt\n1,10", schema=s).sort(desc("amt"))
+    assert f.schema is s
+
+
+def test_limit_drop_n_slice_distinct_pass_through_preserve_schema():
+    s = Schema.of(id=int, amt=int)
+    base = Frame.from_tds("id,amt\n1,10", schema=s)
+    assert base.limit(5).schema is s
+    assert base.drop(2).schema is s
+    assert base.slice(0, 10).schema is s
+    assert base.distinct().schema is s
+
+
+# --- computed: select / drop(*names) / rename / concatenate -----------------
+
+def test_select_validates_and_computes_output_schema():
+    s = Schema.of(id=int, amt=int, name=str)
+    f = Frame.from_tds("id,amt,name\n1,10,a", schema=s).select("name", "id")
+    # Schema mirrors the requested order.
+    assert f.schema.names() == ("name", "id")
+    assert f.schema.of_name("name").type is m3.String
+    assert f.schema.of_name("id").type is m3.Integer
+
+
+def test_select_unknown_column_raises_schema_error_with_verb_in_message():
+    s = Schema.of(id=int, amt=int)
+    with pytest.raises(SchemaError) as exc:
+        Frame.from_tds("id,amt\n1,10", schema=s).select("ammt")
+    msg = str(exc.value)
+    assert "verb='select'" in msg
+    assert "'ammt'" in msg
+    assert "id" in msg and "amt" in msg
+
+
+def test_drop_names_validates_and_removes_columns_from_schema():
+    s = Schema.of(id=int, amt=int, name=str)
+    f = Frame.from_tds("id,amt,name\n1,10,a", schema=s).drop("amt")
+    assert f.schema.names() == ("id", "name")
+    # Without a schema, drop(*names) cannot compute the remaining columns.
+    with pytest.raises(SchemaError, match="requires a schema"):
+        Frame.from_tds("id,amt,name\n1,10,a").drop("amt")
+
+
+def test_drop_names_unknown_column_raises_schema_error():
+    s = Schema.of(id=int, amt=int)
+    with pytest.raises(SchemaError, match="verb='drop'"):
+        Frame.from_tds("id,amt\n1,10", schema=s).drop("ammt")
+
+
+def test_drop_n_row_form_preserves_schema_and_existing_behavior():
+    # The original int-arg row-drop verb is unchanged (schema pass-through).
+    s = Schema.of(id=int, amt=int)
+    f = Frame.from_tds("id,amt\n1,10", schema=s).drop(2)
+    assert f.schema is s
+    assert f.to_pure() == "#TDS{id,amt\n1,10}#->drop(2)"
+
+
+def test_rename_validates_old_name_and_renames_in_schema():
+    s = Schema.of(id=int, amt=int)
+    f = Frame.from_tds("id,amt\n1,10", schema=s).rename("amt", "amount")
+    assert f.schema.names() == ("id", "amount")
+    assert f.schema.of_name("amount").type is m3.Integer
+    with pytest.raises(SchemaError, match="verb='rename'"):
+        Frame.from_tds("id,amt\n1,10", schema=s).rename("ammt", "amount")
+
+
+def test_rename_dict_multi_pair_chains_validation_and_propagates_schema():
+    s = Schema.of(id=int, amt=int)
+    f = Frame.from_tds("id,amt\n1,10", schema=s).rename({"id": "identifier", "amt": "amount"})
+    assert f.schema.names() == ("identifier", "amount")
+
+
+def test_concatenate_with_matching_schemas_preserves_left_schema():
+    s = Schema.of(id=int, amt=int)
+    a = Frame.from_tds("id,amt\n1,10", schema=s)
+    b = Frame.from_tds("id,amt\n2,20", schema=Schema.of(id=int, amt=int))
+    out = a.concatenate(b)
+    assert out.schema.names() == ("id", "amt")
+
+
+def test_concatenate_mismatched_schemas_raise_schema_error():
+    a = Frame.from_tds("id,amt\n1,10", schema=Schema.of(id=int, amt=int))
+    b = Frame.from_tds("id,name\n1,x", schema=Schema.of(id=int, name=str))
+    with pytest.raises(SchemaError, match="concatenate schemas must match"):
+        a.concatenate(b)
+
+
+def test_concatenate_with_other_unschematized_drops_downstream_schema():
+    a = Frame.from_tds("id,amt\n1,10", schema=Schema.of(id=int, amt=int))
+    b = Frame.from_tds("id,amt\n2,20")
+    assert a.concatenate(b).schema is None
+
+
+# --- unknown by default: extend / window_extend / group_by / pivot / joins --
+
+def test_extend_without_out_schema_drops_downstream_schema():
+    s = Schema.of(id=int, amt=int)
+    f = Frame.from_tds("id,amt\n1,10", schema=s).extend(
+        ("doubled", lambda r: r.amt * 2)
+    )
+    assert f.schema is None
+    # Validation stops past the boundary.
+    f.select("nope")  # no raise -- downstream has no schema.
+
+
+def test_extend_with_out_schema_appends_columns_and_keeps_validation_alive():
+    s = Schema.of(id=int, amt=int)
+    f = Frame.from_tds("id,amt\n1,10", schema=s).extend(
+        ("doubled", lambda r: r.amt * 2),
+        out_schema=Schema.of(doubled=int),
+    )
+    assert f.schema.names() == ("id", "amt", "doubled")
+    # Downstream validation still works.
+    with pytest.raises(SchemaError, match="verb='select'"):
+        f.select("nope")
+    # And valid downstream is happy.
+    assert f.select("doubled").schema.names() == ("doubled",)
+
+
+def test_extend_out_schema_clash_raises():
+    s = Schema.of(id=int, amt=int)
+    with pytest.raises(SchemaError, match="already in schema"):
+        Frame.from_tds("id,amt\n1,10", schema=s).extend(
+            ("amt", lambda r: r.amt),
+            out_schema=Schema.of(amt=int),
+        )
+
+
+def test_window_extend_propagation_mirrors_extend():
+    s = Schema.of(p=int, o=int, i=int)
+    base = Frame.from_tds("p,o,i\n0,1,10", schema=s)
+    no_out = base.window_extend(
+        Frame.window(partition_by="p", order_by="o"),
+        ("rn", lambda p, w, r: p.row_number(r)),
+    )
+    assert no_out.schema is None
+    with_out = base.window_extend(
+        Frame.window(partition_by="p", order_by="o"),
+        ("rn", lambda p, w, r: p.row_number(r)),
+        out_schema=Schema.of(rn=int),
+    )
+    assert with_out.schema.names() == ("p", "o", "i", "rn")
+
+
+def test_group_by_validates_keys_and_uses_out_schema():
+    s = Schema.of(grp=int, amt=int)
+    base = Frame.from_tds("grp,amt\n1,10", schema=s)
+    no_out = base.group_by("grp", ("total", lambda r: r.amt, lambda c: c.sum()))
+    assert no_out.schema is None
+    with_out = base.group_by(
+        "grp",
+        ("total", lambda r: r.amt, lambda c: c.sum()),
+        out_schema=Schema.of(total=int),
+    )
+    assert with_out.schema.names() == ("grp", "total")
+    with pytest.raises(SchemaError, match="verb='group_by'"):
+        base.group_by("grpp", ("total", lambda r: r.amt, lambda c: c.sum()))
+
+
+def test_pivot_validates_pivot_columns_and_uses_out_schema():
+    s = Schema.of(id=int, prod=str, amt=int)
+    base = Frame.from_tds("id,prod,amt\n1,a,10", schema=s)
+    # Pivot output columns are engine-fanned; without out_schema downstream is None.
+    no_out = base.pivot("prod", ("amount", lambda r: r.amt, lambda c: c.sum()))
+    assert no_out.schema is None
+    with_out = base.pivot(
+        "prod",
+        ("amount", lambda r: r.amt, lambda c: c.sum()),
+        out_schema=Schema.of(a_amount=int, b_amount=int),
+    )
+    assert with_out.schema.names() == ("a_amount", "b_amount")
+    with pytest.raises(SchemaError, match="verb='pivot'"):
+        base.pivot("prodd", ("amount", lambda r: r.amt, lambda c: c.sum()))
+
+
+def test_join_infers_union_when_both_schemas_known():
+    left = Frame.from_tds("id,name\n1,a", schema=Schema.of(id=int, name=str))
+    right = Frame.from_tds("rid,val\n1,10", schema=Schema.of(rid=int, val=int))
+    f = left.join(right, lambda l, r: l.id == r.rid)
+    assert f.schema.names() == ("id", "name", "rid", "val")
+
+
+def test_join_column_collision_raises_schema_error_naming_both_sides():
+    left = Frame.from_tds("id,name\n1,a", schema=Schema.of(id=int, name=str))
+    right = Frame.from_tds("id,val\n1,10", schema=Schema.of(id=int, val=int))
+    with pytest.raises(SchemaError) as exc:
+        left.join(right, lambda l, r: l.id == r.id)
+    msg = str(exc.value)
+    assert "'id'" in msg
+    assert "left=" in msg and "right=" in msg
+
+
+def test_join_out_schema_overrides_inferred_union():
+    left = Frame.from_tds("id\n1", schema=Schema.of(id=int))
+    right = Frame.from_tds("id\n1", schema=Schema.of(id=int))
+    explicit = Schema.of(left_id=int, right_id=int)
+    f = left.join(right, lambda l, r: l.id == r.id, out_schema=explicit)
+    assert f.schema is explicit
+
+
+def test_join_with_one_side_unschematized_drops_downstream_schema_without_out():
+    left = Frame.from_tds("id\n1", schema=Schema.of(id=int))
+    right = Frame.from_tds("id\n1")  # no schema
+    assert left.join(right, lambda l, r: l.id == r.id).schema is None
+
+
+def test_as_of_join_infers_union_and_accepts_out_schema():
+    left = Frame.from_tds("id,t\n1,5", schema=Schema.of(id=int, t=int))
+    right = Frame.from_tds("rid,rt\n1,4", schema=Schema.of(rid=int, rt=int))
+    f = left.as_of_join(right, lambda l, r: l.t >= r.rt)
+    assert f.schema.names() == ("id", "t", "rid", "rt")
+    explicit = Schema.of(only=int)
+    f2 = left.as_of_join(right, lambda l, r: l.t >= r.rt, out_schema=explicit)
+    assert f2.schema is explicit
+
+
+# --- emit invariance: with-schema produces the SAME m3 graph / Pure text -----
+
+def test_with_schema_emits_byte_identical_tds_and_node_as_without():
+    src = "id,grp\n1,1\n2,0"
+    bare = Frame.from_tds(src).filter(lambda r: r.grp > 0).limit(5)
+    typed = (
+        Frame.from_tds(src, schema=Schema.of(id=int, grp=int))
+        .filter(lambda r: r.grp > 0)
+        .limit(5)
+    )
+    assert bare.to_pure() == typed.to_pure()
+    assert canon(bare.to_m3()) == canon(typed.to_m3())
+
+
+def test_inner_left_right_full_join_thread_out_schema_through():
+    left = Frame.from_tds("id\n1", schema=Schema.of(id=int))
+    right = Frame.from_tds("rid\n1", schema=Schema.of(rid=int))
+    explicit = Schema.of(merged=int)
+    for method in ("inner_join", "left_join", "right_join", "full_join"):
+        f = getattr(left, method)(right, lambda l, r: l.id == r.rid, out_schema=explicit)
+        assert f.schema is explicit
+
+
+# --- a typed-chain example weaving Schema.of(...) through several verbs -----
+
+def test_typed_chain_with_out_schema_threads_validation_to_the_tail():
+    schema = Schema.of(cust=str, amt=int, ship_date=datetime.date)
+    orders = Frame.from_db("my::Store", "orders", schema=schema)
+    q = (
+        orders
+        .filter(lambda r: r.amt > 5)
+        .extend(
+            ("amt_tax", lambda r: r.amt * 1.1),
+            out_schema=Schema.of(amt_tax=float),
+        )
+        .select("cust", "amt", "amt_tax")
+        .sort(desc("amt_tax"))
+    )
+    # The tail schema is computed mechanically.
+    assert q.schema.names() == ("cust", "amt", "amt_tax")
+    # A typo would have raised:
+    with pytest.raises(SchemaError, match="verb='select'"):
+        (
+            orders
+            .filter(lambda r: r.amt > 5)
+            .extend(
+                ("amt_tax", lambda r: r.amt * 1.1),
+                out_schema=Schema.of(amt_tax=float),
+            )
+            .select("cust", "ammt")  # typo
+        )

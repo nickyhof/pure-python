@@ -39,6 +39,7 @@ from .expressions import (
     window,
 )
 from .frame import Frame
+from .schema import Column, Schema, SchemaError
 from .m3_to_pure import to_pure, to_pure_module
 from .m3_to_python import to_module, to_source
 from .pure_expr import parse_expression
@@ -90,4 +91,8 @@ __all__ = [
     "unbounded",
     # relation query builder facade
     "Frame",
+    # typed-schema layer (Schema/Column/SchemaError)
+    "Schema",
+    "Column",
+    "SchemaError",
 ]
